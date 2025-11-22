@@ -546,10 +546,42 @@ function NonoBananaPage() {
 
       {/* Mobile Optimized Prompt Input */}
       <div className="mobile-prompt-section">
-        <label className="mobile-prompt-label">
-          <span className="prompt-icon">✍️</span>
-          Prompt (erforderlich):
-        </label>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <label className="mobile-prompt-label" style={{ margin: 0 }}>
+            <span className="prompt-icon">✍️</span>
+            Prompt (erforderlich):
+          </label>
+          {(prompt || selectedTemplate) && (
+            <button
+              onClick={() => {
+                setPrompt('')
+                setSelectedTemplate(null)
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #f472b6 0%, #fb7185 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '6px 12px',
+                fontSize: '0.85rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 4px rgba(244, 114, 182, 0.3)'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.transform = 'scale(1.05)'
+                e.target.style.boxShadow = '0 4px 8px rgba(244, 114, 182, 0.4)'
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'scale(1)'
+                e.target.style.boxShadow = '0 2px 4px rgba(244, 114, 182, 0.3)'
+              }}
+            >
+              ✕ Reset
+            </button>
+          )}
+        </div>
         <textarea 
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
@@ -558,43 +590,59 @@ function NonoBananaPage() {
         />
       </div>
 
-      {/* Mobile Optimized Settings */}
-      <div className="mobile-settings-section">
-        <div className="mobile-settings-header">
-          <span className="mobile-settings-title">Einstellungen</span>
-        </div>
+      {/* Compact Settings */}
+      <div style={{ 
+        marginBottom: '20px',
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '12px',
+        padding: '16px',
+        background: 'rgba(255, 255, 255, 0.7)',
+        borderRadius: '12px',
+        border: '1px solid rgba(251, 191, 36, 0.2)'
+      }}>
+        <PremiumDropdown
+          label=""
+          value={resolution}
+          onChange={setResolution}
+          options={[
+            { value: '2K', label: '2K Optimal', description: '' },
+            { value: '4K', label: '4K Max', description: '' }
+          ]}
+        />
         
-        <div className="mobile-settings-controls">
-          <PremiumDropdown
-            label="Auflösung"
-            value={resolution}
-            onChange={setResolution}
-            options={[
-              { value: '2K', label: '2K Premium', description: '2048px • Optimal' },
-              { value: '4K', label: '4K Ultra', description: '4096px • Max' }
-            ]}
-          />
-          
-          <PremiumDropdown
-            label="Seitenverhältnis"
-            value={aspectRatio}
-            onChange={setAspectRatio}
-            options={[
-              { value: '9:16', label: '9:16', description: 'Instagram Story/Reels' },
-              { value: '4:3', label: '4:3', description: 'Instagram Posts' }
-            ]}
-          />
-        </div>
+        <PremiumDropdown
+          label=""
+          value={aspectRatio}
+          onChange={setAspectRatio}
+          options={[
+            { value: '9:16', label: '9:16 Story', description: '' },
+            { value: '4:3', label: '4:3 Post', description: '' }
+          ]}
+        />
       </div>
 
       {/* Image Upload */}
-      <div style={{ marginBottom: '20px' }}>
+      <div style={{ 
+        marginBottom: '20px',
+        padding: '16px',
+        background: 'rgba(255, 255, 255, 0.7)',
+        borderRadius: '12px',
+        border: '1px solid rgba(251, 191, 36, 0.2)'
+      }}>
         <label style={{ 
-          display: 'block', 
-          marginBottom: '8px', 
-          fontWeight: 'bold',
-          color: '#374151' 
+          display: 'flex', 
+          alignItems: 'center',
+          gap: '8px',
+          marginBottom: '12px', 
+          fontWeight: '600',
+          fontSize: '0.95rem',
+          background: 'linear-gradient(135deg, #ec4899 0%, #f59e0b 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text'
         }}>
+          <span>📷</span>
           Bilder hochladen (optional, max 14):
         </label>
         

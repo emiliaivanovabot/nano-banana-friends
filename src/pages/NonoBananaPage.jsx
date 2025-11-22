@@ -552,6 +552,79 @@ function NonoBananaPage() {
         🍌 nano banana pro
       </h1>
 
+      {/* Compact Settings - No White Box */}
+      <div style={{ 
+        marginBottom: '16px',
+        fontSize: '0.9rem'
+      }}>
+        <h3 className="mobile-templates-title" style={{ marginBottom: '8px', textAlign: 'left', fontSize: '1rem' }}>
+          Einstellungen
+        </h3>
+        <div style={{ 
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '8px'
+        }}>
+          <button
+            onClick={() => setResolution(resolution === '2K' ? '4K' : '2K')}
+            style={{
+              padding: '10px 14px',
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%)',
+              border: '1px solid rgba(251, 191, 36, 0.3)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '500',
+              fontSize: '0.9rem',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'scale(1.02)'
+              e.target.style.boxShadow = '0 2px 8px rgba(251, 113, 133, 0.15)'
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'scale(1)'
+              e.target.style.boxShadow = 'none'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+              <span style={{ fontWeight: '600' }}>{resolution}</span>
+              <span style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                {resolution === '2K' ? 'Optimal' : 'Max'}
+              </span>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => setAspectRatio(aspectRatio === '9:16' ? '4:3' : '9:16')}
+            style={{
+              padding: '10px 14px',
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%)',
+              border: '1px solid rgba(251, 191, 36, 0.3)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '500',
+              fontSize: '0.9rem',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'scale(1.02)'
+              e.target.style.boxShadow = '0 2px 8px rgba(251, 113, 133, 0.15)'
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'scale(1)'
+              e.target.style.boxShadow = 'none'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+              <span style={{ fontWeight: '600' }}>{aspectRatio}</span>
+              <span style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                {aspectRatio === '9:16' ? 'Story' : 'Post'}
+              </span>
+            </div>
+          </button>
+        </div>
+      </div>
+
       {/* Collapsible Prompt Templates Section */}
       <div className="mobile-prompt-templates-section">
         <div 
@@ -923,79 +996,6 @@ function NonoBananaPage() {
         </div>
       )}
 
-      {/* Compact Toggle Settings at Bottom */}
-      <div style={{ 
-        marginTop: '20px',
-        padding: '6px',
-        background: 'rgba(255, 255, 255, 0.4)',
-        borderRadius: '6px',
-        border: '1px solid rgba(251, 191, 36, 0.1)',
-        fontSize: '0.85rem'
-      }}>
-        <div style={{ 
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '6px'
-        }}>
-          <button
-            onClick={() => setResolution(resolution === '2K' ? '4K' : '2K')}
-            style={{
-              padding: '8px 12px',
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%)',
-              border: '1px solid rgba(251, 191, 36, 0.3)',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: '500',
-              fontSize: '0.85rem',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'scale(1.02)'
-              e.target.style.boxShadow = '0 2px 8px rgba(251, 113, 133, 0.15)'
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'scale(1)'
-              e.target.style.boxShadow = 'none'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-              <span style={{ fontWeight: '600' }}>{resolution}</span>
-              <span style={{ fontSize: '0.7rem', color: '#6B7280' }}>
-                {resolution === '2K' ? 'Optimal' : 'Max'}
-              </span>
-            </div>
-          </button>
-          
-          <button
-            onClick={() => setAspectRatio(aspectRatio === '9:16' ? '4:3' : '9:16')}
-            style={{
-              padding: '8px 12px',
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%)',
-              border: '1px solid rgba(251, 191, 36, 0.3)',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: '500',
-              fontSize: '0.85rem',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'scale(1.02)'
-              e.target.style.boxShadow = '0 2px 8px rgba(251, 113, 133, 0.15)'
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'scale(1)'
-              e.target.style.boxShadow = 'none'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-              <span style={{ fontWeight: '600' }}>{aspectRatio}</span>
-              <span style={{ fontSize: '0.7rem', color: '#6B7280' }}>
-                {aspectRatio === '9:16' ? 'Story' : 'Post'}
-              </span>
-            </div>
-          </button>
-        </div>
-      </div>
 
     </div>
   )

@@ -1,6 +1,60 @@
 import { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 
+// Premium Dropdown Component
+function PremiumDropdown({ label, value, onChange, options, icon }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const selectedOption = options.find(opt => opt.value === value)
+
+  return (
+    <div className="premium-dropdown">
+      <label className="premium-dropdown-label">
+        <span className="dropdown-icon">{icon}</span>
+        {label}
+      </label>
+      
+      <div className={`premium-dropdown-container ${isOpen ? 'open' : ''}`}>
+        <div 
+          className="premium-dropdown-trigger"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <div className="dropdown-value-section">
+            <div className="dropdown-main-value">{selectedOption.label}</div>
+            <div className="dropdown-description">{selectedOption.description}</div>
+          </div>
+          <div className={`dropdown-chevron ${isOpen ? 'rotated' : ''}`}>▼</div>
+        </div>
+        
+        {isOpen && (
+          <>
+            <div className="dropdown-backdrop" onClick={() => setIsOpen(false)} />
+            <div className="premium-dropdown-menu">
+              {options.map((option) => (
+                <div
+                  key={option.value}
+                  className={`dropdown-option ${option.value === value ? 'selected' : ''}`}
+                  onClick={() => {
+                    onChange(option.value)
+                    setIsOpen(false)
+                  }}
+                >
+                  <div className="option-content">
+                    <div className="option-label">{option.label}</div>
+                    <div className="option-description">{option.description}</div>
+                  </div>
+                  {option.value === value && (
+                    <div className="option-check">✓</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function NonoBananaPage() {
   const [prompt, setPrompt] = useState('')
   const [images, setImages] = useState([])
@@ -10,6 +64,7 @@ function NonoBananaPage() {
   const [aspectRatio, setAspectRatio] = useState('9:16')
   const [generationTime, setGenerationTime] = useState(null)
   const [liveTimer, setLiveTimer] = useState(0)
+  const [selectedTemplate, setSelectedTemplate] = useState(null)
   
   const fileRef = useRef(null)
 
@@ -65,8 +120,9 @@ function NonoBananaPage() {
     }
   ]
 
-  const insertPromptTemplate = (template) => {
+  const insertPromptTemplate = (template, categoryIndex, promptIndex) => {
     setPrompt(template)
+    setSelectedTemplate(`${categoryIndex}-${promptIndex}`)
   }
 
   const handleImageUpload = (e) => {
@@ -346,7 +402,7 @@ function NonoBananaPage() {
   }
 
   return (
-    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+    <div className="nano-banana-container">
       
       <Link 
         to="/" 
@@ -361,159 +417,111 @@ function NonoBananaPage() {
         ← Zurück zur Startseite
       </Link>
       
-      <h1 style={{ 
-        fontSize: '1.8rem', 
-        marginBottom: '20px', 
-        color: '#1F2937',
-        textAlign: 'center'
-      }}>
-        🍌 Nano Banana (Gemini 3 Pro Image)
+      <h1 className="nano-banana-title">
+        🍌 nano banana pro
       </h1>
 
-      {/* Prompt Input */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ 
-          display: 'block', 
-          marginBottom: '8px', 
-          fontWeight: 'bold',
-          color: '#374151' 
-        }}>
+      {/* Prompt Templates Section */}
+      <div className="mobile-prompt-templates-section">
+        <div className="mobile-templates-header">
+          <h3 className="mobile-templates-title">Prompt Vorlagen</h3>
+        </div>
+        
+        {promptTemplates.map((category, categoryIndex) => (
+          <div key={categoryIndex} className="mobile-template-category">
+            <div className="mobile-category-header">
+              <span className="mobile-category-title">{category.category}</span>
+            </div>
+            
+            <div className="mobile-template-grid">
+              {category.prompts.map((template, promptIndex) => {
+                const templateId = `${categoryIndex}-${promptIndex}`
+                const isSelected = selectedTemplate === templateId
+                
+                return (
+                  <button
+                    key={promptIndex}
+                    onClick={() => insertPromptTemplate(template, categoryIndex, promptIndex)}
+                    className={`mobile-template-button ${isSelected ? 'selected' : ''}`}
+                  >
+                    <div className="template-button-content">
+                      <div className="template-button-title">
+                        {/* Studio Business - 3 prompts */}
+                        {template.includes('banco alto de madeira') ? 'Wood Bench' :
+                         template.includes('black pantsuit') ? 'Office Chair' :
+                         template.includes('navy blazer') ? 'Standing Pose' :
+                         /* Luxury Chair Poses - 3 prompts */
+                         template.includes('white chair') && template.includes('coffee cup') ? 'White Chair' :
+                         template.includes('velvet armchair') ? 'Velvet Chair' :
+                         template.includes('vintage leather') ? 'Leather Chair' :
+                         /* Fashion Editorial - 3 prompts */
+                         template.includes('avant-garde') ? 'Avant-garde' :
+                         template.includes('oversized blazer') || template.includes('fitted jeans') ? 'Street Style' :
+                         template.includes('monochrome outfit') || template.includes('clean lines') ? 'Minimalist' :
+                         /* Outdoor Locations - 3 prompts */
+                         template.includes('Paris') || template.includes('tower') ? 'Paris Tower' :
+                         template.includes('rooftop') || template.includes('flowing dress') ? 'Rooftop' :
+                         template.includes('beach') || template.includes('shoreline') ? 'Beach' :
+                         /* Beauty & Close-ups - 3 prompts */
+                         template.includes('flawless makeup') || template.includes('luxury beauty campaign') ? 'Luxury Beauty' :
+                         template.includes('dramatic makeup') || template.includes('smoky eyes') ? 'Glamour Shot' :
+                         template.includes('minimal makeup') || template.includes('glowing skin') ? 'Natural Look' :
+                         /* Pose Variations - 3 prompts */
+                         template.includes('hands on hips') || template.includes('confident stance') ? 'Power Pose' :
+                         template.includes('crossed legs') || template.includes('hands placed gracefully') ? 'Elegant Sit' :
+                         template.includes('mid-step movement') || template.includes('flowing outfit') ? 'Walking' :
+                         `Option ${promptIndex + 1}`}
+                      </div>
+                      {isSelected && <div className="selection-indicator">✓</div>}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Mobile Optimized Prompt Input */}
+      <div className="mobile-prompt-section">
+        <label className="mobile-prompt-label">
+          <span className="prompt-icon">✍️</span>
           Prompt (erforderlich):
         </label>
         <textarea 
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Beschreibe was du generieren möchtest..."
-          style={{ 
-            width: '100%', 
-            height: '100px', 
-            padding: '10px',
-            border: '1px solid #D1D5DB',
-            borderRadius: '6px',
-            fontSize: '14px'
-          }}
+          className="mobile-prompt-textarea"
         />
-        
-        {/* Prompt-Vorlagen */}
-        <div style={{ marginTop: '10px' }}>
-          <div style={{ 
-            fontSize: '12px', 
-            color: '#6B7280', 
-            marginBottom: '8px',
-            fontWeight: 'bold'
-          }}>
-            💡 Prompt-Vorlagen (klicken zum Verwenden):
-          </div>
-          
-          {promptTemplates.map((category, categoryIndex) => (
-            <div key={categoryIndex} style={{ marginBottom: '15px' }}>
-              <div style={{ 
-                fontSize: '13px', 
-                fontWeight: 'bold', 
-                color: '#374151',
-                marginBottom: '5px' 
-              }}>
-                {category.category}:
-              </div>
-              
-              <div style={{ 
-                display: 'flex', 
-                flexWrap: 'wrap', 
-                gap: '5px' 
-              }}>
-                {category.prompts.map((template, promptIndex) => (
-                  <button
-                    key={promptIndex}
-                    onClick={() => insertPromptTemplate(template)}
-                    style={{
-                      padding: '6px 10px',
-                      fontSize: '11px',
-                      backgroundColor: '#F3F4F6',
-                      color: '#374151',
-                      border: '1px solid #E5E7EB',
-                      borderRadius: '15px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      maxWidth: '200px',
-                      textAlign: 'left',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis'
-                    }}
-                    onMouseOver={(e) => {
-                      e.target.style.backgroundColor = '#E5E7EB'
-                      e.target.style.color = '#1F2937'
-                    }}
-                    onMouseOut={(e) => {
-                      e.target.style.backgroundColor = '#F3F4F6'
-                      e.target.style.color = '#374151'
-                    }}
-                    title={template}
-                  >
-                    {template.substring(0, 25)}...
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
 
-      {/* Settings */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 1fr', 
-        gap: '15px', 
-        marginBottom: '20px' 
-      }}>
-        <div>
-          <label style={{ 
-            display: 'block', 
-            marginBottom: '4px', 
-            fontSize: '14px',
-            fontWeight: 'bold',
-            color: '#374151' 
-          }}>
-            Auflösung:
-          </label>
-          <select 
-            value={resolution}
-            onChange={(e) => setResolution(e.target.value)}
-            style={{ 
-              width: '100%', 
-              padding: '8px',
-              border: '1px solid #D1D5DB',
-              borderRadius: '4px'
-            }}
-          >
-            <option value="2K">2K (2048px)</option>
-            <option value="4K">4K (4096px)</option>
-          </select>
+      {/* Mobile Optimized Settings */}
+      <div className="mobile-settings-section">
+        <div className="mobile-settings-header">
+          <span className="mobile-settings-title">Einstellungen</span>
         </div>
-
-        <div>
-          <label style={{ 
-            display: 'block', 
-            marginBottom: '4px', 
-            fontSize: '14px',
-            fontWeight: 'bold',
-            color: '#374151' 
-          }}>
-            Format:
-          </label>
-          <select 
+        
+        <div className="mobile-settings-controls">
+          <PremiumDropdown
+            label="Auflösung"
+            value={resolution}
+            onChange={setResolution}
+            options={[
+              { value: '2K', label: '2K Premium', description: '2048px • Optimal' },
+              { value: '4K', label: '4K Ultra', description: '4096px • Max' }
+            ]}
+          />
+          
+          <PremiumDropdown
+            label="Seitenverhältnis"
             value={aspectRatio}
-            onChange={(e) => setAspectRatio(e.target.value)}
-            style={{ 
-              width: '100%', 
-              padding: '8px',
-              border: '1px solid #D1D5DB',
-              borderRadius: '4px'
-            }}
-          >
-            <option value="9:16">9:16 (Instagram Story/Reels)</option>
-            <option value="4:3">4:3 (Instagram Post)</option>
-          </select>
+            onChange={setAspectRatio}
+            options={[
+              { value: '9:16', label: '9:16', description: 'Instagram Story/Reels' },
+              { value: '4:3', label: '4:3', description: 'Instagram Posts' }
+            ]}
+          />
         </div>
       </div>
 
@@ -618,23 +626,16 @@ function NonoBananaPage() {
         </div>
       )}
 
-      {/* Generate Button */}
+      {/* Mobile Optimized Generate Button */}
       <button 
         onClick={generateImage}
         disabled={!prompt.trim() || loading}
-        style={{ 
-          width: '100%',
-          padding: '15px',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          backgroundColor: loading ? '#6B7280' : '#F59E0B',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: loading ? 'not-allowed' : 'pointer'
-        }}
+        className={`mobile-generate-button ${loading ? 'loading' : ''} ${!prompt.trim() ? 'disabled' : ''}`}
       >
-        {loading ? '🍌 Generiere...' : '🍌 Bild generieren'}
+        <span className="generate-icon">🍌</span>
+        <span className="generate-text">
+          {loading ? 'Generiere...' : 'Bild generieren'}
+        </span>
       </button>
 
       {/* Loading State mit Live Timer */}

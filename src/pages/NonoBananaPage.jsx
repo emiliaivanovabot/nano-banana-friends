@@ -48,14 +48,21 @@ function PremiumDropdown({ label, value, onChange, options }) {
 
   return (
     <div className="premium-dropdown-wrapper">
-      <label className="premium-dropdown-label">
-        <span className="label-icon">⚙️</span>
-        {label}
-      </label>
+      {label && (
+        <label className="premium-dropdown-label">
+          <span className="label-icon">⚙️</span>
+          {label}
+        </label>
+      )}
       
       <div 
         ref={dropdownRef}
         className={`premium-dropdown-container ${isOpen ? 'open' : ''}`}
+        style={{ 
+          position: 'relative', 
+          zIndex: isOpen ? 1000000 : 999999,
+          isolation: 'isolate'
+        }}
       >
         <button
           type="button"
@@ -64,11 +71,15 @@ function PremiumDropdown({ label, value, onChange, options }) {
           aria-expanded={isOpen}
         >
           <div className="dropdown-value-section">
-            <div className="dropdown-main-value">
-              {selectedOption.label}
-            </div>
-            <div className="dropdown-description">
-              {selectedOption.description}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+              <span className="dropdown-main-value">
+                {selectedOption.label}
+              </span>
+              {selectedOption.description && (
+                <span className="dropdown-description" style={{ fontSize: '0.8rem', color: '#6B7280', fontWeight: '400' }}>
+                  {selectedOption.description}
+                </span>
+              )}
             </div>
           </div>
           <div className={`dropdown-chevron ${isOpen ? 'rotated' : ''}`}>
@@ -77,9 +88,7 @@ function PremiumDropdown({ label, value, onChange, options }) {
         </button>
 
         {isOpen && (
-          <>
-            <div className="dropdown-backdrop" onClick={() => setIsOpen(false)} />
-            <div className="premium-dropdown-menu">
+          <div className="premium-dropdown-menu">
               {options.map((option) => (
                 <div
                   key={option.value}
@@ -98,7 +107,6 @@ function PremiumDropdown({ label, value, onChange, options }) {
                 </div>
               ))}
             </div>
-          </>
         )}
       </div>
     </div>
@@ -115,6 +123,7 @@ function NonoBananaPage() {
   const [generationTime, setGenerationTime] = useState(null)
   const [liveTimer, setLiveTimer] = useState(0)
   const [selectedTemplate, setSelectedTemplate] = useState(null)
+  const [templatesCollapsed, setTemplatesCollapsed] = useState(true)
   
   const fileRef = useRef(null)
 
@@ -479,13 +488,36 @@ function NonoBananaPage() {
         🍌 nano banana pro
       </h1>
 
-      {/* Prompt Templates Section */}
+      {/* Collapsible Prompt Templates Section */}
       <div className="mobile-prompt-templates-section">
-        <div className="mobile-templates-header">
-          <h3 className="mobile-templates-title">Prompt Vorlagen</h3>
+        <div 
+          className="mobile-templates-header" 
+          onClick={() => setTemplatesCollapsed(!templatesCollapsed)} 
+          style={{ 
+            cursor: 'pointer', 
+            padding: '8px 16px',
+            backgroundColor: 'rgba(255, 255, 255, 0.6)',
+            borderRadius: '8px',
+            border: '1px solid rgba(251, 191, 36, 0.2)',
+            marginBottom: templatesCollapsed ? '8px' : '16px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h3 className="mobile-templates-title" style={{ margin: 0, fontSize: '1rem' }}>
+              Prompt Vorlagen
+            </h3>
+            <span style={{ 
+              fontSize: '0.8rem', 
+              color: '#6B7280', 
+              transition: 'transform 0.3s ease', 
+              transform: templatesCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' 
+            }}>
+              ▼
+            </span>
+          </div>
         </div>
         
-        {promptTemplates.map((category, categoryIndex) => (
+        {!templatesCollapsed && promptTemplates.map((category, categoryIndex) => (
           <div key={categoryIndex} className="mobile-template-category">
             <div className="mobile-category-header">
               <span className="mobile-category-title">{category.category}</span>
@@ -545,12 +577,17 @@ function NonoBananaPage() {
       </div>
 
       {/* Mobile Optimized Prompt Input */}
-      <div className="mobile-prompt-section">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <label className="mobile-prompt-label" style={{ margin: 0 }}>
-            <span className="prompt-icon">✍️</span>
-            Prompt (erforderlich):
-          </label>
+      <div style={{ 
+        marginBottom: '20px',
+        padding: '16px',
+        background: 'rgba(255, 255, 255, 0.7)',
+        borderRadius: '12px',
+        border: '1px solid rgba(251, 191, 36, 0.2)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <h3 className="mobile-templates-title" style={{ margin: 0, textAlign: 'left' }}>
+            Prompt
+          </h3>
           {(prompt || selectedTemplate) && (
             <button
               onClick={() => {
@@ -590,37 +627,6 @@ function NonoBananaPage() {
         />
       </div>
 
-      {/* Compact Settings */}
-      <div style={{ 
-        marginBottom: '20px',
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '12px',
-        padding: '16px',
-        background: 'rgba(255, 255, 255, 0.7)',
-        borderRadius: '12px',
-        border: '1px solid rgba(251, 191, 36, 0.2)'
-      }}>
-        <PremiumDropdown
-          label=""
-          value={resolution}
-          onChange={setResolution}
-          options={[
-            { value: '2K', label: '2K Optimal', description: '' },
-            { value: '4K', label: '4K Max', description: '' }
-          ]}
-        />
-        
-        <PremiumDropdown
-          label=""
-          value={aspectRatio}
-          onChange={setAspectRatio}
-          options={[
-            { value: '9:16', label: '9:16 Story', description: '' },
-            { value: '4:3', label: '4:3 Post', description: '' }
-          ]}
-        />
-      </div>
 
       {/* Image Upload */}
       <div style={{ 
@@ -751,6 +757,46 @@ function NonoBananaPage() {
           {loading ? 'Generiere...' : 'Bild generieren'}
         </span>
       </button>
+
+      {/* Moved Settings Section Below Generate Button */}
+      <div style={{ 
+        marginBottom: '20px',
+        padding: '16px',
+        background: 'rgba(255, 255, 255, 0.7)',
+        borderRadius: '12px',
+        border: '1px solid rgba(251, 191, 36, 0.2)',
+        position: 'relative'
+      }}>
+        <h3 className="mobile-templates-title" style={{ marginBottom: '16px', textAlign: 'center' }}>
+          Einstellungen
+        </h3>
+        
+        <div style={{ 
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '12px'
+        }}>
+        <PremiumDropdown
+          label=""
+          value={resolution}
+          onChange={setResolution}
+          options={[
+            { value: '2K', label: '2K', description: 'Optimal' },
+            { value: '4K', label: '4K', description: 'Max' }
+          ]}
+        />
+        
+        <PremiumDropdown
+          label=""
+          value={aspectRatio}
+          onChange={setAspectRatio}
+          options={[
+            { value: '9:16', label: '9:16', description: 'Story' },
+            { value: '4:3', label: '4:3', description: 'Post' }
+          ]}
+        />
+        </div>
+      </div>
 
       {/* Loading State mit Live Timer */}
       {loading && (

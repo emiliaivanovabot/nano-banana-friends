@@ -23,18 +23,20 @@ body {
 
 /* CRITICAL: Prevent horizontal overflow on all elements */
 html {
-  overflow-x: hidden;
-  width: 100%;
-  max-width: 100vw;
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100vw !important;
 }
 
 /* Lock body to viewport - MOBILE OPTIMIZED */
 body {
   position: relative;
-  width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden;
+  width: 100% !important;
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 /* Prevent any element from exceeding viewport width */
@@ -42,16 +44,26 @@ body {
   max-width: 100%;
 }
 
-/* MOBILE TOUCH OPTIMIZATIONS */
-/* Prevent unwanted touch behaviors */
-.nano-banana-container * {
-  touch-action: manipulation;
+/* MOBILE TOUCH OPTIMIZATIONS - FIXED */
+/* Prevent unwanted touch behaviors without breaking dropdowns */
+.nano-banana-container {
+  touch-action: pan-y;
   -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
+}
+
+.nano-banana-container button:not(.dropdown-option),
+.nano-banana-container .mobile-template-button {
+  touch-action: manipulation;
   -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
   user-select: none;
+}
+
+/* Allow selection on dropdown options */
+.dropdown-option {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: pointer;
 }
 
 /* Allow text selection for input elements */
@@ -63,11 +75,26 @@ input, textarea, [contenteditable] {
   touch-action: manipulation;
 }
 
-/* Prevent page bounce/rubber-band effect */
+/* Prevent page bounce/rubber-band effect - ENHANCED */
 html, body {
   overscroll-behavior: none;
   overscroll-behavior-x: none;
   -webkit-overscroll-behavior: none;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#root {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
 }
 
 /* CRITICAL: Ultimate mobile overflow prevention */
@@ -90,11 +117,32 @@ html, body {
   box-sizing: border-box !important;
 }
 
-/* Force container boundaries */
+/* Force container boundaries - MOBILE LOCKED */
 @media (max-width: 768px) {
-  .nano-banana-container {
-    max-width: 100vw !important;
+  html, body {
+    position: fixed !important;
     overflow-x: hidden !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  #root {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  .nano-banana-container {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    width: 100% !important;
+    position: relative !important;
   }
   
   .mobile-template-grid {
@@ -487,15 +535,7 @@ html, body {
   color: #f472b6;
 }
 
-.dropdown-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 9998;
-  background: transparent;
-}
+/* Dropdown backdrop removed to fix selection issues */
 
 .premium-dropdown-menu {
   position: absolute;
@@ -507,12 +547,14 @@ html, body {
   border: 2px solid rgba(229, 231, 235, 0.6);
   border-radius: 16px;
   overflow: hidden;
-  z-index: 10000;
+  z-index: 1000000 !important;
   box-shadow: 
     0 20px 40px rgba(0, 0, 0, 0.15),
     0 8px 16px rgba(0, 0, 0, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
   animation: dropdownSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto !important;
+  transform: translateZ(0) !important;
 }
 
 @keyframes dropdownSlideIn {
@@ -942,7 +984,8 @@ html, body {
     0 4px 16px rgba(251, 191, 36, 0.05),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
   position: relative;
-  overflow: hidden;
+  overflow: visible; /* Allow content to expand when not collapsed */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mobile-prompt-templates-section::before {
@@ -960,6 +1003,18 @@ html, body {
 .mobile-templates-header {
   text-align: center;
   margin-bottom: 24px;
+  transition: all 0.3s ease;
+  border-radius: 12px;
+  padding: 8px;
+}
+
+.mobile-templates-header:hover {
+  background: rgba(251, 113, 133, 0.05);
+  transform: scale(1.02);
+}
+
+.mobile-templates-header:active {
+  transform: scale(0.98);
 }
 
 .templates-icon {
@@ -1322,9 +1377,23 @@ html, body {
   position: relative;
   width: 100%;
   max-width: 100%;
-  z-index: 9999;
-  overflow: hidden;
+  z-index: 999999;
+  overflow: visible;
   box-sizing: border-box;
+}
+
+/* CRITICAL: Fix dropdown visibility issues */
+.premium-dropdown-container {
+  position: relative;
+  z-index: 999999;
+  isolation: isolate;
+  overflow: visible !important; /* Ensure dropdown content is never clipped */
+}
+
+.premium-dropdown-container.open {
+  z-index: 1000000 !important;
+  isolation: isolate;
+  overflow: visible !important;
 }
 
 /* Premium Dropdown Wrapper - Pink/Yellow Theme */
@@ -1333,6 +1402,25 @@ html, body {
   width: 100%;
   margin-bottom: 20px;
   z-index: 1000;
+  overflow: visible !important; /* Critical: never clip dropdown content */
+}
+
+/* CRITICAL: Ensure all parent containers allow dropdown overflow */
+.premium-dropdown-wrapper,
+.premium-dropdown-wrapper *:not(.premium-dropdown-menu):not(.dropdown-option) {
+  overflow: visible !important;
+}
+
+/* Settings section should not clip dropdowns */
+[style*="position: relative"]:has(.premium-dropdown-wrapper) {
+  overflow: visible !important;
+}
+
+/* Force dropdown to be above all content with absolute positioning */
+.premium-dropdown-menu {
+  position: absolute !important;
+  z-index: 9999999 !important;
+  transform: none !important; /* Remove any transforms that might interfere */
 }
 
 .premium-dropdown-label {
@@ -1369,11 +1457,13 @@ html, body {
 
 .premium-dropdown-container {
   position: relative;
-  z-index: 9999;
+  z-index: 999999;
+  isolation: isolate;
 }
 
 .premium-dropdown-container.open {
-  z-index: 10000;
+  z-index: 1000000 !important;
+  isolation: isolate;
 }
 
 .premium-dropdown-menu {
@@ -1387,14 +1477,19 @@ html, body {
   backdrop-filter: blur(20px);
   border: 2px solid rgba(251, 191, 36, 0.3);
   border-radius: 16px;
-  overflow: hidden;
-  z-index: 10000;
+  overflow: visible !important; /* Allow all content to be visible */
+  z-index: 1000000 !important;
   box-shadow: 
     0 20px 40px rgba(251, 113, 133, 0.15),
     0 8px 16px rgba(251, 191, 36, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
   animation: dropdownSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-sizing: border-box;
+  pointer-events: auto !important;
+  transform: translateZ(0) !important;
+  /* CRITICAL: Ensure dropdown can extend beyond parent container */
+  min-height: auto;
+  max-height: none;
 }
 
 .premium-dropdown-trigger {
@@ -1525,30 +1620,73 @@ html, body {
 
 /* CRITICAL: Image upload and preview container fixes */
 .nano-banana-container img {
-  max-width: 100%;
+  max-width: 100% !important;
   height: auto;
-  box-sizing: border-box;
+  box-sizing: border-box !important;
 }
 
 /* Fix any grid layouts that might overflow */
 .nano-banana-container [style*="display: grid"] {
-  width: 100%;
-  max-width: 100%;
-  overflow: hidden;
-  box-sizing: border-box;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
 /* Fix any absolute positioned elements */
 .nano-banana-container [style*="position: absolute"] {
-  max-width: calc(100vw - 32px);
+  max-width: calc(100vw - 32px) !important;
 }
 
 /* Force all children to respect container bounds */
 .nano-banana-container > * {
-  max-width: 100%;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  box-sizing: border-box;
+  max-width: 100% !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  box-sizing: border-box !important;
+}
+
+/* ULTIMATE MOBILE OVERFLOW PREVENTION - OPTIMIZED */
+* {
+  box-sizing: border-box !important;
+}
+
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  width: 100% !important;
+}
+
+.nano-banana-container {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  width: 100%;
+  position: relative;
+}
+
+.nano-banana-container > * {
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+}
+
+/* Prevent specific elements from causing overflow */
+pre, code {
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100% !important;
+}
+
+textarea {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+button {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 /* Mobile Responsive Adjustments */

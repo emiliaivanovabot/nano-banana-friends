@@ -1,9 +1,10 @@
-/* Nano Banana Friends - Minimal CSS */
+/* Nano Banana Friends - Premium CSS */
 body {
   margin: 0;
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  background: #f8f9fa;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
 }
 
 #root {
@@ -12,4 +13,166 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+/* Premium Button Styles */
+.premium-button {
+  position: relative;
+  width: 100%;
+  padding: 24px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: white;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  text-align: center;
+  isolation: isolate;
+}
+
+.premium-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.premium-button:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.premium-button:active {
+  transform: translateY(-2px) scale(1.01);
+  transition: all 0.1s ease;
+}
+
+/* Individual button themes */
+.premium-button--blue {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+}
+
+.premium-button--blue::before {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+}
+
+.premium-button--blue:hover::before {
+  opacity: 1;
+}
+
+.premium-button--orange {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  box-shadow: 0 8px 32px rgba(245, 87, 108, 0.3);
+}
+
+.premium-button--orange::before {
+  background: linear-gradient(135deg, #ed64a6 0%, #e53e3e 100%);
+}
+
+.premium-button--orange:hover::before {
+  opacity: 1;
+}
+
+.premium-button--purple {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  color: #4a5568;
+  box-shadow: 0 8px 32px rgba(168, 237, 234, 0.3);
+}
+
+.premium-button--purple::before {
+  background: linear-gradient(135deg, #81e6d9 0%, #fbb6ce 100%);
+}
+
+.premium-button--purple:hover::before {
+  opacity: 1;
+}
+
+/* Button content */
+.button-icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.button-title {
+  font-weight: 700;
+  font-size: 1.3rem;
+  margin-bottom: 6px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.button-description {
+  font-size: 0.95rem;
+  opacity: 0.9;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Container and layout */
+.homepage-container {
+  padding: 60px 20px;
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.homepage-title {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.homepage-subtitle {
+  font-size: 1.3rem;
+  color: #6b7280;
+  margin-bottom: 48px;
+  font-weight: 500;
+}
+
+.buttons-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+}
+
+.button-link {
+  text-decoration: none;
+  width: 100%;
+  max-width: 380px;
+  display: block;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .homepage-title {
+    font-size: 2.5rem;
+  }
+  
+  .premium-button {
+    padding: 20px;
+  }
+  
+  .button-icon {
+    font-size: 1.8rem;
+  }
+  
+  .button-title {
+    font-size: 1.2rem;
+  }
 }

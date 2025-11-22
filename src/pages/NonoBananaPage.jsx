@@ -1,12 +1,17 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { createPortal } from 'react-dom'
 
-// Premium Dropdown Component - Mobile Safe
+// Premium Dropdown Component - Bulletproof Portal-based
 function PremiumDropdown({ label, value, onChange, options }) {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedOption, setSelectedOption] = useState(
     options.find(opt => opt.value === value) || options[0]
   )
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
+  
+  const triggerRef = useRef(null)
+  const menuRef = useRef(null)
 
   // Update selectedOption when value prop changes
   useEffect(() => {
@@ -16,6 +21,21 @@ function PremiumDropdown({ label, value, onChange, options }) {
     }
   }, [value, options, selectedOption])
 
+  // Calculate dropdown position when opening
+  const updatePosition = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect()
+      const scrollY = window.scrollY || document.documentElement.scrollTop
+      const scrollX = window.scrollX || document.documentElement.scrollLeft
+      
+      setDropdownPosition({
+        top: rect.bottom + scrollY + 8,
+        left: rect.left + scrollX,
+        width: rect.width
+      })
+    }
+  }
+
   const handleSelect = (option) => {
     setSelectedOption(option)
     onChange(option.value)
@@ -23,28 +43,84 @@ function PremiumDropdown({ label, value, onChange, options }) {
   }
 
   const toggleDropdown = () => {
+    if (!isOpen) {
+      updatePosition()
+    }
     setIsOpen(!isOpen)
   }
 
   // Close dropdown when clicking outside
-  const dropdownRef = useRef(null)
-  
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (triggerRef.current && !triggerRef.current.contains(event.target) &&
+          menuRef.current && !menuRef.current.contains(event.target)) {
         setIsOpen(false)
+      }
+    }
+
+    const handleScroll = () => {
+      if (isOpen) {
+        updatePosition()
+      }
+    }
+
+    const handleResize = () => {
+      if (isOpen) {
+        updatePosition()
       }
     }
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside)
       document.addEventListener('touchstart', handleClickOutside)
+      document.addEventListener('scroll', handleScroll, true)
+      window.addEventListener('resize', handleResize)
       return () => {
         document.removeEventListener('mousedown', handleClickOutside)
         document.removeEventListener('touchstart', handleClickOutside)
+        document.removeEventListener('scroll', handleScroll, true)
+        window.removeEventListener('resize', handleResize)
       }
     }
   }, [isOpen])
+
+  // Render dropdown menu as portal
+  const renderDropdownMenu = () => {
+    if (!isOpen) return null
+
+    return createPortal(
+      <div
+        ref={menuRef}
+        className="premium-dropdown-menu"
+        style={{
+          position: 'absolute',
+          top: `${dropdownPosition.top}px`,
+          left: `${dropdownPosition.left}px`,
+          width: `${dropdownPosition.width}px`,
+          zIndex: 999999999
+        }}
+      >
+        {options.map((option) => (
+          <div
+            key={option.value}
+            onClick={() => handleSelect(option)}
+            className={`dropdown-option ${
+              option.value === selectedOption.value ? 'selected' : ''
+            }`}
+          >
+            <div className="option-content">
+              <div className="option-label">{option.label}</div>
+              <div className="option-description">{option.description}</div>
+            </div>
+            {option.value === selectedOption.value && (
+              <div className="option-check">✓</div>
+            )}
+          </div>
+        ))}
+      </div>,
+      document.body
+    )
+  }
 
   return (
     <div className="premium-dropdown-wrapper">
@@ -56,12 +132,11 @@ function PremiumDropdown({ label, value, onChange, options }) {
       )}
       
       <div 
-        ref={dropdownRef}
+        ref={triggerRef}
         className={`premium-dropdown-container ${isOpen ? 'open' : ''}`}
         style={{ 
-          position: 'relative', 
-          zIndex: isOpen ? 1000000 : 999999,
-          isolation: 'isolate'
+          position: 'relative',
+          zIndex: isOpen ? 1000 : 999
         }}
       >
         <button
@@ -86,29 +161,9 @@ function PremiumDropdown({ label, value, onChange, options }) {
             ⌄
           </div>
         </button>
-
-        {isOpen && (
-          <div className="premium-dropdown-menu">
-              {options.map((option) => (
-                <div
-                  key={option.value}
-                  onClick={() => handleSelect(option)}
-                  className={`dropdown-option ${
-                    option.value === selectedOption.value ? 'selected' : ''
-                  }`}
-                >
-                  <div className="option-content">
-                    <div className="option-label">{option.label}</div>
-                    <div className="option-description">{option.description}</div>
-                  </div>
-                  {option.value === selectedOption.value && (
-                    <div className="option-check">✓</div>
-                  )}
-                </div>
-              ))}
-            </div>
-        )}
       </div>
+
+      {renderDropdownMenu()}
     </div>
   )
 }
@@ -318,7 +373,14 @@ function NonoBananaPage() {
           contents: [{
             role: "user",
             parts: parts
-          }]
+          }],
+          generationConfig: {
+            response_modalities: ['TEXT', 'IMAGE'],
+            image_config: {
+              aspect_ratio: aspectRatio,
+              image_size: resolution
+            }
+          }
         }
 
         // Nur unterstützte generation_config Felder verwenden
@@ -328,6 +390,8 @@ function NonoBananaPage() {
           model,
           prompt,
           images: images.length,
+          resolution,
+          aspectRatio,
           requestBody: requestBody
         })
 
@@ -758,45 +822,6 @@ function NonoBananaPage() {
         </span>
       </button>
 
-      {/* Moved Settings Section Below Generate Button */}
-      <div style={{ 
-        marginBottom: '20px',
-        padding: '16px',
-        background: 'rgba(255, 255, 255, 0.7)',
-        borderRadius: '12px',
-        border: '1px solid rgba(251, 191, 36, 0.2)',
-        position: 'relative'
-      }}>
-        <h3 className="mobile-templates-title" style={{ marginBottom: '16px', textAlign: 'center' }}>
-          Einstellungen
-        </h3>
-        
-        <div style={{ 
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '12px'
-        }}>
-        <PremiumDropdown
-          label=""
-          value={resolution}
-          onChange={setResolution}
-          options={[
-            { value: '2K', label: '2K', description: 'Optimal' },
-            { value: '4K', label: '4K', description: 'Max' }
-          ]}
-        />
-        
-        <PremiumDropdown
-          label=""
-          value={aspectRatio}
-          onChange={setAspectRatio}
-          options={[
-            { value: '9:16', label: '9:16', description: 'Story' },
-            { value: '4:3', label: '4:3', description: 'Post' }
-          ]}
-        />
-        </div>
-      </div>
 
       {/* Loading State mit Live Timer */}
       {loading && (
@@ -897,6 +922,80 @@ function NonoBananaPage() {
           )}
         </div>
       )}
+
+      {/* Compact Toggle Settings at Bottom */}
+      <div style={{ 
+        marginTop: '20px',
+        padding: '6px',
+        background: 'rgba(255, 255, 255, 0.4)',
+        borderRadius: '6px',
+        border: '1px solid rgba(251, 191, 36, 0.1)',
+        fontSize: '0.85rem'
+      }}>
+        <div style={{ 
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '6px'
+        }}>
+          <button
+            onClick={() => setResolution(resolution === '2K' ? '4K' : '2K')}
+            style={{
+              padding: '8px 12px',
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%)',
+              border: '1px solid rgba(251, 191, 36, 0.3)',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '500',
+              fontSize: '0.85rem',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'scale(1.02)'
+              e.target.style.boxShadow = '0 2px 8px rgba(251, 113, 133, 0.15)'
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'scale(1)'
+              e.target.style.boxShadow = 'none'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+              <span style={{ fontWeight: '600' }}>{resolution}</span>
+              <span style={{ fontSize: '0.7rem', color: '#6B7280' }}>
+                {resolution === '2K' ? 'Optimal' : 'Max'}
+              </span>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => setAspectRatio(aspectRatio === '9:16' ? '4:3' : '9:16')}
+            style={{
+              padding: '8px 12px',
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%)',
+              border: '1px solid rgba(251, 191, 36, 0.3)',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '500',
+              fontSize: '0.85rem',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'scale(1.02)'
+              e.target.style.boxShadow = '0 2px 8px rgba(251, 113, 133, 0.15)'
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'scale(1)'
+              e.target.style.boxShadow = 'none'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+              <span style={{ fontWeight: '600' }}>{aspectRatio}</span>
+              <span style={{ fontSize: '0.7rem', color: '#6B7280' }}>
+                {aspectRatio === '9:16' ? 'Story' : 'Post'}
+              </span>
+            </div>
+          </button>
+        </div>
+      </div>
 
     </div>
   )

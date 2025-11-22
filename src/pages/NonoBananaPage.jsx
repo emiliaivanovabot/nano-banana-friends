@@ -1,30 +1,81 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
-// Premium Dropdown Component
-function PremiumDropdown({ label, value, onChange, options, icon }) {
+// Premium Dropdown Component - Mobile Safe
+function PremiumDropdown({ label, value, onChange, options }) {
   const [isOpen, setIsOpen] = useState(false)
-  const selectedOption = options.find(opt => opt.value === value)
+  const [selectedOption, setSelectedOption] = useState(
+    options.find(opt => opt.value === value) || options[0]
+  )
+
+  // Update selectedOption when value prop changes
+  useEffect(() => {
+    const newOption = options.find(opt => opt.value === value)
+    if (newOption && newOption !== selectedOption) {
+      setSelectedOption(newOption)
+    }
+  }, [value, options, selectedOption])
+
+  const handleSelect = (option) => {
+    setSelectedOption(option)
+    onChange(option.value)
+    setIsOpen(false)
+  }
+
+  const toggleDropdown = () => {
+    setIsOpen(!isOpen)
+  }
+
+  // Close dropdown when clicking outside
+  const dropdownRef = useRef(null)
+  
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+        document.removeEventListener('touchstart', handleClickOutside)
+      }
+    }
+  }, [isOpen])
 
   return (
-    <div className="premium-dropdown">
+    <div className="premium-dropdown-wrapper">
       <label className="premium-dropdown-label">
-        <span className="dropdown-icon">{icon}</span>
+        <span className="label-icon">⚙️</span>
         {label}
       </label>
       
-      <div className={`premium-dropdown-container ${isOpen ? 'open' : ''}`}>
-        <div 
+      <div 
+        ref={dropdownRef}
+        className={`premium-dropdown-container ${isOpen ? 'open' : ''}`}
+      >
+        <button
+          type="button"
+          onClick={toggleDropdown}
           className="premium-dropdown-trigger"
-          onClick={() => setIsOpen(!isOpen)}
+          aria-expanded={isOpen}
         >
           <div className="dropdown-value-section">
-            <div className="dropdown-main-value">{selectedOption.label}</div>
-            <div className="dropdown-description">{selectedOption.description}</div>
+            <div className="dropdown-main-value">
+              {selectedOption.label}
+            </div>
+            <div className="dropdown-description">
+              {selectedOption.description}
+            </div>
           </div>
-          <div className={`dropdown-chevron ${isOpen ? 'rotated' : ''}`}>▼</div>
-        </div>
-        
+          <div className={`dropdown-chevron ${isOpen ? 'rotated' : ''}`}>
+            ⌄
+          </div>
+        </button>
+
         {isOpen && (
           <>
             <div className="dropdown-backdrop" onClick={() => setIsOpen(false)} />
@@ -32,17 +83,16 @@ function PremiumDropdown({ label, value, onChange, options, icon }) {
               {options.map((option) => (
                 <div
                   key={option.value}
-                  className={`dropdown-option ${option.value === value ? 'selected' : ''}`}
-                  onClick={() => {
-                    onChange(option.value)
-                    setIsOpen(false)
-                  }}
+                  onClick={() => handleSelect(option)}
+                  className={`dropdown-option ${
+                    option.value === selectedOption.value ? 'selected' : ''
+                  }`}
                 >
                   <div className="option-content">
                     <div className="option-label">{option.label}</div>
                     <div className="option-description">{option.description}</div>
                   </div>
-                  {option.value === value && (
+                  {option.value === selectedOption.value && (
                     <div className="option-check">✓</div>
                   )}
                 </div>
@@ -116,6 +166,14 @@ function NonoBananaPage() {
         "Standing power pose: woman with hands on hips, confident stance, professional attire, strong lighting, empowering business portrait style",
         "Sitting elegantly: crossed legs, hands placed gracefully, maintaining posture, sophisticated indoor setting, refined portrait photography",
         "Walking pose: mid-step movement, flowing outfit, dynamic composition, natural movement captured, editorial fashion photography style"
+      ]
+    },
+    {
+      category: "Realistic",
+      prompts: [
+        "Take the provided image and recreate it with increased realism while keeping the woman's identity, pose, facial features, expression, lighting, and composition fully intact. Enhance natural skin texture, pores, micro-details, subtle facial hairs, light reflections, shadows, and depth. Improve fabric realism, color accuracy, contrast, and photographic clarity. Do not change her face, makeup, proportions, hairstyle, or clothing design — only make everything more realistic and true-to-life.",
+        "Using the provided image as reference, enhance photorealistic details while preserving the exact identity and composition. Add natural skin imperfections, realistic hair texture, authentic fabric details, improved lighting depth, and enhanced shadows. Maintain all original facial features, expressions, and poses unchanged. Focus on making the image look like a high-quality professional photograph with natural authenticity.",
+        "Transform the provided image into ultra-realistic photography while maintaining complete fidelity to the original subject. Enhance surface textures, add realistic environmental lighting, improve material properties, and increase photographic authenticity. Preserve every aspect of the woman's appearance, pose, and setting exactly as shown. Only enhance realism, depth, and photographic quality without altering any visual elements."
       ]
     }
   ]
@@ -470,6 +528,10 @@ function NonoBananaPage() {
                          template.includes('hands on hips') || template.includes('confident stance') ? 'Power Pose' :
                          template.includes('crossed legs') || template.includes('hands placed gracefully') ? 'Elegant Sit' :
                          template.includes('mid-step movement') || template.includes('flowing outfit') ? 'Walking' :
+                         /* Realistic - 3 prompts */
+                         template.includes('increased realism') || template.includes('natural skin texture') ? 'Enhanced Reality' :
+                         template.includes('photorealistic details') || template.includes('natural authenticity') ? 'Photo Details' :
+                         template.includes('ultra-realistic photography') || template.includes('photographic quality') ? 'Ultra Realistic' :
                          `Option ${promptIndex + 1}`}
                       </div>
                       {isSelected && <div className="selection-indicator">✓</div>}
@@ -587,7 +649,11 @@ function NonoBananaPage() {
           <div style={{ 
             display: 'grid', 
             gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', 
-            gap: '10px' 
+            gap: '10px',
+            width: '100%',
+            maxWidth: '100%',
+            overflow: 'hidden',
+            boxSizing: 'border-box'
           }}>
             {images.map((img, index) => (
               <div key={index} style={{ position: 'relative' }}>
@@ -668,7 +734,11 @@ function NonoBananaPage() {
           marginTop: '20px',
           padding: '15px',
           backgroundColor: '#F3F4F6',
-          borderRadius: '8px'
+          borderRadius: '8px',
+          width: '100%',
+          maxWidth: '100%',
+          overflow: 'hidden',
+          boxSizing: 'border-box'
         }}>
           <div style={{ 
             display: 'flex', 
@@ -720,10 +790,12 @@ function NonoBananaPage() {
               alt="Generated" 
               style={{ 
                 width: '100%', 
-                maxWidth: '400px',
+                maxWidth: 'min(400px, 100%)',
                 borderRadius: '8px',
                 border: '1px solid #D1D5DB',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                height: 'auto',
+                boxSizing: 'border-box'
               }}
               onClick={downloadImage}
               title="Klicken zum Download"

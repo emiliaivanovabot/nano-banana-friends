@@ -172,6 +172,7 @@ function NonoBananaPage() {
   const location = useLocation()
   const [prompt, setPrompt] = useState('')
   const [images, setImages] = useState([])
+  const [userGender, setUserGender] = useState('female') // Default to female (90% of users)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [resolution, setResolution] = useState('2K')
@@ -188,11 +189,23 @@ function NonoBananaPage() {
     const searchParams = new URLSearchParams(location.search)
     const importedPrompt = searchParams.get('prompt')
     if (importedPrompt) {
-      setPrompt(decodeURIComponent(importedPrompt))
+      const decodedPrompt = decodeURIComponent(importedPrompt)
+      
+      // If user has uploaded images, automatically add face instructions
+      if (images.length > 0) {
+        const faceInstruction = userGender === 'female' 
+          ? "Use my uploaded photo to maintain my exact facial features, skin tone, eye color, and hair as a woman."
+          : "Use my uploaded photo to maintain my exact facial features, skin tone, eye color, and hair as a man."
+        
+        setPrompt(`${faceInstruction} ${decodedPrompt}`)
+      } else {
+        setPrompt(decodedPrompt)
+      }
+      
       // Clear the URL parameter after import
       window.history.replaceState({}, '', '/nono-banana')
     }
-  }, [location])
+  }, [location, images.length, userGender])
 
   // Prompt-Vorlagen für AI Model Shootings
   const promptTemplates = [
@@ -259,12 +272,19 @@ function NonoBananaPage() {
     setSelectedTemplate(`${categoryIndex}-${promptIndex}`)
   }
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = (e, gender = 'female') => {
     const files = Array.from(e.target.files)
     if (files.length > 14) {
       alert('Maximal 14 Bilder erlaubt')
       return
     }
+
+    // Set gender based on which upload button was used
+    setUserGender(gender)
+    
+    // Store gender and upload status in localStorage for Community Prompts
+    localStorage.setItem('userGender', gender)
+    localStorage.setItem('hasUploadedImages', 'true')
 
     Promise.all(
       files.map(file => {
@@ -812,48 +832,125 @@ function NonoBananaPage() {
           Bilder hochladen (optional, max 14):
         </label>
         
+        {/* Hidden file inputs for different genders */}
         <input 
           ref={fileRef}
           type="file" 
           multiple
           accept="image/*" 
-          onChange={handleImageUpload}
+          onChange={(e) => handleImageUpload(e, 'female')}
           style={{ display: 'none' }}
         />
         
-        <button 
-          onClick={() => fileRef.current.click()}
-          style={{
-            padding: '10px 15px',
-            backgroundColor: '#F59E0B',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            marginRight: '10px'
-          }}
-        >
-          📎 Bilder hinzufügen
-        </button>
+        <input 
+          id="male-upload"
+          type="file" 
+          multiple
+          accept="image/*" 
+          onChange={(e) => handleImageUpload(e, 'male')}
+          style={{ display: 'none' }}
+        />
+        
+        <input 
+          id="neutral-upload"
+          type="file" 
+          multiple
+          accept="image/*" 
+          onChange={(e) => handleImageUpload(e, userGender)}
+          style={{ display: 'none' }}
+        />
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Show gender-specific buttons only when no images uploaded yet */}
+          {images.length === 0 ? (
+            <>
+              <button 
+                onClick={() => fileRef.current.click()}
+                style={{
+                  padding: '10px 15px',
+                  backgroundColor: '#F59E0B',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                👩 Frauengesicht
+              </button>
+              
+              <button 
+                onClick={() => document.getElementById('male-upload').click()}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: '#3B82F6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.75rem',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title="Spezial-Upload für männliche Fotos - optimiert für Mann-zu-Frau Generierung"
+              >
+                👨 Manngesicht
+              </button>
+            </>
+          ) : (
+            /* Show neutral upload button when images already exist */
+            <button 
+              onClick={() => document.getElementById('neutral-upload').click()}
+              style={{
+                padding: '10px 15px',
+                backgroundColor: '#6B7280',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              📎 Weitere Bilder hinzufügen
+            </button>
+          )}
+          
+          {/* Clear all button inside the flex container when images exist */}
+          {images.length > 0 && (
+            <button 
+              onClick={clearAllImages}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#EF4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.8rem'
+              }}
+            >
+              🗑️ Alle löschen
+            </button>
+          )}
+        </div>
 
-        {images.length > 0 && (
-          <button 
-            onClick={clearAllImages}
-            style={{
-              padding: '10px 15px',
-              backgroundColor: '#EF4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            🗑️ Alle löschen
-          </button>
-        )}
         
         <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
           {images.length}/14 Bilder • Text-to-Image wenn keine Bilder, Image-Edit wenn Bilder vorhanden
+        </div>
+        
+        <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px', fontStyle: 'italic' }}>
+          {images.length === 0 ? (
+            <>💡 Wähle den passenden Button: "Frauengesicht" (90% der Nutzer) oder "Manngesicht" für männliche Fotos</>
+          ) : (
+            <>📎 Gender wurde bereits festgelegt - du kannst bis zu {14 - images.length} weitere Bilder hinzufügen</>
+          )}
         </div>
       </div>
 

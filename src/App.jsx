@@ -3,6 +3,7 @@ import HomePage from './pages/HomePage'
 import WanVideoPage from './pages/WanVideoPage'
 import NonoBananaPage from './pages/NonoBananaPage'
 import QwenPage from './pages/QwenPage'
+import CommunityPromptsPage from './pages/CommunityPromptsPage'
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/wan-video" element={<WanVideoPage />} />
         <Route path="/nono-banana" element={<NonoBananaPage />} />
         <Route path="/qwen" element={<QwenPage />} />
+        <Route path="/community-prompts" element={<CommunityPromptsPage />} />
       </Routes>
     </Router>
   )

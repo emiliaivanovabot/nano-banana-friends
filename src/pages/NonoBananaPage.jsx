@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 
 // Premium Dropdown Component - Bulletproof Portal-based
@@ -169,6 +169,7 @@ function PremiumDropdown({ label, value, onChange, options }) {
 }
 
 function NonoBananaPage() {
+  const location = useLocation()
   const [prompt, setPrompt] = useState('')
   const [images, setImages] = useState([])
   const [loading, setLoading] = useState(false)
@@ -181,6 +182,17 @@ function NonoBananaPage() {
   const [templatesCollapsed, setTemplatesCollapsed] = useState(true)
   
   const fileRef = useRef(null)
+
+  // Handle imported prompts from URL parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search)
+    const importedPrompt = searchParams.get('prompt')
+    if (importedPrompt) {
+      setPrompt(decodeURIComponent(importedPrompt))
+      // Clear the URL parameter after import
+      window.history.replaceState({}, '', '/nono-banana')
+    }
+  }, [location])
 
   // Prompt-Vorlagen für AI Model Shootings
   const promptTemplates = [
@@ -535,18 +547,29 @@ function NonoBananaPage() {
   return (
     <div className="nano-banana-container">
       
-      <Link 
-        to="/" 
-        style={{ 
-          display: 'inline-block',
-          marginBottom: '20px',
-          color: '#6B7280',
-          textDecoration: 'none',
-          fontSize: '14px'
-        }}
-      >
-        ← Zurück zur Startseite
-      </Link>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <Link 
+          to="/" 
+          style={{ 
+            color: '#6B7280',
+            textDecoration: 'none',
+            fontSize: '14px'
+          }}
+        >
+          ← Zurück zur Startseite
+        </Link>
+        
+        <Link 
+          to="/community-prompts" 
+          style={{ 
+            color: '#6B7280',
+            textDecoration: 'none',
+            fontSize: '14px'
+          }}
+        >
+          bananaprompts.xyz →
+        </Link>
+      </div>
       
       <h1 className="nano-banana-title">
         🍌 nano banana pro

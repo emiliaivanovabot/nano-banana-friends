@@ -63,6 +63,11 @@ function App() {
               <SettingsPage />
             </ProtectedRoute>
           } />
+          <Route path="/community-prompts" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <CommunityPromptsPage />
+            </ProtectedRoute>
+          } />
         </Routes>
       </Router>
     </AuthProvider>

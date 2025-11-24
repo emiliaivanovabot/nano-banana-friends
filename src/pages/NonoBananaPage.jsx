@@ -198,6 +198,10 @@ function NonoBananaPage() {
 
       try {
         // Use service role for user data access (RLS bypass)
+        console.log('🔍 DEBUG ENV VARS:')
+        console.log('URL:', import.meta.env.VITE_SUPABASE_URL)
+        console.log('KEY:', import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY?.slice(0, 20) + '...')
+        
         const supabase = createClient(
           import.meta.env.VITE_SUPABASE_URL,
           import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY

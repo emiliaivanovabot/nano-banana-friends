@@ -223,6 +223,7 @@ function NonoBananaPage() {
           setResolution(data.default_resolution || '2K')
           setAspectRatio(data.default_aspect_ratio || '9:16')
           
+          
         } else {
           console.log('No user settings data found')
         }
@@ -241,8 +242,8 @@ function NonoBananaPage() {
     if (importedPrompt) {
       const decodedPrompt = decodeURIComponent(importedPrompt)
       
-      // If user has uploaded images, automatically add face instructions
-      if (images.length > 0) {
+      // If user has uploaded images OR has saved face image AND it's visible, automatically add face instructions
+      if (images.length > 0 || (userSettings?.main_face_image_url && showMainFaceImage)) {
         const faceInstruction = userGender === 'female' 
           ? "Use my uploaded photo to maintain my exact facial features, skin tone, eye color, and hair as a woman."
           : "Use my uploaded photo to maintain my exact facial features, skin tone, eye color, and hair as a man."
@@ -255,7 +256,8 @@ function NonoBananaPage() {
       // Clear the URL parameter after import
       window.history.replaceState({}, '', '/nono-banana')
     }
-  }, [location, images.length, userGender])
+  }, [location, images.length, userGender, userSettings?.main_face_image_url, showMainFaceImage])
+
 
   // Prompt-Vorlagen für AI Model Shootings
   const promptTemplates = [

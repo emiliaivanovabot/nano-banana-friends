@@ -34,15 +34,15 @@ export default function LoginPage() {
     const errors = {}
     
     if (!formData.username.trim()) {
-      errors.username = 'Username is required'
+      errors.username = 'Benutzername ist erforderlich'
     } else if (formData.username.length < 3) {
-      errors.username = 'Username must be at least 3 characters'
+      errors.username = 'Benutzername muss mindestens 3 Zeichen haben'
     }
 
     if (!formData.password) {
-      errors.password = 'Password is required'
+      errors.password = 'Passwort ist erforderlich'
     } else if (formData.password.length < 3) {
-      errors.password = 'Password must be at least 3 characters'
+      errors.password = 'Passwort muss mindestens 3 Zeichen haben'
     }
 
     setFormErrors(errors)
@@ -127,14 +127,14 @@ export default function LoginPage() {
             fontWeight: '600',
             color: '#333'
           }}>
-            Nano Banana Login
+            neuronalworks Alpha Login
           </h1>
           <p style={{ 
             margin: '8px 0 0 0', 
             color: '#666', 
             fontSize: '14px' 
           }}>
-            Sign in to access your AI tools
+            Anmelden um auf deine KI-Tools zuzugreifen
           </p>
         </div>
 
@@ -165,7 +165,7 @@ export default function LoginPage() {
               fontWeight: '500',
               color: '#333'
             }}>
-              Username
+              Benutzername
             </label>
             <input
               type="text"
@@ -182,7 +182,7 @@ export default function LoginPage() {
                 transition: 'border-color 0.2s',
                 boxSizing: 'border-box'
               }}
-              placeholder="Enter your username"
+              placeholder="Gib deinen Benutzernamen ein"
             />
             {formErrors.username && (
               <div style={{ color: '#f56565', fontSize: '12px', marginTop: '4px' }}>
@@ -200,7 +200,7 @@ export default function LoginPage() {
               fontWeight: '500',
               color: '#333'
             }}>
-              Password
+              Passwort
             </label>
             <input
               type="password"
@@ -243,7 +243,7 @@ export default function LoginPage() {
               transition: 'all 0.2s'
             }}
           >
-            {isSubmitting ? 'Signing in...' : 'Sign In'}
+            {isSubmitting ? 'Anmeldung läuft...' : 'Anmelden'}
           </button>
         </form>
       </div>

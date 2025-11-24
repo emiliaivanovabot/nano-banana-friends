@@ -188,8 +188,53 @@ function NonoBananaPage() {
   const [liveTimer, setLiveTimer] = useState(0)
   const [selectedTemplate, setSelectedTemplate] = useState(null)
   const [templatesCollapsed, setTemplatesCollapsed] = useState(true)
+  const [showPersonalization, setShowPersonalization] = useState(true)
   
   const fileRef = useRef(null)
+
+  // Generate natural personalization text from user settings
+  const generatePersonalizationText = () => {
+    if (!userSettings) return ""
+    
+    const parts = []
+    
+    // Age - convert to natural description
+    if (userSettings.age_range) {
+      switch(userSettings.age_range) {
+        case 'under-20': parts.push("A teenage woman"); break;
+        case 'young-adult': parts.push("A young adult woman"); break;
+        case 'adult': parts.push("A confident woman"); break;
+        case 'over-40': parts.push("A mature woman"); break;
+        default: parts.push("A woman"); break;
+      }
+    }
+    
+    const details = []
+    
+    // Hair
+    if (userSettings.hair_color) {
+      details.push(`${userSettings.hair_color.toLowerCase()} hair`)
+    }
+    
+    // Eyes  
+    if (userSettings.eye_color) {
+      details.push(`${userSettings.eye_color.toLowerCase()} eyes`)
+    }
+    
+    // Skin
+    if (userSettings.skin_tone) {
+      details.push(`${userSettings.skin_tone.toLowerCase()} skin tone`)
+    }
+    
+    // Build the final sentence
+    if (parts.length === 0) parts.push("A woman")
+    
+    if (details.length > 0) {
+      return `${parts[0]} with ${details.join(", ")}`
+    }
+    
+    return parts[0]
+  }
 
   // Load user settings on component mount
   useEffect(() => {
@@ -205,7 +250,7 @@ function NonoBananaPage() {
 
         const { data, error } = await supabase
           .from('users')
-          .select('default_resolution, default_aspect_ratio, main_face_image_url, gemini_api_key')
+          .select('default_resolution, default_aspect_ratio, main_face_image_url, gemini_api_key, hair_color, eye_color, skin_tone, age_range')
           .eq('id', user.id)
           .single()
 
@@ -217,7 +262,12 @@ function NonoBananaPage() {
             default_resolution: data.default_resolution,
             default_aspect_ratio: data.default_aspect_ratio, 
             has_face_image: !!data.main_face_image_url,
-            has_api_key: !!data.gemini_api_key
+            has_api_key: !!data.gemini_api_key,
+            hair_color: data.hair_color,
+            eye_color: data.eye_color,
+            skin_tone: data.skin_tone,
+            age_range: data.age_range,
+            showMainFaceImage: showMainFaceImage
           })
           setUserSettings(data)
           setResolution(data.default_resolution || '2K')
@@ -409,9 +459,18 @@ function NonoBananaPage() {
         
         SecureLogger.debug('Gemini API initialized', { model, hasUserApiKey: true, userId: user?.id })
 
+        // Build final prompt with personalization if enabled and face image is visible
+        let finalPrompt = prompt
+        if (showPersonalization && userSettings?.main_face_image_url && showMainFaceImage && userSettings) {
+          const personalizationText = generatePersonalizationText()
+          if (personalizationText) {
+            finalPrompt = `${personalizationText}. ${prompt}`
+          }
+        }
+        
         // Nano Banana Pro API Format (echte Dokumentation)
         const parts = [
-          { text: prompt }
+          { text: finalPrompt }
         ]
         
         // Hauptgesichtsbild hinzufügen (falls sichtbar)
@@ -1194,6 +1253,55 @@ function NonoBananaPage() {
             </button>
           )}
         </div>
+        
+        {/* Personalization Block - Show when face image is visible */}
+        {userSettings?.main_face_image_url && showMainFaceImage && userSettings && (userSettings.hair_color || userSettings.eye_color || userSettings.skin_tone || userSettings.age) && (
+          <div style={{
+            marginBottom: '15px',
+            border: '1px solid rgba(251, 191, 36, 0.3)',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            background: 'rgba(249, 250, 251, 0.9)'
+          }}>
+            <button
+              onClick={() => setShowPersonalization(!showPersonalization)}
+              style={{
+                width: '100%',
+                padding: '10px 15px',
+                background: showPersonalization ? 'rgba(251, 191, 36, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                border: 'none',
+                borderBottom: showPersonalization ? '1px solid rgba(251, 191, 36, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#1F2937',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                textAlign: 'left'
+              }}
+            >
+              <span>{showPersonalization ? '✓' : '○'} Mein Aussehen verwenden</span>
+              <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#6B7280' }}>
+                {showPersonalization ? 'Ein' : 'Aus'}
+              </span>
+            </button>
+            
+            {showPersonalization && (
+              <div style={{
+                padding: '15px',
+                fontSize: '14px',
+                color: '#4B5563',
+                lineHeight: '1.5',
+                fontStyle: 'italic',
+                background: 'rgba(251, 191, 36, 0.05)'
+              }}>
+                {generatePersonalizationText()}
+              </div>
+            )}
+          </div>
+        )}
+        
         <textarea 
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}

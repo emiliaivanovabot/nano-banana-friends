@@ -31,3 +31,12 @@ pids
 # Uploads and temporary files
 uploads/
 temp/
+
+# Lokale Backup Dateien
+backup-local.sh.log
+.gitconfig-local
+nano-banana-backups/
+
+# Entwicklungsnotizen
+dev-notes/
+TODO-LOCAL.md

@@ -240,23 +240,51 @@ Basierend auf 6 Monaten Alpha-Daten:
 
 ### 🔐 Authentication & Database Issues
 
-**Problem 1: bcrypt Browser Kompatibilität**
+**Problem 6: Row Level Security (RLS) für User Data Access**
+- **Issue**: Normale Supabase Client (anon key) kann keine User-Daten lesen trotz gültiger Session
+- **Symptom**: "406 Not Acceptable" + "The result contains 0 rows" bei User-Abfragen
+- **Ursache**: RLS Policy blockiert User-eigene Daten bei anon key Zugriff
+- **Lösung**: Service Role Key für alle User-Datenbank-Operationen verwenden
+- **Code Pattern**:
+  ```javascript
+  // ❌ FALSCH: Normale Client (wird von RLS blockiert)
+  import { supabase } from '../../lib/supabase/client.js'
+  
+  // ✅ RICHTIG: Service Role Client für User-Daten
+  import { createClient } from '@supabase/supabase-js'
+  
+  const supabase = createClient(
+    import.meta.env.VITE_SUPABASE_URL,
+    import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+  )
+  
+  const { data, error } = await supabase
+    .from('users')
+    .select('default_resolution, default_aspect_ratio')
+    .eq('id', user.id)
+    .single()
+  ```
+- **Lesson**: Für User-Profil Abfragen IMMER Service Role verwenden, Anon Key nur für öffentliche Daten
+
+### 🔐 Authentication & Database Issues
+
+**Problem 1: bcrypt Browser Kompatibilität** ✅ **GELÖST**
 - **Issue**: `bcrypt.compare()` funktioniert in Node.js, aber nicht im Browser (Vite)
 - **Symptom**: "Invalid username or password" trotz korrekter Credentials
-- **Lösung**: Separate Client für Authentication mit Service Role Key verwenden
-- **Lesson**: Nie Browser-Client für sensible Operations verwenden
+- **Lösung**: Service Role Key für Authentication implementiert ✅
+- **Status**: Vollständig behoben - Login funktioniert stabil
 
-**Problem 2: Row Level Security (RLS) Blocking**
+**Problem 2: Row Level Security (RLS) Blocking** ✅ **GELÖST**
 - **Issue**: Supabase RLS verhindert User-Abfragen mit Anon Key  
 - **Symptom**: "The result contains 0 rows" bei existierenden Usern
-- **Lösung**: Service Role Key für alle User-Operations (Auth, Profile Loading)
-- **Lesson**: RLS Policy richtig konfigurieren oder Service Role für Backend-Operations
+- **Lösung**: Service Role Key Pattern für alle User-Operations implementiert ✅
+- **Status**: Vollständig behoben - alle User-Daten werden korrekt geladen
 
-**Problem 3: Mobile UX Disaster**
+**Problem 3: Mobile UX Disaster** ✅ **GELÖST**
 - **Issue**: URL Input für Face Images völlig unbrauchbar auf Mobile
 - **Symptom**: User können keine Fotos hochladen (haben keine URLs)
-- **Lösung**: Supabase Storage + File Upload Component implementiert
-- **Lesson**: Nie URLs von Mobile-Usern erwarten - immer File Upload anbieten
+- **Lösung**: Supabase Storage + File Upload Component implementiert ✅
+- **Status**: Vollständig behoben - mobile File Uploads funktionieren perfekt
 
 ### 🌍 Internationalization (DE/EN Mismatch) 
 
@@ -303,9 +331,9 @@ Basierend auf 6 Monaten Alpha-Daten:
    - **Settings Page**: Vollständige Profilverwaltung mit 3 Gesichts-Slots
    - **File Upload**: Mobile-friendly für Face Images (JPG/PNG/GIF/WebP, 5MB max)
    - **Face Image Categorization**: Dropdown-Menüs mit vordefinierten Kategorien
-     - Kategorien: Testbild, College Partner, Hintergrund, Location, Outfit, Pose, Business Look, Casual Style, Party Look, Sport
-     - Option für eigene Eingabe verfügbar
+     - Kategorien: Testbild, College Partner, Hintergrund, Location, Outfit, Pose, Sonstiges
      - Klare Erklärung: "Dieses Bild wird beim Generieren als Alternative zur Auswahl verfügbar sein"
+   - **User Settings Loading**: Service Role Pattern für alle User-Daten Abfragen implementiert
    - **Wichtig**: UI zeigt deutsche Labels, Database speichert englische Values für AI-Prompts
 
 ### 🚧 IN PROGRESS

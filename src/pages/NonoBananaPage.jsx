@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { SecureLogger, ApiLogger } from '../utils/secure-logger.js'
+import { createClient } from '@supabase/supabase-js'
 
 // Premium Dropdown Component - Bulletproof Portal-based
 function PremiumDropdown({ label, value, onChange, options }) {
@@ -181,12 +182,57 @@ function NonoBananaPage() {
   const [result, setResult] = useState(null)
   const [resolution, setResolution] = useState('2K')
   const [aspectRatio, setAspectRatio] = useState('9:16')
+  const [userSettings, setUserSettings] = useState(null)
+  const [showMainFaceImage, setShowMainFaceImage] = useState(true)
   const [generationTime, setGenerationTime] = useState(null)
   const [liveTimer, setLiveTimer] = useState(0)
   const [selectedTemplate, setSelectedTemplate] = useState(null)
   const [templatesCollapsed, setTemplatesCollapsed] = useState(true)
   
   const fileRef = useRef(null)
+
+  // Load user settings on component mount
+  useEffect(() => {
+    const loadUserSettings = async () => {
+      if (!user?.id) return
+
+      try {
+        // Use service role for user data access (RLS bypass)
+        const supabase = createClient(
+          import.meta.env.VITE_SUPABASE_URL,
+          import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+        )
+
+        const { data, error } = await supabase
+          .from('users')
+          .select('default_resolution, default_aspect_ratio, main_face_image_url, gemini_api_key')
+          .eq('id', user.id)
+          .single()
+
+        if (error) throw error
+
+        if (data) {
+          // Secure logging - never log API keys
+          console.log('Loaded user settings:', {
+            default_resolution: data.default_resolution,
+            default_aspect_ratio: data.default_aspect_ratio, 
+            has_face_image: !!data.main_face_image_url,
+            has_api_key: !!data.gemini_api_key
+          })
+          setUserSettings(data)
+          setResolution(data.default_resolution || '2K')
+          setAspectRatio(data.default_aspect_ratio || '9:16')
+          
+        } else {
+          console.log('No user settings data found')
+        }
+      } catch (error) {
+        console.error('Error loading user settings:', error)
+      }
+    }
+
+    loadUserSettings()
+  }, [user?.id])
 
   // Handle imported prompts from URL parameters
   useEffect(() => {
@@ -338,24 +384,50 @@ function NonoBananaPage() {
       const maxRetries = 3
       
       try {
-        // Gemini API Call aufbauen
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+        // Gemini API Call aufbauen - INDIVIDUELLER USER API KEY
+        const apiKey = userSettings?.gemini_api_key
         const model = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-image'
         
         if (!apiKey) {
-          const error = 'Gemini API Key fehlt'
-          ApiLogger.logError('Gemini', 'Missing API Key', { hasKey: false })
+          const error = 'Dein Gemini API Key fehlt. Bitte gehe zu Settings und trage ihn ein.'
+          ApiLogger.logError('Gemini', 'User API Key Missing', { hasUserKey: false, userId: user?.id })
           throw new Error(error)
         }
         
-        SecureLogger.debug('Gemini API initialized', { model, hasApiKey: true })
+        SecureLogger.debug('Gemini API initialized', { model, hasUserApiKey: true, userId: user?.id })
 
         // Nano Banana Pro API Format (echte Dokumentation)
         const parts = [
           { text: prompt }
         ]
         
-        // Bilder hinzufügen (base64 ohne data: prefix)
+        // Hauptgesichtsbild hinzufügen (falls sichtbar)
+        if (userSettings?.main_face_image_url && showMainFaceImage) {
+          try {
+            const response = await fetch(userSettings.main_face_image_url)
+            const blob = await response.blob()
+            const base64Data = await new Promise((resolve) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve(reader.result)
+              reader.readAsDataURL(blob)
+            })
+            
+            const base64String = base64Data.split(',')[1] // Remove "data:image/...;base64," prefix
+            const mimeType = base64Data.split(';')[0].split(':')[1] // Extract MIME type
+            
+            parts.push({
+              inline_data: {
+                mime_type: mimeType,
+                data: base64String
+              }
+            })
+            console.log('Main face image added to generation') // Debug
+          } catch (error) {
+            console.warn('Failed to load main face image for generation:', error)
+          }
+        }
+        
+        // Zusätzliche Bilder hinzufügen (base64 ohne data: prefix)
         images.forEach(img => {
           const base64Data = img.base64.split(',')[1] // Remove "data:image/...;base64," prefix
           const mimeType = img.base64.split(';')[0].split(':')[1] // Extract MIME type
@@ -589,28 +661,6 @@ function NonoBananaPage() {
             🌟 Community →
           </Link>
           
-          {/* Logout button */}
-          <button
-            onClick={() => {
-              logout()
-              navigate('/login')
-            }}
-            style={{
-              padding: '6px 12px',
-              backgroundColor: '#EF4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#DC2626'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#EF4444'}
-          >
-            🚪 Logout
-          </button>
         </div>
       </div>
       
@@ -628,11 +678,15 @@ function NonoBananaPage() {
         </h3>
         <div style={{ 
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: '1fr 1fr 80px',
           gap: '8px'
         }}>
           <button
-            onClick={() => setResolution(resolution === '2K' ? '4K' : '2K')}
+            onClick={() => {
+              if (resolution === '1K') setResolution('2K')
+              else if (resolution === '2K') setResolution('4K')
+              else setResolution('1K')
+            }}
             style={{
               padding: '10px 14px',
               background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%)',
@@ -655,13 +709,18 @@ function NonoBananaPage() {
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
               <span style={{ fontWeight: '600' }}>{resolution}</span>
               <span style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                {resolution === '2K' ? 'Optimal' : 'Max'}
+                {resolution === '1K' ? 'Fast' : resolution === '2K' ? 'Optimal' : 'Max'}
               </span>
             </div>
           </button>
           
           <button
-            onClick={() => setAspectRatio(aspectRatio === '9:16' ? '4:3' : '9:16')}
+            onClick={() => {
+              if (aspectRatio === '9:16') setAspectRatio('4:3')
+              else if (aspectRatio === '4:3') setAspectRatio('2:3')
+              else if (aspectRatio === '2:3') setAspectRatio('3:2')
+              else setAspectRatio('9:16')
+            }}
             style={{
               padding: '10px 14px',
               background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%)',
@@ -684,12 +743,300 @@ function NonoBananaPage() {
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
               <span style={{ fontWeight: '600' }}>{aspectRatio}</span>
               <span style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                {aspectRatio === '9:16' ? 'Story' : 'Post'}
+                {aspectRatio === '9:16' ? 'Story' : 
+                 aspectRatio === '4:3' ? 'Post' :
+                 aspectRatio === '2:3' ? 'Portrait' : 'Landscape'}
               </span>
             </div>
           </button>
+          
+          {/* Main Face Image Display */}
+          <div style={{
+            position: 'relative',
+            width: '80px',
+            height: '80px',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            border: '1px solid rgba(251, 191, 36, 0.3)',
+            background: 'rgba(249, 250, 251, 0.9)'
+          }}>
+            {userSettings?.main_face_image_url && showMainFaceImage ? (
+              <>
+                <img 
+                  src={userSettings.main_face_image_url}
+                  alt="Gesichtsbild"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
+                  onError={(e) => {
+                    console.log('Face image failed to load:', userSettings.main_face_image_url)
+                    e.target.style.display = 'none'
+                  }}
+                />
+                <button
+                  onClick={() => setShowMainFaceImage(false)}
+                  style={{
+                    position: 'absolute',
+                    top: '2px',
+                    right: '2px',
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    background: 'rgba(0, 0, 0, 0.7)',
+                    color: 'white',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    lineHeight: '1'
+                  }}
+                  title="Gesichtsbild entfernen"
+                >
+                  ×
+                </button>
+              </>
+            ) : (
+              <div style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '24px',
+                color: '#9CA3AF',
+                cursor: showMainFaceImage === false ? 'pointer' : 'default'
+              }}
+              onClick={() => {
+                if (showMainFaceImage === false) {
+                  setShowMainFaceImage(true) // Wiederherstellen
+                }
+              }}
+              title={showMainFaceImage === false ? "Gesichtsbild wiederherstellen" : "Kein Gesichtsbild verfügbar"}
+              >
+                👤
+                {showMainFaceImage === false && (
+                  <div style={{ fontSize: '8px', marginTop: '2px', textAlign: 'center' }}>
+                    Klicken zum<br/>Wiederherstellen
+                  </div>
+                )}
+              </div>
+            )}
+            <div style={{
+              position: 'absolute',
+              bottom: '2px',
+              right: '2px',
+              fontSize: '8px',
+              background: 'rgba(0,0,0,0.6)',
+              color: 'white',
+              padding: '1px 3px',
+              borderRadius: '3px',
+              fontWeight: '500'
+            }}>
+              Face
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Image Upload Section */}
+      <div style={{ 
+        marginBottom: '20px',
+        padding: '16px',
+        background: 'rgba(255, 255, 255, 0.7)',
+        borderRadius: '12px',
+        border: '1px solid rgba(251, 191, 36, 0.2)'
+      }}>
+        <label style={{ 
+          display: 'flex', 
+          alignItems: 'center',
+          gap: '8px',
+          marginBottom: '12px', 
+          fontWeight: '600',
+          fontSize: '0.95rem',
+          background: 'linear-gradient(135deg, #ec4899 0%, #f59e0b 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text'
+        }}>
+          <span>📷</span>
+          Bilder hochladen (optional, max 14):
+        </label>
+        
+        {/* Hidden file inputs for different genders */}
+        <input 
+          ref={fileRef}
+          type="file" 
+          multiple
+          accept="image/*" 
+          onChange={(e) => handleImageUpload(e, 'female')}
+          style={{ display: 'none' }}
+        />
+        
+        <input 
+          id="male-upload"
+          type="file" 
+          multiple
+          accept="image/*" 
+          onChange={(e) => handleImageUpload(e, 'male')}
+          style={{ display: 'none' }}
+        />
+        
+        <input 
+          id="neutral-upload"
+          type="file" 
+          multiple
+          accept="image/*" 
+          onChange={(e) => handleImageUpload(e, userGender)}
+          style={{ display: 'none' }}
+        />
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Show gender-specific buttons only when main face is removed AND no additional images */}
+          {!showMainFaceImage && images.length === 0 ? (
+            <>
+              <button 
+                onClick={() => fileRef.current.click()}
+                style={{
+                  padding: '10px 15px',
+                  backgroundColor: '#F59E0B',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                👩 Frauengesicht
+              </button>
+              
+              <button 
+                onClick={() => document.getElementById('male-upload').click()}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: '#3B82F6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.75rem',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title="Spezial-Upload für männliche Fotos - optimiert für Mann-zu-Frau Generierung"
+              >
+                👨 Manngesicht
+              </button>
+            </>
+          ) : (
+            /* Show neutral upload button when images already exist */
+            <button 
+              onClick={() => document.getElementById('neutral-upload').click()}
+              style={{
+                padding: '10px 15px',
+                backgroundColor: '#6B7280',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              📎 Weitere Bilder hinzufügen
+            </button>
+          )}
+          
+          {/* Clear all button inside the flex container when images exist */}
+          {images.length > 0 && (
+            <button 
+              onClick={clearAllImages}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#EF4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.8rem'
+              }}
+            >
+              🗑️ Alle löschen
+            </button>
+          )}
+        </div>
+
+        <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
+          {images.length}/14 Bilder • Text-to-Image wenn keine Bilder, Image-Edit wenn Bilder vorhanden
+        </div>
+        
+        <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px', fontStyle: 'italic' }}>
+          {!showMainFaceImage && images.length === 0 ? (
+            <>💡 Wähle den passenden Button: "Frauengesicht" (90% der Nutzer) oder "Manngesicht" für männliche Fotos</>
+          ) : (
+            <>📎 {showMainFaceImage ? 'Gesichtsbild geladen' : 'Gender festgelegt'} - du kannst bis zu {14 - images.length} weitere Bilder hinzufügen</>
+          )}
+        </div>
+      </div>
+
+      {/* Image Preview */}
+      {images.length > 0 && (
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', 
+            gap: '10px',
+            width: '100%',
+            maxWidth: '100%',
+            overflow: 'hidden',
+            boxSizing: 'border-box'
+          }}>
+            {images.map((img, index) => (
+              <div key={index} style={{ position: 'relative' }}>
+                <img 
+                  src={img.base64} 
+                  alt={img.name}
+                  style={{ 
+                    width: '100%', 
+                    height: '100px', 
+                    objectFit: 'cover',
+                    borderRadius: '4px',
+                    border: '1px solid #D1D5DB'
+                  }} 
+                />
+                <button
+                  onClick={() => removeImage(index)}
+                  style={{
+                    position: 'absolute',
+                    top: '2px',
+                    right: '2px',
+                    background: '#EF4444',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '20px',
+                    height: '20px',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Collapsible Prompt Templates Section */}
       <div className="mobile-prompt-templates-section">
@@ -831,200 +1178,6 @@ function NonoBananaPage() {
       </div>
 
 
-      {/* Image Upload */}
-      <div style={{ 
-        marginBottom: '20px',
-        padding: '16px',
-        background: 'rgba(255, 255, 255, 0.7)',
-        borderRadius: '12px',
-        border: '1px solid rgba(251, 191, 36, 0.2)'
-      }}>
-        <label style={{ 
-          display: 'flex', 
-          alignItems: 'center',
-          gap: '8px',
-          marginBottom: '12px', 
-          fontWeight: '600',
-          fontSize: '0.95rem',
-          background: 'linear-gradient(135deg, #ec4899 0%, #f59e0b 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text'
-        }}>
-          <span>📷</span>
-          Bilder hochladen (optional, max 14):
-        </label>
-        
-        {/* Hidden file inputs for different genders */}
-        <input 
-          ref={fileRef}
-          type="file" 
-          multiple
-          accept="image/*" 
-          onChange={(e) => handleImageUpload(e, 'female')}
-          style={{ display: 'none' }}
-        />
-        
-        <input 
-          id="male-upload"
-          type="file" 
-          multiple
-          accept="image/*" 
-          onChange={(e) => handleImageUpload(e, 'male')}
-          style={{ display: 'none' }}
-        />
-        
-        <input 
-          id="neutral-upload"
-          type="file" 
-          multiple
-          accept="image/*" 
-          onChange={(e) => handleImageUpload(e, userGender)}
-          style={{ display: 'none' }}
-        />
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Show gender-specific buttons only when no images uploaded yet */}
-          {images.length === 0 ? (
-            <>
-              <button 
-                onClick={() => fileRef.current.click()}
-                style={{
-                  padding: '10px 15px',
-                  backgroundColor: '#F59E0B',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-              >
-                👩 Frauengesicht
-              </button>
-              
-              <button 
-                onClick={() => document.getElementById('male-upload').click()}
-                style={{
-                  padding: '6px 12px',
-                  backgroundColor: '#3B82F6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.75rem',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-                title="Spezial-Upload für männliche Fotos - optimiert für Mann-zu-Frau Generierung"
-              >
-                👨 Manngesicht
-              </button>
-            </>
-          ) : (
-            /* Show neutral upload button when images already exist */
-            <button 
-              onClick={() => document.getElementById('neutral-upload').click()}
-              style={{
-                padding: '10px 15px',
-                backgroundColor: '#6B7280',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              📎 Weitere Bilder hinzufügen
-            </button>
-          )}
-          
-          {/* Clear all button inside the flex container when images exist */}
-          {images.length > 0 && (
-            <button 
-              onClick={clearAllImages}
-              style={{
-                padding: '8px 12px',
-                backgroundColor: '#EF4444',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.8rem'
-              }}
-            >
-              🗑️ Alle löschen
-            </button>
-          )}
-        </div>
-
-        
-        <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
-          {images.length}/14 Bilder • Text-to-Image wenn keine Bilder, Image-Edit wenn Bilder vorhanden
-        </div>
-        
-        <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px', fontStyle: 'italic' }}>
-          {images.length === 0 ? (
-            <>💡 Wähle den passenden Button: "Frauengesicht" (90% der Nutzer) oder "Manngesicht" für männliche Fotos</>
-          ) : (
-            <>📎 Gender wurde bereits festgelegt - du kannst bis zu {14 - images.length} weitere Bilder hinzufügen</>
-          )}
-        </div>
-      </div>
-
-      {/* Image Preview */}
-      {images.length > 0 && (
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', 
-            gap: '10px',
-            width: '100%',
-            maxWidth: '100%',
-            overflow: 'hidden',
-            boxSizing: 'border-box'
-          }}>
-            {images.map((img, index) => (
-              <div key={index} style={{ position: 'relative' }}>
-                <img 
-                  src={img.base64} 
-                  alt={img.name}
-                  style={{ 
-                    width: '100%', 
-                    height: '100px', 
-                    objectFit: 'cover',
-                    borderRadius: '4px',
-                    border: '1px solid #D1D5DB'
-                  }} 
-                />
-                <button
-                  onClick={() => removeImage(index)}
-                  style={{
-                    position: 'absolute',
-                    top: '2px',
-                    right: '2px',
-                    background: '#EF4444',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '20px',
-                    height: '20px',
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Mobile Optimized Generate Button */}
       <button 

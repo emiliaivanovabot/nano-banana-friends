@@ -19,7 +19,7 @@ function App() {
           {/* Public routes - redirect authenticated users */}
           <Route path="/" element={
             <PublicRoute>
-              <HomePage />
+              <LoginPage />
             </PublicRoute>
           } />
           

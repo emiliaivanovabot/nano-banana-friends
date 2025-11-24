@@ -42,14 +42,19 @@ export default function SettingsPage() {
   const [canNavigateAway, setCanNavigateAway] = useState(false)
   const autoSaveTimeoutRef = useRef(null)
 
-  const { user, isAuthenticated, logout } = useAuth()
+  const { user, isAuthenticated, logout, isLoading: authLoading } = useAuth()
   const navigate = useNavigate()
 
   // Check if user can navigate away (has API key)
   useEffect(() => {
-    const hasApiKey = userData.gemini_api_key && userData.gemini_api_key.trim().length > 0
-    setCanNavigateAway(hasApiKey)
-  }, [userData.gemini_api_key])
+    // Safely check for API key only when userData is loaded
+    if (userData && typeof userData.gemini_api_key === 'string') {
+      const hasApiKey = userData.gemini_api_key.trim().length > 0
+      setCanNavigateAway(hasApiKey)
+    } else {
+      setCanNavigateAway(false)
+    }
+  }, [userData?.gemini_api_key])
 
   // Prevent navigation without API key
   useEffect(() => {
@@ -70,8 +75,11 @@ export default function SettingsPage() {
       navigate('/login')
       return
     }
-    loadUserData()
-  }, [isAuthenticated, navigate])
+    // Only load data if we have a valid user and userData hasn't been loaded yet
+    if (user?.id && (!userData || !userData.username)) {
+      loadUserData()
+    }
+  }, [isAuthenticated, navigate, user?.id])
 
   // Cleanup auto-save timeout on unmount
   useEffect(() => {
@@ -154,33 +162,44 @@ export default function SettingsPage() {
   }, [user?.id])
 
   const handleInputChange = (field, value) => {
-    setUserData(prev => ({ ...prev, [field]: value }))
-    setHasUnsavedChanges(true)
-    
-    // Clear any existing auto-save timeout
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current)
-    }
+    setUserData(prev => {
+      // Safety check: only proceed if prev is valid
+      if (!prev || typeof prev !== 'object') {
+        console.warn('handleInputChange called with invalid userData state')
+        return prev
+      }
+      
+      const updatedData = { ...prev, [field]: value }
+      
+      // Clear any existing auto-save timeout
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
 
-    // Set new auto-save timeout (debounced to 1.5 seconds)
-    autoSaveTimeoutRef.current = setTimeout(() => {
-      const updatedData = { ...userData, [field]: value }
-      autoSaveSettings({
-        email: updatedData.email,
-        gemini_api_key: updatedData.gemini_api_key,
-        main_face_image_url: updatedData.main_face_image_url,
-        face_2_image_url: updatedData.face_2_image_url,
-        face_2_name: updatedData.face_2_name,
-        face_3_image_url: updatedData.face_3_image_url,
-        face_3_name: updatedData.face_3_name,
-        hair_color: updatedData.hair_color,
-        eye_color: updatedData.eye_color,
-        skin_tone: updatedData.skin_tone,
-        age_range: updatedData.age_range,
-        default_resolution: updatedData.default_resolution,
-        default_aspect_ratio: updatedData.default_aspect_ratio
-      })
-    }, 1500) // 1.5 second debounce
+      // Only set auto-save timeout if user is authenticated and data is valid
+      if (user?.id && updatedData) {
+        autoSaveTimeoutRef.current = setTimeout(() => {
+          autoSaveSettings({
+            email: updatedData.email || '',
+            gemini_api_key: updatedData.gemini_api_key || '',
+            main_face_image_url: updatedData.main_face_image_url || '',
+            face_2_image_url: updatedData.face_2_image_url || '',
+            face_2_name: updatedData.face_2_name || '',
+            face_3_image_url: updatedData.face_3_image_url || '',
+            face_3_name: updatedData.face_3_name || '',
+            hair_color: updatedData.hair_color || '',
+            eye_color: updatedData.eye_color || '',
+            skin_tone: updatedData.skin_tone || '',
+            age_range: updatedData.age_range || '',
+            default_resolution: updatedData.default_resolution || '2K',
+            default_aspect_ratio: updatedData.default_aspect_ratio || '9:16'
+          })
+        }, 1500) // 1.5 second debounce
+      }
+      
+      return updatedData
+    })
+    setHasUnsavedChanges(true)
   }
 
   const handleFileUpload = async (file, section) => {
@@ -205,26 +224,35 @@ export default function SettingsPage() {
         .from('face-images')
         .getPublicUrl(filePath)
 
-      handleInputChange(`${section}_image_url`, publicUrl)
-      setMessage({ type: 'success', text: 'Bild erfolgreich hochgeladen!' })
-      
-      // Trigger immediate auto-save for image uploads
-      const updatedData = { ...userData, [`${section}_image_url`]: publicUrl }
-      autoSaveSettings({
-        email: updatedData.email,
-        gemini_api_key: updatedData.gemini_api_key,
-        main_face_image_url: updatedData.main_face_image_url,
-        face_2_image_url: updatedData.face_2_image_url,
-        face_2_name: updatedData.face_2_name,
-        face_3_image_url: updatedData.face_3_image_url,
-        face_3_name: updatedData.face_3_name,
-        hair_color: updatedData.hair_color,
-        eye_color: updatedData.eye_color,
-        skin_tone: updatedData.skin_tone,
-        age_range: updatedData.age_range,
-        default_resolution: updatedData.default_resolution,
-        default_aspect_ratio: updatedData.default_aspect_ratio
+      setUserData(prev => {
+        // Safety check: ensure prev is valid before updating
+        if (!prev || typeof prev !== 'object') {
+          console.error('Invalid userData state during file upload')
+          return prev
+        }
+        
+        const updatedData = { ...prev, [`${section}_image_url`]: publicUrl }
+        
+        // Trigger immediate auto-save for image uploads
+        autoSaveSettings({
+          email: updatedData.email || '',
+          gemini_api_key: updatedData.gemini_api_key || '',
+          main_face_image_url: updatedData.main_face_image_url || '',
+          face_2_image_url: updatedData.face_2_image_url || '',
+          face_2_name: updatedData.face_2_name || '',
+          face_3_image_url: updatedData.face_3_image_url || '',
+          face_3_name: updatedData.face_3_name || '',
+          hair_color: updatedData.hair_color || '',
+          eye_color: updatedData.eye_color || '',
+          skin_tone: updatedData.skin_tone || '',
+          age_range: updatedData.age_range || '',
+          default_resolution: updatedData.default_resolution || '2K',
+          default_aspect_ratio: updatedData.default_aspect_ratio || '9:16'
+        })
+        
+        return updatedData
       })
+      setMessage({ type: 'success', text: 'Bild erfolgreich hochgeladen!' })
 
     } catch (error) {
       console.error('Upload failed:', error)
@@ -270,7 +298,8 @@ export default function SettingsPage() {
     }
   }
 
-  if (isLoading) {
+  // Show loading state if auth is loading or data is loading
+  if (authLoading || isLoading) {
     return (
       <div style={{
         minHeight: '100vh',
@@ -279,7 +308,24 @@ export default function SettingsPage() {
         justifyContent: 'center',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
       }}>
-        <div style={{ color: 'white', fontSize: '18px' }}>Lade Einstellungen...</div>
+        <div style={{ color: 'white', fontSize: '18px' }}>
+          {authLoading ? 'Lade Authentifizierung...' : 'Lade Einstellungen...'}
+        </div>
+      </div>
+    )
+  }
+
+  // Additional safety check: Don't render if userData is not yet initialized
+  if (!userData || typeof userData !== 'object') {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      }}>
+        <div style={{ color: 'white', fontSize: '18px' }}>Initialisiere Daten...</div>
       </div>
     )
   }
@@ -446,7 +492,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
-                value={userData.username}
+                value={userData?.username || ''}
                 disabled
                 style={{
                   width: '100%',
@@ -467,7 +513,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="email"
-                value={userData.email}
+                value={userData?.email || ''}
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 style={{
                   width: '100%',
@@ -489,7 +535,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="password"
-                value={userData.gemini_api_key}
+                value={userData?.gemini_api_key || ''}
                 onChange={(e) => handleInputChange('gemini_api_key', e.target.value)}
                 style={{
                   width: '100%',
@@ -502,7 +548,7 @@ export default function SettingsPage() {
                 }}
                 placeholder="AIza... (API Key erforderlich)"
               />
-              {!canNavigateAway && userData.gemini_api_key.length === 0 && (
+              {!canNavigateAway && (!userData?.gemini_api_key || userData.gemini_api_key.length === 0) && (
                 <div style={{ color: '#ff5722', fontSize: '12px', marginTop: '4px' }}>
                   ⚠️ Du musst einen API Key eingeben, um die App verwenden zu können
                 </div>
@@ -529,9 +575,9 @@ export default function SettingsPage() {
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#333' }}>
                 Hauptgesicht
               </label>
-              {userData.main_face_image_url ? (
+              {userData?.main_face_image_url ? (
                 <div style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '12px', backgroundColor: '#f9f9f9' }}>
-                  <img src={userData.main_face_image_url} alt="Hauptgesicht" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px', marginBottom: '8px' }} />
+                  <img src={userData?.main_face_image_url} alt="Hauptgesicht" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px', marginBottom: '8px' }} />
                   <button
                     onClick={() => document.getElementById('main_face').click()}
                     disabled={uploadingSection === 'main_face'}
@@ -575,29 +621,89 @@ export default function SettingsPage() {
               />
             </div>
 
-            {/* Schnellauswahl 1 */}
+            {/* Zusätzliches Gesichtsbild 1 */}
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#333' }}>
-                Schnellauswahl 1
+                Zusätzliches Bild 1
               </label>
-              <input
-                type="text"
-                value={userData.face_2_name}
-                onChange={(e) => handleInputChange('face_2_name', e.target.value)}
-                placeholder="Name für Schnellauswahl"
+              
+              {/* Erklärung */}
+              <div style={{
+                marginBottom: '10px',
+                padding: '8px 10px',
+                backgroundColor: '#FEF3E2',
+                borderRadius: '6px',
+                fontSize: '12px',
+                color: '#92400E',
+                border: '1px solid #FBBF24'
+              }}>
+                💡 Dieses Bild wird beim Generieren als Alternative zur Auswahl verfügbar sein
+              </div>
+              
+              {/* Kategorie Dropdown */}
+              <select
+                value={userData?.face_2_name || ''}
+                onChange={(e) => {
+                  const newValue = e.target.value
+                  handleInputChange('face_2_name', newValue)
+                  
+                  // Sofort speichern wenn Kategorie gewählt wird
+                  if (newValue && userData?.face_2_image_url) {
+                    setMessage({ type: 'success', text: 'Kategorie gespeichert!' })
+                  }
+                }}
                 style={{
                   width: '100%',
                   padding: '8px',
-                  border: '1px solid #ddd',
+                  border: (userData?.face_2_image_url && !userData?.face_2_name)
+                    ? '2px solid #EF4444' 
+                    : '1px solid #ddd',
                   borderRadius: '4px',
                   fontSize: '12px',
                   marginBottom: '8px',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  backgroundColor: (userData?.face_2_image_url && !userData?.face_2_name)
+                    ? '#FEF2F2' 
+                    : 'white'
                 }}
-              />
-              {userData.face_2_image_url ? (
+                required={!!userData?.face_2_image_url}
+              >
+                <option value="">
+                  {userData?.face_2_image_url 
+                    ? "⚠️ Kategorie wählen (Pflicht)" 
+                    : "Bildkategorie wählen..."
+                  }
+                </option>
+                <option value="Testbild">Testbild</option>
+                <option value="College Partner">College Partner</option>
+                <option value="Hintergrund">Hintergrund</option>
+                <option value="Location">Location</option>
+                <option value="Outfit">Outfit</option>
+                <option value="Pose">Pose</option>
+                <option value="Sonstiges">Sonstiges</option>
+              </select>
+              
+              {/* Warnung bei fehlendem Namen */}
+              {userData?.face_2_image_url && !userData?.face_2_name && (
+                <div style={{
+                  marginBottom: '8px',
+                  padding: '8px 10px',
+                  backgroundColor: '#FEF2F2',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  color: '#DC2626',
+                  border: '1px solid #EF4444',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  <span>⚠️</span>
+                  <strong>Kategorie ist Pflicht!</strong> Wähle eine Kategorie für dein hochgeladenes Bild.
+                </div>
+              )}
+              {userData?.face_2_image_url ? (
                 <div style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '12px', backgroundColor: '#f9f9f9' }}>
-                  <img src={userData.face_2_image_url} alt="Schnellauswahl 1" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px', marginBottom: '8px' }} />
+                  <img src={userData?.face_2_image_url} alt="Schnellauswahl 1" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px', marginBottom: '8px' }} />
                   <button
                     onClick={() => document.getElementById('face_2').click()}
                     disabled={uploadingSection === 'face_2'}
@@ -641,29 +747,89 @@ export default function SettingsPage() {
               />
             </div>
 
-            {/* Schnellauswahl 2 */}
+            {/* Zusätzliches Gesichtsbild 2 */}
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#333' }}>
-                Schnellauswahl 2
+                Zusätzliches Bild 2
               </label>
-              <input
-                type="text"
-                value={userData.face_3_name}
-                onChange={(e) => handleInputChange('face_3_name', e.target.value)}
-                placeholder="Name für Schnellauswahl"
+              
+              {/* Erklärung */}
+              <div style={{
+                marginBottom: '10px',
+                padding: '8px 10px',
+                backgroundColor: '#FEF3E2',
+                borderRadius: '6px',
+                fontSize: '12px',
+                color: '#92400E',
+                border: '1px solid #FBBF24'
+              }}>
+                💡 Dieses Bild wird beim Generieren als Alternative zur Auswahl verfügbar sein
+              </div>
+              
+              {/* Kategorie Dropdown */}
+              <select
+                value={userData?.face_3_name || ''}
+                onChange={(e) => {
+                  const newValue = e.target.value
+                  handleInputChange('face_3_name', newValue)
+                  
+                  // Sofort speichern wenn Kategorie gewählt wird
+                  if (newValue && userData?.face_3_image_url) {
+                    setMessage({ type: 'success', text: 'Kategorie gespeichert!' })
+                  }
+                }}
                 style={{
                   width: '100%',
                   padding: '8px',
-                  border: '1px solid #ddd',
+                  border: (userData?.face_3_image_url && !userData?.face_3_name)
+                    ? '2px solid #EF4444' 
+                    : '1px solid #ddd',
                   borderRadius: '4px',
                   fontSize: '12px',
                   marginBottom: '8px',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  backgroundColor: (userData?.face_3_image_url && !userData?.face_3_name)
+                    ? '#FEF2F2' 
+                    : 'white'
                 }}
-              />
-              {userData.face_3_image_url ? (
+                required={!!userData?.face_3_image_url}
+              >
+                <option value="">
+                  {userData?.face_3_image_url 
+                    ? "⚠️ Kategorie wählen (Pflicht)" 
+                    : "Bildkategorie wählen..."
+                  }
+                </option>
+                <option value="Testbild">Testbild</option>
+                <option value="College Partner">College Partner</option>
+                <option value="Hintergrund">Hintergrund</option>
+                <option value="Location">Location</option>
+                <option value="Outfit">Outfit</option>
+                <option value="Pose">Pose</option>
+                <option value="Sonstiges">Sonstiges</option>
+              </select>
+              
+              {/* Warnung bei fehlendem Namen */}
+              {userData?.face_3_image_url && !userData?.face_3_name && (
+                <div style={{
+                  marginBottom: '8px',
+                  padding: '8px 10px',
+                  backgroundColor: '#FEF2F2',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  color: '#DC2626',
+                  border: '1px solid #EF4444',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  <span>⚠️</span>
+                  <strong>Kategorie ist Pflicht!</strong> Wähle eine Kategorie für dein hochgeladenes Bild.
+                </div>
+              )}
+              {userData?.face_3_image_url ? (
                 <div style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '12px', backgroundColor: '#f9f9f9' }}>
-                  <img src={userData.face_3_image_url} alt="Schnellauswahl 2" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px', marginBottom: '8px' }} />
+                  <img src={userData?.face_3_image_url} alt="Schnellauswahl 2" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px', marginBottom: '8px' }} />
                   <button
                     onClick={() => document.getElementById('face_3').click()}
                     disabled={uploadingSection === 'face_3'}
@@ -727,7 +893,7 @@ export default function SettingsPage() {
                 Haarfarbe
               </label>
               <select
-                value={userData.hair_color}
+                value={userData?.hair_color || ''}
                 onChange={(e) => handleInputChange('hair_color', e.target.value)}
                 style={{
                   width: '100%',
@@ -751,7 +917,7 @@ export default function SettingsPage() {
                 Augenfarbe
               </label>
               <select
-                value={userData.eye_color}
+                value={userData?.eye_color || ''}
                 onChange={(e) => handleInputChange('eye_color', e.target.value)}
                 style={{
                   width: '100%',
@@ -776,7 +942,7 @@ export default function SettingsPage() {
                 Hautton
               </label>
               <select
-                value={userData.skin_tone}
+                value={userData?.skin_tone || ''}
                 onChange={(e) => handleInputChange('skin_tone', e.target.value)}
                 style={{
                   width: '100%',
@@ -801,7 +967,7 @@ export default function SettingsPage() {
                 Altersbereich
               </label>
               <select
-                value={userData.age_range}
+                value={userData?.age_range || ''}
                 onChange={(e) => handleInputChange('age_range', e.target.value)}
                 style={{
                   width: '100%',
@@ -840,7 +1006,7 @@ export default function SettingsPage() {
                 Standard Auflösung
               </label>
               <select
-                value={userData.default_resolution}
+                value={userData?.default_resolution || '2K'}
                 onChange={(e) => handleInputChange('default_resolution', e.target.value)}
                 style={{
                   width: '100%',
@@ -862,7 +1028,7 @@ export default function SettingsPage() {
                 Standard Seitenverhältnis
               </label>
               <select
-                value={userData.default_aspect_ratio}
+                value={userData?.default_aspect_ratio || '9:16'}
                 onChange={(e) => handleInputChange('default_aspect_ratio', e.target.value)}
                 style={{
                   width: '100%',
@@ -923,20 +1089,6 @@ export default function SettingsPage() {
             </span>
           </button>
           
-          <button
-            onClick={logout}
-            style={{
-              padding: '15px 30px',
-              background: 'transparent',
-              color: '#666',
-              border: '2px solid #ddd',
-              borderRadius: '8px',
-              fontSize: '14px',
-              cursor: 'pointer'
-            }}
-          >
-            🚪 Abmelden
-          </button>
         </div>
       </div>
     </div>

@@ -50,10 +50,10 @@ CREATE TABLE users (
   
   -- Face Management (3 Slots)
   main_face_image_url TEXT,                    -- Hauptgesicht (Default)
-  face_2_image_url TEXT,                       -- Schnellauswahl 1  
-  face_2_name VARCHAR(100),                    -- "Business Look"
-  face_3_image_url TEXT,                       -- Schnellauswahl 2
-  face_3_name VARCHAR(100),                    -- "Party Style"
+  face_2_image_url TEXT,                       -- Zusätzliches Gesichtsbild 1  
+  face_2_name VARCHAR(100),                    -- Kategorie: "Business Look", "Testbild", "College Partner", etc.
+  face_3_image_url TEXT,                       -- Zusätzliches Gesichtsbild 2
+  face_3_name VARCHAR(100),                    -- Kategorie: "Party Style", "Location", "Outfit", etc.
   
   -- System Management
   is_active BOOLEAN DEFAULT true,              -- Soft Delete für Freunde-Management
@@ -302,13 +302,23 @@ Basierend auf 6 Monaten Alpha-Daten:
    - **Onboarding Page**: Komplett auf Deutsch mit allen Profil-Feldern
    - **Settings Page**: Vollständige Profilverwaltung mit 3 Gesichts-Slots
    - **File Upload**: Mobile-friendly für Face Images (JPG/PNG/GIF/WebP, 5MB max)
+   - **Face Image Categorization**: Dropdown-Menüs mit vordefinierten Kategorien
+     - Kategorien: Testbild, College Partner, Hintergrund, Location, Outfit, Pose, Business Look, Casual Style, Party Look, Sport
+     - Option für eigene Eingabe verfügbar
+     - Klare Erklärung: "Dieses Bild wird beim Generieren als Alternative zur Auswahl verfügbar sein"
    - **Wichtig**: UI zeigt deutsche Labels, Database speichert englische Values für AI-Prompts
 
 ### 🚧 IN PROGRESS
-2. **Authentication**: Login-System für Freunde implementieren
-3. **Analytics Dashboard**: Real-time Cost/Usage Tracking
-4. **Alpha Launch**: Freunde onboarden und Daten sammeln
-5. **6-Monats Review**: Business-Plan für kommerzielle Phase
+1. **Face Image Selection**: Implementation der Auswahl zwischen verschiedenen Gesichtsbildern beim Generieren
+   - User soll zwischen main_face, face_2, face_3 wechseln können
+   - UI für Bildauswahl im Generierungs-Interface
+2. **Analytics Dashboard**: Real-time Cost/Usage Tracking
+3. **Alpha Launch**: Freunde onboarden und Daten sammeln
+4. **6-Monats Review**: Business-Plan für kommerzielle Phase
+
+### 🔜 NEXT STEPS
+1. **Face Selection UI**: Dropdown/Button Interface zum Wechseln zwischen gespeicherten Gesichtsbildern
+2. **Dynamic Face Loading**: Verwendung der ausgewählten face_image_url in Generierungs-Prompts
 
 ### 🏗️ Database Verification Results
 **Tables Created**: users, user_stats, daily_usage_history

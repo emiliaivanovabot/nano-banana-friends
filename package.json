@@ -10,7 +10,13 @@
     "db:verify": "node scripts/verify-database.js",
     "auth:create-test-user": "node scripts/create-test-user.js",
     "community:setup": "node scripts/setup-community-prompts.js",
-    "community:scrape": "node scripts/scrape-community-prompts.js"
+    "community:scrape": "node scripts/scrape-community-prompts.js",
+    "async:cleanup": "node scripts/cleanup-generations.js",
+    "async:cleanup-stats": "node scripts/cleanup-generations.js stats",
+    "async:fix-stuck": "node scripts/cleanup-generations.js fix-stuck",
+    "async:maintenance": "node scripts/cleanup-generations.js all",
+    "api:dev": "cd api && npm run dev",
+    "api:start": "cd api && npm start"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.84.0",

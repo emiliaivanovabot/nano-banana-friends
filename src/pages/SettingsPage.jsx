@@ -906,6 +906,7 @@ export default function SettingsPage() {
               >
                 <option value="">Wählen...</option>
                 <option value="black">Schwarz</option>
+                <option value="darkbrown">Dunkelbraun</option>
                 <option value="brunette">Brunette</option>
                 <option value="blonde">Blond</option>
                 <option value="red">Rot</option>

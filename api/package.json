@@ -1,0 +1,34 @@
+{
+  "name": "nano-banana-async-api",
+  "version": "1.0.0",
+  "description": "Async image generation API for Nano Banana Pro - Solves mobile sleep/lock interruption issues",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "async",
+    "image-generation", 
+    "gemini-api",
+    "mobile-friendly",
+    "supabase"
+  ],
+  "author": "Nano Banana Team",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.84.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -4,8 +4,9 @@ import { createPortal } from 'react-dom'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { SecureLogger, ApiLogger } from '../utils/secure-logger.js'
 import { createClient } from '@supabase/supabase-js'
+import { useAsyncGeneration, useGenerationStatus } from '../utils/async-generation.js'
 
-// Premium Dropdown Component - Bulletproof Portal-based
+// Premium Dropdown Component - Bulletproof Portal-based (same as before)
 function PremiumDropdown({ label, value, onChange, options }) {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedOption, setSelectedOption] = useState(
@@ -171,25 +172,190 @@ function PremiumDropdown({ label, value, onChange, options }) {
   )
 }
 
-function NonoBananaPage() {
+// ==============================================
+// ASYNC GENERATION STATUS COMPONENT
+// ==============================================
+
+function GenerationStatusCard({ generation, onRetry, onCancel }) {
+  const status = useGenerationStatus(generation)
+  
+  const formatDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    if (mins > 0) {
+      return `${mins}m ${secs}s`
+    }
+    return `${secs}s`
+  }
+  
+  const formatCreatedAt = (timestamp) => {
+    const date = new Date(timestamp)
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+  
+  if (!generation) return null
+  
+  return (
+    <div style={{
+      margin: '20px 0',
+      padding: '16px',
+      background: generation.status === 'processing' ? 
+        'linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(249, 250, 251, 0.9) 100%)' : 
+        generation.status === 'completed' ? 
+        'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(249, 250, 251, 0.9) 100%)' :
+        'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(249, 250, 251, 0.9) 100%)',
+      borderRadius: '12px',
+      border: `1px solid ${status.color}30`,
+      position: 'relative'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '1.2rem' }}>{status.icon}</span>
+          <span style={{ fontWeight: '600', color: status.color }}>
+            {status.text}
+          </span>
+          {generation.created_at && (
+            <span style={{ fontSize: '0.8rem', color: '#6B7280' }}>
+              {formatCreatedAt(generation.created_at)}
+            </span>
+          )}
+        </div>
+        
+        {generation.status === 'processing' && onCancel && (
+          <button
+            onClick={onCancel}
+            style={{
+              background: 'transparent',
+              border: '1px solid #EF4444',
+              color: '#EF4444',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              fontSize: '0.8rem',
+              cursor: 'pointer'
+            }}
+          >
+            Cancel
+          </button>
+        )}
+      </div>
+      
+      {/* Processing status with live duration */}
+      {generation.status === 'processing' && (
+        <div style={{ marginBottom: '12px' }}>
+          <div style={{ 
+            fontSize: '0.9rem', 
+            color: '#D97706',
+            marginBottom: '8px',
+            fontFamily: 'monospace',
+            fontWeight: '500'
+          }}>
+            ⏱️ {formatDuration(Math.floor((Date.now() - new Date(generation.created_at).getTime()) / 1000))}
+          </div>
+          <div style={{
+            width: '100%',
+            height: '4px',
+            background: '#E5E7EB',
+            borderRadius: '2px',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(90deg, #F59E0B, #D97706)',
+              animation: 'pulse 2s infinite'
+            }} />
+          </div>
+          <div style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '4px' }}>
+            Generation continues even if you close the app or phone sleeps 📱
+          </div>
+        </div>
+      )}
+      
+      {/* Completed status with result */}
+      {generation.status === 'completed' && generation.result && (
+        <div>
+          {generation.result.generation_time_seconds && (
+            <div style={{ fontSize: '0.8rem', color: '#10B981', marginBottom: '8px' }}>
+              Completed in {formatDuration(generation.result.generation_time_seconds)}
+            </div>
+          )}
+          {generation.result.image && (
+            <img 
+              src={generation.result.image} 
+              alt="Generated"
+              style={{ 
+                width: '100%', 
+                maxWidth: '300px',
+                borderRadius: '8px',
+                border: '1px solid #D1D5DB'
+              }}
+            />
+          )}
+        </div>
+      )}
+      
+      {/* Failed status with retry option */}
+      {generation.status === 'failed' && (
+        <div>
+          <div style={{ fontSize: '0.9rem', color: '#EF4444', marginBottom: '12px' }}>
+            {generation.error || 'Generation failed'}
+          </div>
+          {onRetry && (
+            <button
+              onClick={() => onRetry(generation.id)}
+              style={{
+                background: '#F59E0B',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '8px 16px',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: '500'
+              }}
+            >
+              🔄 Retry Generation
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ==============================================
+// MAIN COMPONENT
+// ==============================================
+
+function NonoBananaPageAsync() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const [prompt, setPrompt] = useState('')
   const [images, setImages] = useState([])
-  const [userGender, setUserGender] = useState('female') // Default to female (90% of users)
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState(null)
+  const [userGender, setUserGender] = useState('female')
   const [resolution, setResolution] = useState('2K')
   const [aspectRatio, setAspectRatio] = useState('9:16')
   const [userSettings, setUserSettings] = useState(null)
   const [showMainFaceImage, setShowMainFaceImage] = useState(true)
-  const [generationTime, setGenerationTime] = useState(null)
-  const [liveTimer, setLiveTimer] = useState(0)
   const [selectedTemplate, setSelectedTemplate] = useState(null)
   const [templatesCollapsed, setTemplatesCollapsed] = useState(true)
   
   const fileRef = useRef(null)
+  
+  // Async generation hook
+  const {
+    currentGeneration,
+    isGenerating,
+    generationHistory,
+    error: generationError,
+    hasActiveGeneration,
+    startAsyncGeneration,
+    retryGeneration,
+    requestNotificationPermission,
+    clearError,
+    stopPolling
+  } = useAsyncGeneration(user?.id)
 
   // Load user settings on component mount
   useEffect(() => {
@@ -197,7 +363,10 @@ function NonoBananaPage() {
       if (!user?.id) return
 
       try {
-        // Use service role for user data access (RLS bypass)
+        console.log('🔍 DEBUG ENV VARS:')
+        console.log('URL:', import.meta.env.VITE_SUPABASE_URL)
+        console.log('KEY:', import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY?.slice(0, 20) + '...')
+        
         const supabase = createClient(
           import.meta.env.VITE_SUPABASE_URL,
           import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
@@ -212,7 +381,6 @@ function NonoBananaPage() {
         if (error) throw error
 
         if (data) {
-          // Secure logging - never log API keys
           console.log('Loaded user settings:', {
             default_resolution: data.default_resolution,
             default_aspect_ratio: data.default_aspect_ratio, 
@@ -241,7 +409,6 @@ function NonoBananaPage() {
     if (importedPrompt) {
       const decodedPrompt = decodeURIComponent(importedPrompt)
       
-      // If user has uploaded images, automatically add face instructions
       if (images.length > 0) {
         const faceInstruction = userGender === 'female' 
           ? "Use my uploaded photo to maintain my exact facial features, skin tone, eye color, and hair as a woman."
@@ -252,12 +419,16 @@ function NonoBananaPage() {
         setPrompt(decodedPrompt)
       }
       
-      // Clear the URL parameter after import
       window.history.replaceState({}, '', '/nono-banana')
     }
   }, [location, images.length, userGender])
 
-  // Prompt-Vorlagen für AI Model Shootings
+  // Request notification permission on mount
+  useEffect(() => {
+    requestNotificationPermission()
+  }, [requestNotificationPermission])
+
+  // Prompt templates (same as before)
   const promptTemplates = [
     {
       category: "Beauty & Close-ups",
@@ -289,10 +460,7 @@ function NonoBananaPage() {
       return
     }
 
-    // Set gender based on which upload button was used
     setUserGender(gender)
-    
-    // Store gender and upload status in localStorage for Community Prompts
     localStorage.setItem('userGender', gender)
     localStorage.setItem('hasUploadedImages', 'true')
 
@@ -303,7 +471,8 @@ function NonoBananaPage() {
           reader.onload = (e) => resolve({
             file: file,
             base64: e.target.result,
-            name: file.name
+            name: file.name,
+            mime_type: file.type
           })
           reader.readAsDataURL(file)
         })
@@ -321,312 +490,86 @@ function NonoBananaPage() {
     setImages([])
   }
 
-  const downloadImage = () => {
-    if (!result?.image) return
+  const downloadImage = (imageData) => {
+    if (!imageData) return
     
     try {
-      // Convert base64 to blob for proper download
-      const base64Data = result.image.split(',')[1] // Remove data:image/png;base64, prefix
-      const mimeType = result.image.split(',')[0].split(':')[1].split(';')[0] // Extract MIME type
+      const base64Data = imageData.split(',')[1]
+      const mimeType = imageData.split(',')[0].split(':')[1].split(';')[0]
       
-      // Convert base64 to binary
       const binaryData = atob(base64Data)
       const bytes = new Uint8Array(binaryData.length)
       for (let i = 0; i < binaryData.length; i++) {
         bytes[i] = binaryData.charCodeAt(i)
       }
       
-      // Create blob and download
       const blob = new Blob([bytes], { type: mimeType })
       const url = URL.createObjectURL(blob)
       
       const link = document.createElement('a')
       link.href = url
-      link.download = `nano-banana-${Date.now()}.png`
+      link.download = `nano-banana-async-${Date.now()}.png`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
       
-      // Clean up
       URL.revokeObjectURL(url)
     } catch (error) {
       SecureLogger.error('Download failed', error)
-      // Fallback to simple download
-      const link = document.createElement('a')
-      link.href = result.image
-      link.download = `nano-banana-${Date.now()}.png`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
     }
   }
 
-  const generateImage = async () => {
+  const generateImageAsync = async () => {
     if (!prompt.trim()) {
       alert('Bitte gib einen Prompt ein')
       return
     }
 
-    setLoading(true)
-    
-    // Prevent mobile sleep during generation
-    let wakeLock = null
-    try {
-      if ('wakeLock' in navigator) {
-        wakeLock = await navigator.wakeLock.request('screen')
-        console.log('📱 Wake Lock activated - phone will stay awake')
-      }
-    } catch (err) {
-      console.log('Wake Lock not supported or failed:', err)
+    if (!userSettings?.gemini_api_key) {
+      alert('Dein Gemini API Key fehlt. Bitte gehe zu Settings und trage ihn ein.')
+      return
     }
-    setResult(null)
-    setGenerationTime(null)
-    setLiveTimer(0)
-    const startTime = Date.now()
 
-    // Live Timer während Generierung
-    const timerInterval = setInterval(() => {
-      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
-      setLiveTimer(elapsed)
-    }, 100) // Update alle 100ms
-
-    // Retry-Funktion mit exponential backoff
-    const makeApiCall = async (retryCount = 0) => {
-      const maxRetries = 3
+    try {
+      clearError()
       
-      try {
-        // Gemini API Call aufbauen - INDIVIDUELLER USER API KEY
-        const apiKey = userSettings?.gemini_api_key
-        const model = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-image'
-        
-        if (!apiKey) {
-          const error = 'Dein Gemini API Key fehlt. Bitte gehe zu Settings und trage ihn ein.'
-          ApiLogger.logError('Gemini', 'User API Key Missing', { hasUserKey: false, userId: user?.id })
-          throw new Error(error)
-        }
-        
-        SecureLogger.debug('Gemini API initialized', { model, hasUserApiKey: true, userId: user?.id })
+      // Prepare additional images data
+      const additionalImages = images.map(img => ({
+        base64: img.base64,
+        mime_type: img.mime_type || 'image/jpeg',
+        name: img.name
+      }))
 
-        // Nano Banana Pro API Format (echte Dokumentation)
-        const parts = [
-          { text: prompt }
-        ]
-        
-        // Hauptgesichtsbild hinzufügen (falls sichtbar)
-        if (userSettings?.main_face_image_url && showMainFaceImage) {
-          try {
-            const response = await fetch(userSettings.main_face_image_url)
-            const blob = await response.blob()
-            const base64Data = await new Promise((resolve) => {
-              const reader = new FileReader()
-              reader.onload = () => resolve(reader.result)
-              reader.readAsDataURL(blob)
-            })
-            
-            const base64String = base64Data.split(',')[1] // Remove "data:image/...;base64," prefix
-            const mimeType = base64Data.split(';')[0].split(':')[1] // Extract MIME type
-            
-            parts.push({
-              inline_data: {
-                mime_type: mimeType,
-                data: base64String
-              }
-            })
-            console.log('Main face image added to generation') // Debug
-          } catch (error) {
-            console.warn('Failed to load main face image for generation:', error)
-          }
-        }
-        
-        // Zusätzliche Bilder hinzufügen (base64 ohne data: prefix)
-        images.forEach(img => {
-          const base64Data = img.base64.split(',')[1] // Remove "data:image/...;base64," prefix
-          const mimeType = img.base64.split(';')[0].split(':')[1] // Extract MIME type
-          
-          parts.push({
-            inline_data: {
-              mime_type: mimeType,
-              data: base64Data
-            }
-          })
-        })
-
-        // Gemini API Request Body (basierend auf Error Message)
-        const requestBody = {
-          contents: [{
-            role: "user",
-            parts: parts
-          }],
-          generationConfig: {
-            response_modalities: ['TEXT', 'IMAGE'],
-            image_config: {
-              aspect_ratio: aspectRatio,
-              image_size: resolution
-            }
-          }
-        }
-
-        // Nur unterstützte generation_config Felder verwenden
-        // (Die Error Message zeigt, dass responseModal, aspect_ratio, quality nicht unterstützt sind)
-
-        ApiLogger.logRequest('Gemini', 'generateContent', {
-          model,
-          attempt: retryCount + 1,
-          imageCount: images.length,
-          resolution,
-          aspectRatio
-        })
-
-        // Nano Banana Pro API Call (echte Dokumentation)
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-goog-api-key': apiKey  // lowercase per Dokumentation
-            },
-            body: JSON.stringify(requestBody)
-          }
-        )
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          ApiLogger.logError('Gemini', 'API Request Failed', {
-            status: response.status,
-            statusText: response.statusText
-          })
-          
-          // Bei Rate Limit (429) oder Server Overload (503) retry mit exponential backoff
-          if ((response.status === 429 || response.status === 503) && retryCount < maxRetries) {
-            const waitTime = 1000 * Math.pow(2, retryCount) // 1s, 2s, 4s
-            const statusMessage = response.status === 503 ? 'Server überlastet' : 'Rate Limited'
-            SecureLogger.info(`${statusMessage}. Retrying in ${waitTime}ms`)
-            await new Promise(resolve => setTimeout(resolve, waitTime))
-            return makeApiCall(retryCount + 1)
-          }
-          
-          // Spezielle Behandlung für 503 Server Overload
-          if (response.status === 503) {
-            throw new Error(`Das Gemini-Modell ist momentan überlastet. Bitte versuche es in 1-2 Minuten nochmal. 🤖`)
-          }
-          
-          try {
-            const errorJson = JSON.parse(errorText)
-            throw new Error(`Gemini API Error: ${response.status} - ${errorJson.error?.message || errorText}`)
-          } catch {
-            throw new Error(`Gemini API Error: ${response.status} ${response.statusText} - ${errorText}`)
-          }
-        }
-
-        return response
-      } catch (error) {
-        if (retryCount < maxRetries && (error.message.includes('429') || error.message.includes('rate') || error.message.includes('503') || error.message.includes('überlastet'))) {
-          const waitTime = 1000 * Math.pow(2, retryCount)
-          SecureLogger.info(`API error occurred, retrying in ${waitTime}ms`)
-          await new Promise(resolve => setTimeout(resolve, waitTime))
-          return makeApiCall(retryCount + 1)
-        }
-        throw error
-      }
-    }
-
-    try {
-      const response = await makeApiCall()
-
-      const data = await response.json()
-      ApiLogger.logResponse('Gemini', true, {
-        candidatesCount: data.candidates?.length || 0,
-        hasContent: !!(data.candidates?.[0]?.content)
-      })
-
-      // Response verarbeiten - detailliertes Debugging
-      if (data.candidates && data.candidates[0]) {
-        SecureLogger.debug('Candidate found in response')
-        
-        // Safety Filter Check
-        if (data.candidates[0].finishReason === 'IMAGE_SAFETY') {
-          const endTime = Date.now()
-          const duration = ((endTime - startTime) / 1000).toFixed(1)
-          setGenerationTime(`${duration}s`)
-          
-          const safetyMessage = data.candidates[0].finishMessage || 
-            'Bild wurde von Google Safety Filter blockiert. Versuche einen anderen Prompt.'
-          
-          setResult({
-            text: `🛡️ Safety Filter: ${safetyMessage}`,
-            image: null
-          })
-          return
-        }
-        
-        if (data.candidates[0].content && data.candidates[0].content.parts) {
-          const parts = data.candidates[0].content.parts
-          SecureLogger.debug('Response parts found', { partsCount: parts.length })
-          
-          let resultText = ''
-          let resultImage = null
-
-          parts.forEach((part, index) => {
-            SecureLogger.debug(`Processing part ${index}`, { hasText: !!part.text, hasInlineData: !!part.inline_data })
-            
-            if (part.text) {
-              resultText += part.text + ' '
-            } else if (part.inline_data && part.inline_data.mime_type && part.inline_data.mime_type.startsWith('image/')) {
-              resultImage = `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`
-              SecureLogger.debug(`Image found in part ${index}`)
-            } else if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/')) {
-              // Alternative naming format
-              resultImage = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
-              SecureLogger.debug(`Image found in part ${index} (alternative format)`)
-            }
-          })
-
-          SecureLogger.debug('Processing complete', { hasText: !!resultText.trim(), hasImage: !!resultImage })
-
-          if (resultImage || resultText.trim()) {
-            const endTime = Date.now()
-            const duration = ((endTime - startTime) / 1000).toFixed(1)
-            setGenerationTime(`${duration}s`)
-            
-            setResult({
-              text: resultText.trim() || 'Bild erfolgreich generiert!',
-              image: resultImage
-            })
-          } else {
-            SecureLogger.warn('No valid image or text found in response parts')
-            throw new Error('Keine gültigen Daten in der Antwort erhalten')
-          }
-        } else {
-          SecureLogger.warn('No content.parts found in candidate')
-          throw new Error('Keine content.parts in der Antwort gefunden')
-        }
-      } else {
-        SecureLogger.warn('No candidates found in response')
-        throw new Error('Keine candidates in der API-Antwort gefunden')
+      const generationData = {
+        prompt,
+        resolution,
+        aspect_ratio: aspectRatio,
+        main_face_image_url: showMainFaceImage ? userSettings.main_face_image_url : null,
+        additional_images: additionalImages
       }
 
+      await startAsyncGeneration(generationData)
+      
+      // Show success message
+      console.log('Async generation started successfully!')
+      
     } catch (error) {
-      const endTime = Date.now()
-      const duration = ((endTime - startTime) / 1000).toFixed(1)
-      setGenerationTime(`${duration}s`)
-      
-      ApiLogger.logError('Gemini', error, { operation: 'Image Generation' })
-      alert(`Fehler: ${error.message}`)
-    } finally {
-      clearInterval(timerInterval)
-      setLoading(false)
-      
-      // Release wake lock
-      if (wakeLock) {
-        try {
-          await wakeLock.release()
-          console.log('📱 Wake Lock released - phone can sleep again')
-        } catch (err) {
-          console.log('Wake Lock release failed:', err)
-        }
-      }
+      console.error('Generation start error:', error)
+      alert(`Fehler beim Starten der Generierung: ${error.message}`)
     }
+  }
+
+  const handleRetry = async (generationId) => {
+    try {
+      await retryGeneration(generationId)
+    } catch (error) {
+      alert(`Retry failed: ${error.message}`)
+    }
+  }
+
+  const handleCancel = () => {
+    stopPolling()
+    // Could also call API to cancel generation if implemented
   }
 
   return (
@@ -654,7 +597,6 @@ function NonoBananaPage() {
             ← Home
           </Link>
           
-          {/* User info */}
           {user && (
             <div style={{
               padding: '6px 12px',
@@ -681,15 +623,49 @@ function NonoBananaPage() {
           >
             🌟 Community →
           </Link>
-          
         </div>
       </div>
       
       <h1 className="nano-banana-title">
-        🍌 nano banana pro
+        🍌 nano banana pro (async)
       </h1>
 
-      {/* Compact Settings - No White Box */}
+      {/* Error display */}
+      {generationError && (
+        <div style={{
+          margin: '20px 0',
+          padding: '12px',
+          background: '#FEF2F2',
+          color: '#DC2626',
+          borderRadius: '8px',
+          border: '1px solid #FECACA',
+          fontSize: '0.9rem'
+        }}>
+          <strong>Error:</strong> {generationError}
+          <button
+            onClick={clearError}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#DC2626',
+              cursor: 'pointer',
+              marginLeft: '10px',
+              fontWeight: 'bold'
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Generation Status Card */}
+      <GenerationStatusCard 
+        generation={currentGeneration}
+        onRetry={handleRetry}
+        onCancel={hasActiveGeneration ? handleCancel : null}
+      />
+
+      {/* Compact Settings */}
       <div style={{ 
         marginBottom: '16px',
         fontSize: '0.9rem'
@@ -708,23 +684,17 @@ function NonoBananaPage() {
               else if (resolution === '2K') setResolution('4K')
               else setResolution('1K')
             }}
+            disabled={isGenerating}
             style={{
               padding: '10px 14px',
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%)',
+              background: isGenerating ? '#E5E7EB' : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%)',
               border: '1px solid rgba(251, 191, 36, 0.3)',
               borderRadius: '8px',
-              cursor: 'pointer',
+              cursor: isGenerating ? 'not-allowed' : 'pointer',
               fontWeight: '500',
               fontSize: '0.9rem',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'scale(1.02)'
-              e.target.style.boxShadow = '0 2px 8px rgba(251, 113, 133, 0.15)'
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'scale(1)'
-              e.target.style.boxShadow = 'none'
+              transition: 'all 0.2s ease',
+              opacity: isGenerating ? 0.6 : 1
             }}
           >
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
@@ -742,23 +712,17 @@ function NonoBananaPage() {
               else if (aspectRatio === '2:3') setAspectRatio('3:2')
               else setAspectRatio('9:16')
             }}
+            disabled={isGenerating}
             style={{
               padding: '10px 14px',
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%)',
+              background: isGenerating ? '#E5E7EB' : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%)',
               border: '1px solid rgba(251, 191, 36, 0.3)',
               borderRadius: '8px',
-              cursor: 'pointer',
+              cursor: isGenerating ? 'not-allowed' : 'pointer',
               fontWeight: '500',
               fontSize: '0.9rem',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'scale(1.02)'
-              e.target.style.boxShadow = '0 2px 8px rgba(251, 113, 133, 0.15)'
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'scale(1)'
-              e.target.style.boxShadow = 'none'
+              transition: 'all 0.2s ease',
+              opacity: isGenerating ? 0.6 : 1
             }}
           >
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
@@ -798,6 +762,7 @@ function NonoBananaPage() {
                 />
                 <button
                   onClick={() => setShowMainFaceImage(false)}
+                  disabled={isGenerating}
                   style={{
                     position: 'absolute',
                     top: '2px',
@@ -808,13 +773,14 @@ function NonoBananaPage() {
                     background: 'rgba(0, 0, 0, 0.7)',
                     color: 'white',
                     border: 'none',
-                    cursor: 'pointer',
+                    cursor: isGenerating ? 'not-allowed' : 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: '10px',
                     fontWeight: 'bold',
-                    lineHeight: '1'
+                    lineHeight: '1',
+                    opacity: isGenerating ? 0.6 : 1
                   }}
                   title="Gesichtsbild entfernen"
                 >
@@ -831,11 +797,11 @@ function NonoBananaPage() {
                 justifyContent: 'center',
                 fontSize: '24px',
                 color: '#9CA3AF',
-                cursor: showMainFaceImage === false ? 'pointer' : 'default'
+                cursor: showMainFaceImage === false && !isGenerating ? 'pointer' : 'default'
               }}
               onClick={() => {
-                if (showMainFaceImage === false) {
-                  setShowMainFaceImage(true) // Wiederherstellen
+                if (showMainFaceImage === false && !isGenerating) {
+                  setShowMainFaceImage(true)
                 }
               }}
               title={showMainFaceImage === false ? "Gesichtsbild wiederherstellen" : "Kein Gesichtsbild verfügbar"}
@@ -897,6 +863,7 @@ function NonoBananaPage() {
           accept="image/*" 
           onChange={(e) => handleImageUpload(e, 'female')}
           style={{ display: 'none' }}
+          disabled={isGenerating}
         />
         
         <input 
@@ -906,6 +873,7 @@ function NonoBananaPage() {
           accept="image/*" 
           onChange={(e) => handleImageUpload(e, 'male')}
           style={{ display: 'none' }}
+          disabled={isGenerating}
         />
         
         <input 
@@ -915,24 +883,26 @@ function NonoBananaPage() {
           accept="image/*" 
           onChange={(e) => handleImageUpload(e, userGender)}
           style={{ display: 'none' }}
+          disabled={isGenerating}
         />
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Show gender-specific buttons only when main face is removed AND no additional images */}
           {!showMainFaceImage && images.length === 0 ? (
             <>
               <button 
                 onClick={() => fileRef.current.click()}
+                disabled={isGenerating}
                 style={{
                   padding: '10px 15px',
-                  backgroundColor: '#F59E0B',
+                  backgroundColor: isGenerating ? '#E5E7EB' : '#F59E0B',
                   color: 'white',
                   border: 'none',
                   borderRadius: '6px',
-                  cursor: 'pointer',
+                  cursor: isGenerating ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  opacity: isGenerating ? 0.6 : 1
                 }}
               >
                 👩 Frauengesicht
@@ -940,18 +910,20 @@ function NonoBananaPage() {
               
               <button 
                 onClick={() => document.getElementById('male-upload').click()}
+                disabled={isGenerating}
                 style={{
                   padding: '6px 12px',
-                  backgroundColor: '#3B82F6',
+                  backgroundColor: isGenerating ? '#E5E7EB' : '#3B82F6',
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
-                  cursor: 'pointer',
+                  cursor: isGenerating ? 'not-allowed' : 'pointer',
                   fontSize: '0.75rem',
                   fontWeight: '500',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px'
+                  gap: '4px',
+                  opacity: isGenerating ? 0.6 : 1
                 }}
                 title="Spezial-Upload für männliche Fotos - optimiert für Mann-zu-Frau Generierung"
               >
@@ -959,37 +931,39 @@ function NonoBananaPage() {
               </button>
             </>
           ) : (
-            /* Show neutral upload button when images already exist */
             <button 
               onClick={() => document.getElementById('neutral-upload').click()}
+              disabled={isGenerating}
               style={{
                 padding: '10px 15px',
-                backgroundColor: '#6B7280',
+                backgroundColor: isGenerating ? '#E5E7EB' : '#6B7280',
                 color: 'white',
                 border: 'none',
                 borderRadius: '6px',
-                cursor: 'pointer',
+                cursor: isGenerating ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '6px',
+                opacity: isGenerating ? 0.6 : 1
               }}
             >
               📎 Weitere Bilder hinzufügen
             </button>
           )}
           
-          {/* Clear all button inside the flex container when images exist */}
           {images.length > 0 && (
             <button 
               onClick={clearAllImages}
+              disabled={isGenerating}
               style={{
                 padding: '8px 12px',
-                backgroundColor: '#EF4444',
+                backgroundColor: isGenerating ? '#E5E7EB' : '#EF4444',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.8rem'
+                cursor: isGenerating ? 'not-allowed' : 'pointer',
+                fontSize: '0.8rem',
+                opacity: isGenerating ? 0.6 : 1
               }}
             >
               🗑️ Alle löschen
@@ -998,7 +972,7 @@ function NonoBananaPage() {
         </div>
 
         <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
-          {images.length}/14 Bilder • Text-to-Image wenn keine Bilder, Image-Edit wenn Bilder vorhanden
+          {images.length}/14 Bilder • Async generation prevents mobile sleep interruptions 📱
         </div>
         
         <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px', fontStyle: 'italic' }}>
@@ -1037,18 +1011,20 @@ function NonoBananaPage() {
                 />
                 <button
                   onClick={() => removeImage(index)}
+                  disabled={isGenerating}
                   style={{
                     position: 'absolute',
                     top: '2px',
                     right: '2px',
-                    background: '#EF4444',
+                    background: isGenerating ? '#E5E7EB' : '#EF4444',
                     color: 'white',
                     border: 'none',
                     borderRadius: '50%',
                     width: '20px',
                     height: '20px',
-                    cursor: 'pointer',
-                    fontSize: '12px'
+                    cursor: isGenerating ? 'not-allowed' : 'pointer',
+                    fontSize: '12px',
+                    opacity: isGenerating ? 0.6 : 1
                   }}
                 >
                   ×
@@ -1103,35 +1079,18 @@ function NonoBananaPage() {
                   <button
                     key={promptIndex}
                     onClick={() => insertPromptTemplate(template, categoryIndex, promptIndex)}
+                    disabled={isGenerating}
                     className={`mobile-template-button ${isSelected ? 'selected' : ''}`}
+                    style={{ 
+                      opacity: isGenerating ? 0.6 : 1,
+                      cursor: isGenerating ? 'not-allowed' : 'pointer'
+                    }}
                   >
                     <div className="template-button-content">
                       <div className="template-button-title">
-                        {/* Studio Business - 3 prompts */}
-                        {template.includes('banco alto de madeira') ? 'Wood Bench' :
-                         template.includes('black pantsuit') ? 'Office Chair' :
-                         template.includes('navy blazer') ? 'Standing Pose' :
-                         /* Luxury Chair Poses - 3 prompts */
-                         template.includes('white chair') && template.includes('coffee cup') ? 'White Chair' :
-                         template.includes('velvet armchair') ? 'Velvet Chair' :
-                         template.includes('vintage leather') ? 'Leather Chair' :
-                         /* Fashion Editorial - 3 prompts */
-                         template.includes('avant-garde') ? 'Avant-garde' :
-                         template.includes('oversized blazer') || template.includes('fitted jeans') ? 'Street Style' :
-                         template.includes('monochrome outfit') || template.includes('clean lines') ? 'Minimalist' :
-                         /* Outdoor Locations - 3 prompts */
-                         template.includes('Paris') || template.includes('tower') ? 'Paris Tower' :
-                         template.includes('rooftop') || template.includes('flowing dress') ? 'Rooftop' :
-                         template.includes('beach') || template.includes('shoreline') ? 'Beach' :
-                         /* Beauty & Close-ups - 3 prompts */
-                         template.includes('flawless makeup') || template.includes('luxury beauty campaign') ? 'Luxury Beauty' :
+                        {template.includes('flawless makeup') || template.includes('luxury beauty campaign') ? 'Luxury Beauty' :
                          template.includes('dramatic makeup') || template.includes('smoky eyes') ? 'Glamour Shot' :
                          template.includes('minimal makeup') || template.includes('glowing skin') ? 'Natural Look' :
-                         /* Pose Variations - 3 prompts */
-                         template.includes('hands on hips') || template.includes('confident stance') ? 'Power Pose' :
-                         template.includes('crossed legs') || template.includes('hands placed gracefully') ? 'Elegant Sit' :
-                         template.includes('mid-step movement') || template.includes('flowing outfit') ? 'Walking' :
-                         /* Realistic - 3 prompts */
                          template.includes('increased realism') || template.includes('natural skin texture') ? 'Enhanced Reality' :
                          template.includes('photorealistic details') || template.includes('natural authenticity') ? 'Photo Details' :
                          template.includes('ultra-realistic photography') || template.includes('photographic quality') ? 'Ultra Realistic' :
@@ -1165,25 +1124,19 @@ function NonoBananaPage() {
                 setPrompt('')
                 setSelectedTemplate(null)
               }}
+              disabled={isGenerating}
               style={{
-                background: 'linear-gradient(135deg, #f472b6 0%, #fb7185 100%)',
+                background: isGenerating ? '#E5E7EB' : 'linear-gradient(135deg, #f472b6 0%, #fb7185 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '8px',
                 padding: '6px 12px',
                 fontSize: '0.85rem',
                 fontWeight: '500',
-                cursor: 'pointer',
+                cursor: isGenerating ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s ease',
-                boxShadow: '0 2px 4px rgba(244, 114, 182, 0.3)'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.transform = 'scale(1.05)'
-                e.target.style.boxShadow = '0 4px 8px rgba(244, 114, 182, 0.4)'
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'scale(1)'
-                e.target.style.boxShadow = '0 2px 4px rgba(244, 114, 182, 0.3)'
+                boxShadow: isGenerating ? 'none' : '0 2px 4px rgba(244, 114, 182, 0.3)',
+                opacity: isGenerating ? 0.6 : 1
               }}
             >
               ✕ Reset
@@ -1195,127 +1148,114 @@ function NonoBananaPage() {
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Beschreibe was du generieren möchtest..."
           className="mobile-prompt-textarea"
+          disabled={isGenerating}
+          style={{
+            opacity: isGenerating ? 0.6 : 1,
+            cursor: isGenerating ? 'not-allowed' : 'text'
+          }}
         />
       </div>
 
-
-
       {/* Mobile Optimized Generate Button */}
       <button 
-        onClick={generateImage}
-        disabled={!prompt.trim() || loading}
-        className={`mobile-generate-button ${loading ? 'loading' : ''} ${!prompt.trim() ? 'disabled' : ''}`}
+        onClick={generateImageAsync}
+        disabled={!prompt.trim() || isGenerating || !userSettings?.gemini_api_key}
+        className={`mobile-generate-button ${isGenerating ? 'loading' : ''} ${!prompt.trim() || !userSettings?.gemini_api_key ? 'disabled' : ''}`}
       >
         <span className="generate-icon">🍌</span>
         <span className="generate-text">
-          {loading ? 'Generiere...' : 'Bild generieren'}
+          {isGenerating ? 'Startet Generation...' : 'Async Generierung starten'}
         </span>
       </button>
 
-
-      {/* Loading State mit Live Timer */}
-      {loading && (
+      {/* Generation History */}
+      {generationHistory && generationHistory.length > 0 && (
         <div style={{ 
-          marginTop: '20px',
-          padding: '15px',
-          backgroundColor: '#FEF3C7',
-          borderRadius: '8px',
-          textAlign: 'center'
+          marginTop: '30px',
+          padding: '16px',
+          background: 'rgba(255, 255, 255, 0.5)',
+          borderRadius: '12px',
+          border: '1px solid rgba(251, 191, 36, 0.2)'
         }}>
-          <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🍌</div>
-          <div style={{ color: '#92400E', marginBottom: '8px' }}>
-            Gemini generiert dein Bild...
-          </div>
-          <div style={{ 
-            fontSize: '1.2rem', 
-            fontFamily: 'monospace',
-            color: '#D97706',
-            fontWeight: 'bold'
-          }}>
-            ⏱️ {liveTimer}s
-          </div>
-        </div>
-      )}
-
-      {/* Result */}
-      {result && (
-        <div style={{ 
-          marginTop: '20px',
-          padding: '15px',
-          backgroundColor: '#F3F4F6',
-          borderRadius: '8px',
-          width: '100%',
-          maxWidth: '100%',
-          overflow: 'hidden',
-          boxSizing: 'border-box'
-        }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginBottom: '10px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h3 style={{ margin: '0', color: '#1F2937' }}>Ergebnis:</h3>
-              {generationTime && (
-                <span style={{
-                  backgroundColor: '#E5E7EB',
-                  color: '#6B7280',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontFamily: 'monospace'
-                }}>
-                  ⏱️ {generationTime}
-                </span>
-              )}
-            </div>
-            {result.image && (
-              <button
-                onClick={downloadImage}
-                style={{
-                  padding: '8px 15px',
-                  backgroundColor: '#10B981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px'
-                }}
-              >
-                📥 Download
-              </button>
-            )}
-          </div>
-          
-          <p style={{ marginBottom: '15px', color: '#374151' }}>{result.text}</p>
-          
-          {result.image && (
-            <img 
-              src={result.image} 
-              alt="Generated" 
-              style={{ 
-                width: '100%', 
-                maxWidth: 'min(400px, 100%)',
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: '#374151' }}>
+            Letzte Generierungen
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {generationHistory.slice(0, 5).map((generation) => (
+              <div key={generation.id} style={{
+                padding: '12px',
+                background: 'rgba(255, 255, 255, 0.8)',
                 borderRadius: '8px',
-                border: '1px solid #D1D5DB',
-                cursor: 'pointer',
-                height: 'auto',
-                boxSizing: 'border-box'
-              }}
-              onClick={downloadImage}
-              title="Klicken zum Download"
-            />
-          )}
+                border: '1px solid rgba(229, 231, 235, 0.8)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>{generation.status === 'completed' ? '✅' : generation.status === 'failed' ? '❌' : '⏳'}</span>
+                    <span style={{ fontSize: '0.8rem', color: '#6B7280' }}>
+                      {new Date(generation.created_at).toLocaleDateString()} {new Date(generation.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  {generation.status === 'completed' && generation.result?.image && (
+                    <button
+                      onClick={() => downloadImage(generation.result.image)}
+                      style={{
+                        padding: '4px 8px',
+                        backgroundColor: '#10B981',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem'
+                      }}
+                    >
+                      📥
+                    </button>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#4B5563', marginBottom: '8px' }}>
+                  {generation.prompt.length > 100 ? `${generation.prompt.substring(0, 100)}...` : generation.prompt}
+                </div>
+                {generation.status === 'completed' && generation.result?.image && (
+                  <img 
+                    src={generation.result.image}
+                    alt="Generated"
+                    style={{
+                      width: '100%',
+                      maxWidth: '200px',
+                      borderRadius: '4px',
+                      border: '1px solid #D1D5DB',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => downloadImage(generation.result.image)}
+                  />
+                )}
+                {generation.status === 'failed' && (
+                  <div style={{ fontSize: '0.8rem', color: '#EF4444' }}>
+                    Error: {generation.error}
+                    <button
+                      onClick={() => handleRetry(generation.id)}
+                      style={{
+                        marginLeft: '8px',
+                        padding: '2px 6px',
+                        backgroundColor: '#F59E0B',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer',
+                        fontSize: '0.7rem'
+                      }}
+                    >
+                      🔄 Retry
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
-
-
     </div>
   )
 }
 
-export default NonoBananaPage
+export default NonoBananaPageAsync

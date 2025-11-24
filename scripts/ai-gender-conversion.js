@@ -16,8 +16,8 @@ dotenv.config() // This loads .env as fallback
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-// Temporary API key ONLY for this one-time cleanup - will be deleted afterwards
-const TEMP_GEMINI_API_KEY = 'AIzaSyB7AmQ3SM6TshyhEokrNFadDFbvgxOTsvI'
+// Use environment variable for API key
+const TEMP_GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !TEMP_GEMINI_API_KEY) {
   console.error('❌ Missing environment variables!')

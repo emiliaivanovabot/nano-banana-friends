@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
+import { useAuth } from '../auth/AuthContext.jsx'
+import { SecureLogger, ApiLogger } from '../utils/secure-logger.js'
 
 // Premium Dropdown Component - Bulletproof Portal-based
 function PremiumDropdown({ label, value, onChange, options }) {
@@ -170,6 +172,8 @@ function PremiumDropdown({ label, value, onChange, options }) {
 
 function NonoBananaPage() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
   const [prompt, setPrompt] = useState('')
   const [images, setImages] = useState([])
   const [userGender, setUserGender] = useState('female') // Default to female (90% of users)
@@ -210,51 +214,11 @@ function NonoBananaPage() {
   // Prompt-Vorlagen für AI Model Shootings
   const promptTemplates = [
     {
-      category: "Studio Business",
-      prompts: [
-        "Recrie essa cena utilizando minha foto enviada como base, mantendo o mesmo enquadramento, pose, iluminação e atmosfera da imagem de referência. A composição deve mostrar uma mulher sentada sobre um banco alto de madeira com estrutura metálica preta, em um estúdio minimalista de fundo neutro em tons de cinza. A modelo deve estar com a perna direita dobrada e apoiada no degrau do banco, enquanto a esquerda toca o chão com elegância, calçando sapatos de salto preto. O figurino é totalmente preto e elegante: blazer estruturado sobre os ombros, calça de alfaiataria justa e blusa preta por baixo. O cabelo solto deve cair suavemente sobre os ombros, expressão confiante com olhar direcionado levemente para o lado. Iluminação de estúdio, luz suave e direcional, fundo liso com degradê sutil em cinza. Estilo editorial corporativo moderno, formato vertical (1080x1920), qualidade fotográfica premium.",
-        "Using the provided image, recreate this woman as a professional businesswoman in elegant black pantsuit, sitting confidently on modern office chair, minimalist white background, studio lighting, editorial style, high-end fashion photography. Keep facial features identical to the original image.",
-        "Using the provided image as reference, recreate this woman in a corporate portrait wearing tailored navy blazer, standing pose with hands on hips, clean studio background, professional lighting, confident expression, business magazine style. Maintain exact facial features from the uploaded image."
-      ]
-    },
-    {
-      category: "Luxury Chair Poses",
-      prompts: [
-        "A beautiful, confident woman wearing a black suit sits elegantly on a luxurious white chair that highlights her slim, graceful figure. Her right hand rests gently beneath her chin, with her chin slightly raised in a pose of self-assurance. Her head tilts subtly to the right, eyes steady and looking forward with confidence. The background is pure white, featuring soft, cinematic illumination. Beside the chair stands a unique white table topped with a black coffee cup and stylish lamp decor, creating a refined and elegant atmosphere.",
-        "Sophisticated woman in cream-colored designer outfit, sitting gracefully on velvet armchair, legs crossed elegantly, one hand on armrest, luxurious interior background with soft ambient lighting",
-        "Model in flowing midi dress, seated on vintage leather chair, relaxed pose with one leg tucked under, natural window lighting, bohemian-chic atmosphere, warm earth tones"
-      ]
-    },
-    {
-      category: "Fashion Editorial",
-      prompts: [
-        "High-fashion editorial shoot: model in avant-garde designer dress, dramatic pose against geometric backdrop, bold fashion photography lighting, magazine cover style, artistic composition",
-        "Street fashion portrait: woman in trendy oversized blazer and fitted jeans, urban background, natural lighting, confident street style pose, contemporary fashion photography",
-        "Minimalist fashion: model in monochrome outfit, clean lines, neutral background, soft even lighting, focus on clothing texture and silhouette, Scandinavian aesthetic"
-      ]
-    },
-    {
-      category: "Outdoor Locations",
-      prompts: [
-        "A hyper-realistic cinematic image of a young woman, standing at the very top of a famous tower in Paris. From this high vantage point, the entire Paris skyline is visible: the Eiffel Tower in the distance, classic Parisian rooftops, and winding streets below. White blouse, elegant accessories. Golden daylight shines across the city, with soft atmospheric haze adding depth. The camera angle is wide, slightly low, making the person look majestic and free while embracing the panoramic view. Mood: liberating, cinematic, awe-inspiring. Aspect ratio: 16:9, ultra-realistic, cinematic detail.",
-        "Rooftop fashion shoot: model in flowing dress, city skyline background, golden hour lighting, wind-blown hair, urban glamour aesthetic, cinematic photography",
-        "Beach editorial: woman in elegant white linen outfit, walking along shoreline, natural beach lighting, relaxed coastal vibe, Mediterranean aesthetic, professional photography"
-      ]
-    },
-    {
       category: "Beauty & Close-ups",
       prompts: [
         "Using the provided image as reference, recreate this woman's face with extremely high fidelity. Create a high-end beauty portrait with flawless makeup, focus on eyes and lips, soft studio lighting, clean background, luxury beauty campaign style. Keep every facial feature exactly the same — eyes, nose, lips, eyebrows, bone structure. Enhance micro-details only: visible skin pores, natural skin texture, realistic highlights, soft shadows and depth. Maintain the original look, identity and proportions. Ultra-high resolution details.",
         "Using the provided image, recreate this woman's face with perfect accuracy. Create a glamour headshot with dramatic makeup and smoky eyes, professional beauty lighting, focus on facial features, magazine beauty editorial style. Keep all original facial features unchanged, enhance clarity and detail only.",
         "Using the provided image as base, recreate this woman's natural beauty with minimal makeup, glowing skin, soft natural lighting, clean simple background, fresh and organic beauty aesthetic. Maintain exact facial features, enhance skin texture and natural glow only."
-      ]
-    },
-    {
-      category: "Pose Variations",
-      prompts: [
-        "Standing power pose: woman with hands on hips, confident stance, professional attire, strong lighting, empowering business portrait style",
-        "Sitting elegantly: crossed legs, hands placed gracefully, maintaining posture, sophisticated indoor setting, refined portrait photography",
-        "Walking pose: mid-step movement, flowing outfit, dynamic composition, natural movement captured, editorial fashion photography style"
       ]
     },
     {
@@ -340,7 +304,7 @@ function NonoBananaPage() {
       // Clean up
       URL.revokeObjectURL(url)
     } catch (error) {
-      console.error('Download error:', error)
+      SecureLogger.error('Download failed', error)
       // Fallback to simple download
       const link = document.createElement('a')
       link.href = result.image
@@ -379,8 +343,12 @@ function NonoBananaPage() {
         const model = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-image'
         
         if (!apiKey) {
-          throw new Error('Gemini API Key fehlt')
+          const error = 'Gemini API Key fehlt'
+          ApiLogger.logError('Gemini', 'Missing API Key', { hasKey: false })
+          throw new Error(error)
         }
+        
+        SecureLogger.debug('Gemini API initialized', { model, hasApiKey: true })
 
         // Nano Banana Pro API Format (echte Dokumentation)
         const parts = [
@@ -418,13 +386,12 @@ function NonoBananaPage() {
         // Nur unterstützte generation_config Felder verwenden
         // (Die Error Message zeigt, dass responseModal, aspect_ratio, quality nicht unterstützt sind)
 
-        console.log(`Sending to Gemini (Attempt ${retryCount + 1}):`, {
+        ApiLogger.logRequest('Gemini', 'generateContent', {
           model,
-          prompt,
-          images: images.length,
+          attempt: retryCount + 1,
+          imageCount: images.length,
           resolution,
-          aspectRatio,
-          requestBody: requestBody
+          aspectRatio
         })
 
         // Nano Banana Pro API Call (echte Dokumentation)
@@ -442,13 +409,16 @@ function NonoBananaPage() {
 
         if (!response.ok) {
           const errorText = await response.text()
-          console.error('Gemini API Error Response:', errorText)
+          ApiLogger.logError('Gemini', 'API Request Failed', {
+            status: response.status,
+            statusText: response.statusText
+          })
           
           // Bei Rate Limit (429) oder Server Overload (503) retry mit exponential backoff
           if ((response.status === 429 || response.status === 503) && retryCount < maxRetries) {
             const waitTime = 1000 * Math.pow(2, retryCount) // 1s, 2s, 4s
             const statusMessage = response.status === 503 ? 'Server überlastet' : 'Rate Limited'
-            console.log(`${statusMessage}. Retrying in ${waitTime}ms...`)
+            SecureLogger.info(`${statusMessage}. Retrying in ${waitTime}ms`)
             await new Promise(resolve => setTimeout(resolve, waitTime))
             return makeApiCall(retryCount + 1)
           }
@@ -470,7 +440,7 @@ function NonoBananaPage() {
       } catch (error) {
         if (retryCount < maxRetries && (error.message.includes('429') || error.message.includes('rate') || error.message.includes('503') || error.message.includes('überlastet'))) {
           const waitTime = 1000 * Math.pow(2, retryCount)
-          console.log(`Error occurred, retrying in ${waitTime}ms...`)
+          SecureLogger.info(`API error occurred, retrying in ${waitTime}ms`)
           await new Promise(resolve => setTimeout(resolve, waitTime))
           return makeApiCall(retryCount + 1)
         }
@@ -482,11 +452,14 @@ function NonoBananaPage() {
       const response = await makeApiCall()
 
       const data = await response.json()
-      console.log('Gemini Response Full:', JSON.stringify(data, null, 2))
+      ApiLogger.logResponse('Gemini', true, {
+        candidatesCount: data.candidates?.length || 0,
+        hasContent: !!(data.candidates?.[0]?.content)
+      })
 
       // Response verarbeiten - detailliertes Debugging
       if (data.candidates && data.candidates[0]) {
-        console.log('Candidate found:', data.candidates[0])
+        SecureLogger.debug('Candidate found in response')
         
         // Safety Filter Check
         if (data.candidates[0].finishReason === 'IMAGE_SAFETY') {
@@ -506,28 +479,27 @@ function NonoBananaPage() {
         
         if (data.candidates[0].content && data.candidates[0].content.parts) {
           const parts = data.candidates[0].content.parts
-          console.log('Parts found:', parts)
+          SecureLogger.debug('Response parts found', { partsCount: parts.length })
           
           let resultText = ''
           let resultImage = null
 
           parts.forEach((part, index) => {
-            console.log(`Part ${index}:`, part)
+            SecureLogger.debug(`Processing part ${index}`, { hasText: !!part.text, hasInlineData: !!part.inline_data })
             
             if (part.text) {
               resultText += part.text + ' '
             } else if (part.inline_data && part.inline_data.mime_type && part.inline_data.mime_type.startsWith('image/')) {
               resultImage = `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`
-              console.log('Image found in part', index)
+              SecureLogger.debug(`Image found in part ${index}`)
             } else if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/')) {
               // Alternative naming format
               resultImage = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
-              console.log('Image found in part', index, '(alternative format)')
+              SecureLogger.debug(`Image found in part ${index} (alternative format)`)
             }
           })
 
-          console.log('Result Text:', resultText)
-          console.log('Result Image found:', !!resultImage)
+          SecureLogger.debug('Processing complete', { hasText: !!resultText.trim(), hasImage: !!resultImage })
 
           if (resultImage || resultText.trim()) {
             const endTime = Date.now()
@@ -539,15 +511,15 @@ function NonoBananaPage() {
               image: resultImage
             })
           } else {
-            console.log('No valid image or text found in parts')
+            SecureLogger.warn('No valid image or text found in response parts')
             throw new Error('Keine gültigen Daten in der Antwort erhalten')
           }
         } else {
-          console.log('No content.parts found in candidate')
+          SecureLogger.warn('No content.parts found in candidate')
           throw new Error('Keine content.parts in der Antwort gefunden')
         }
       } else {
-        console.log('No candidates found in response')
+        SecureLogger.warn('No candidates found in response')
         throw new Error('Keine candidates in der API-Antwort gefunden')
       }
 
@@ -556,7 +528,7 @@ function NonoBananaPage() {
       const duration = ((endTime - startTime) / 1000).toFixed(1)
       setGenerationTime(`${duration}s`)
       
-      console.error('Fehler bei Bildgenerierung:', error)
+      ApiLogger.logError('Gemini', error, { operation: 'Image Generation' })
       alert(`Fehler: ${error.message}`)
     } finally {
       clearInterval(timerInterval)
@@ -567,28 +539,79 @@ function NonoBananaPage() {
   return (
     <div className="nano-banana-container">
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <Link 
-          to="/" 
-          style={{ 
-            color: '#6B7280',
-            textDecoration: 'none',
-            fontSize: '14px'
-          }}
-        >
-          ← Zurück zur Startseite
-        </Link>
+      {/* Header with user info and navigation */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '20px',
+        flexWrap: 'wrap',
+        gap: '10px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <Link 
+            to="/" 
+            style={{ 
+              color: '#6B7280',
+              textDecoration: 'none',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}
+          >
+            ← Home
+          </Link>
+          
+          {/* User info */}
+          {user && (
+            <div style={{
+              padding: '6px 12px',
+              backgroundColor: '#F3F4F6',
+              borderRadius: '20px',
+              fontSize: '14px',
+              color: '#374151',
+              fontWeight: '500'
+            }}>
+              👋 {user.username}
+            </div>
+          )}
+        </div>
         
-        <Link 
-          to="/community-prompts" 
-          style={{ 
-            color: '#6B7280',
-            textDecoration: 'none',
-            fontSize: '14px'
-          }}
-        >
-          bananaprompts.xyz →
-        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <Link 
+            to="/community-prompts" 
+            style={{ 
+              color: '#6B7280',
+              textDecoration: 'none',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}
+          >
+            🌟 Community →
+          </Link>
+          
+          {/* Logout button */}
+          <button
+            onClick={() => {
+              logout()
+              navigate('/login')
+            }}
+            style={{
+              padding: '6px 12px',
+              backgroundColor: '#EF4444',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#DC2626'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#EF4444'}
+          >
+            🚪 Logout
+          </button>
+        </div>
       </div>
       
       <h1 className="nano-banana-title">

@@ -190,3 +190,112 @@ CREATE INDEX idx_community_prompts_active ON community_prompts(is_active);
 
 ### Empfehlung:
 Kompletter Neustart mit sauberer Datenschicht und automatisiertem Fetching von bananaprompts.xyz.
+
+<<<<>>>>
+Counting tokens
+
+content_copy
+
+Einen detaillierten Leitfaden zum Zählen von Tokens mit der Gemini API, einschließlich der Zählung von Bildern, Audio und Video, finden Sie im Leitfaden zum Zählen von Tokens und im zugehörigen Cookbook-Rezept.
+
+Methode: models.countTokens
+Führt den Tokenizer eines Modells für die Eingabe Content aus und gibt die Anzahl der Tokens zurück. Weitere Informationen zu Tokens finden Sie im Leitfaden zu Tokens.
+
+Endpunkt
+post
+https://generativelanguage.googleapis.com/v1beta/{model=models/*}:countTokens
+>>
+>
+>
+Pfadparameter
+model
+string
+Erforderlich. Der Ressourcenname des Modells. Dies dient als ID für das zu verwendende Modell.
+
+Dieser Name sollte mit einem Modellnamen übereinstimmen, der von der Methode models.list zurückgegeben wird.
+
+Format: models/{model} Sie nimmt die Form models/{model} an.
+
+Anfragetext
+Der Anfragetext enthält Daten mit folgender Struktur:
+
+Felder
+contents[]
+object (Content)
+Optional. Die Eingabe, die dem Modell als Prompt gegeben wird. Dieses Feld wird ignoriert, wenn generateContentRequest festgelegt ist.
+
+generateContentRequest
+object (GenerateContentRequest)
+Optional. Die Gesamteingabe für Model. Dazu gehören der Prompt sowie andere Informationen zur Modellsteuerung wie Systemanweisungen und/oder Funktionsdeklarationen für Funktionsaufrufe. Models/Contents und generateContentRequests schließen sich gegenseitig aus. Sie können entweder Model + Contents oder ein generateContentRequest senden, aber niemals beides.
+
+Beispielanfrage
+Text
+Chat
+Inline-Medien
+Video
+PDF
+Mehr
+Python
+Node.js
+Ok
+Muschel
+
+from google import genai
+
+client = genai.Client()
+prompt = "The quick brown fox jumps over the lazy dog."
+
+# Count tokens using the new client method.
+total_tokens = client.models.count_tokens(
+    model="gemini-2.0-flash", contents=prompt
+)
+print("total_tokens: ", total_tokens)
+# ( e.g., total_tokens: 10 )
+
+response = client.models.generate_content(
+    model="gemini-2.0-flash", contents=prompt
+)
+
+# The usage_metadata provides detailed token counts.
+print(response.usage_metadata)
+# ( e.g., prompt_token_count: 11, candidates_token_count: 73, total_token_count: 84 )
+Antworttext
+Eine Antwort von models.countTokens.
+
+Sie gibt die tokenCount des Modells für die prompt zurück.
+
+Bei Erfolg enthält der Antworttext Daten mit der folgenden Struktur:
+
+Felder
+totalTokens
+integer
+Die Anzahl der Tokens, in die Model prompt tokenisiert. Immer nicht negativ.
+
+cachedContentTokenCount
+integer
+Anzahl der Tokens im im Cache gespeicherten Teil des Prompts (im Cache gespeicherter Inhalt).
+
+promptTokensDetails[]
+object (ModalityTokenCount)
+Nur Ausgabe. Liste der Modalitäten, die in der Anfrageeingabe verarbeitet wurden.
+
+cacheTokensDetails[]
+object (ModalityTokenCount)
+Nur Ausgabe. Liste der Modalitäten, die in den im Cache gespeicherten Inhalten verarbeitet wurden.
+
+JSON-Darstellung
+
+{
+  "totalTokens": integer,
+  "cachedContentTokenCount": integer,
+  "promptTokensDetails": [
+    {
+      object (ModalityTokenCount)
+    }
+  ],
+  "cacheTokensDetails": [
+    {
+      object (ModalityTokenCount)
+    }
+  ]
+}

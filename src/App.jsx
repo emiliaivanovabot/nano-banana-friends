@@ -1,21 +1,71 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './auth/AuthContext.jsx'
+import { ProtectedRoute, PublicRoute } from './auth/ProtectedRoute.jsx'
 import HomePage from './pages/HomePage'
+import DashboardPage from './pages/DashboardPage'
 import WanVideoPage from './pages/WanVideoPage'
 import NonoBananaPage from './pages/NonoBananaPage'
 import QwenPage from './pages/QwenPage'
 import CommunityPromptsPage from './pages/CommunityPromptsPage'
+import SettingsPage from './pages/SettingsPage'
+import LoginPage from './auth/LoginPage.jsx'
+import OnboardingPage from './auth/OnboardingPage.jsx'
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/wan-video" element={<WanVideoPage />} />
-        <Route path="/nono-banana" element={<NonoBananaPage />} />
-        <Route path="/qwen" element={<QwenPage />} />
-        <Route path="/community-prompts" element={<CommunityPromptsPage />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Public routes - redirect authenticated users */}
+          <Route path="/" element={
+            <PublicRoute>
+              <HomePage />
+            </PublicRoute>
+          } />
+          
+          {/* Main Dashboard - after successful login + complete profile */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <DashboardPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/login" element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          } />
+          
+          {/* Onboarding route - only for authenticated users who need setup */}
+          <Route path="/onboarding" element={
+            <ProtectedRoute>
+              <OnboardingPage />
+            </ProtectedRoute>
+          } />
+          
+          {/* Protected routes - require authentication AND complete profile */}
+          <Route path="/nono-banana" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <NonoBananaPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/wan-video" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <WanVideoPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/qwen" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <QwenPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <SettingsPage />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </Router>
+    </AuthProvider>
   )
 }
 

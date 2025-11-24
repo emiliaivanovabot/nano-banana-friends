@@ -5,9 +5,19 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:setup": "node scripts/manual-database-setup.js",
+    "db:verify": "node scripts/verify-database.js",
+    "auth:create-test-user": "node scripts/create-test-user.js",
+    "community:setup": "node scripts/setup-community-prompts.js",
+    "community:scrape": "node scripts/scrape-community-prompts.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.84.0",
+    "bcryptjs": "^3.0.3",
+    "cheerio": "^1.0.0",
+    "dotenv": "^17.2.3",
+    "node-fetch": "^3.3.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.9.6"

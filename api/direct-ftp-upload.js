@@ -83,11 +83,14 @@ export default async function handler(req, res) {
       console.log('📁 Creating directory:', remotePath)
       await ftpClient.ensureDir(remotePath)
 
-      // Upload file to FTP
+      // Upload buffer to FTP using uploadFrom with Readable stream
+      const { Readable } = await import('stream')
       const remoteFilePath = remotePath + filename
       console.log('📤 Uploading to FTP:', remoteFilePath)
       
-      await ftpClient.uploadFrom(imageBuffer, remoteFilePath)
+      // Convert Buffer to Readable stream for FTP upload
+      const imageStream = Readable.from(imageBuffer)
+      await ftpClient.uploadFrom(imageStream, remoteFilePath)
       
       console.log('✅ Uploaded to Boertlay FTP successfully')
 

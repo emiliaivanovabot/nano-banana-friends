@@ -63,13 +63,32 @@ export default async function handler(req, res) {
 
     console.log('📥 Step 1: Downloading from Supabase Storage...', { bucket: 'temp-uploads', path: supabasePath })
 
+    // First check if bucket exists and list files for debugging
+    const { data: bucketFiles, error: listError } = await supabase.storage
+      .from('temp-uploads')
+      .list('', { limit: 10 })
+    
+    if (listError) {
+      console.error('❌ Bucket access error:', listError)
+      throw new Error(`Cannot access temp-uploads bucket: ${listError.message}`)
+    }
+    
+    console.log('🗂️ Files in temp-uploads bucket:', bucketFiles?.map(f => f.name) || [])
+
     // Download image from Supabase Storage
+    console.log('🔍 Attempting download:', { bucket: 'temp-uploads', path: supabasePath })
     const { data: downloadData, error: downloadError } = await supabase.storage
       .from('temp-uploads')
       .download(supabasePath)
 
     if (downloadError) {
-      throw new Error(`Supabase download failed: ${downloadError.message}`)
+      console.error('❌ Supabase download error details:', downloadError)
+      throw new Error(`Supabase download failed: ${downloadError.message} (code: ${downloadError.statusCode || 'unknown'})`)
+    }
+
+    // Check if we actually got data
+    if (!downloadData) {
+      throw new Error('Supabase download succeeded but returned no data')
     }
 
     console.log('✅ Downloaded from Supabase Storage, size:', downloadData.size)
@@ -82,6 +101,12 @@ export default async function handler(req, res) {
 
     try {
       // Connect to Boertlay FTP
+      console.log('🔌 Connecting to FTP:', { 
+        host: process.env.BOERTLAY_FTP_HOST, 
+        user: process.env.BOERTLAY_FTP_USER,
+        port: parseInt(process.env.BOERTLAY_FTP_PORT) || 21
+      })
+      
       await ftpClient.access({
         host: process.env.BOERTLAY_FTP_HOST,
         user: process.env.BOERTLAY_FTP_USER,

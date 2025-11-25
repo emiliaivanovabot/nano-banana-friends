@@ -212,6 +212,16 @@
   transform: translateY(-1px);
 }
 
+.copy-prompt-button {
+  background: #28a745;
+  color: white;
+}
+
+.copy-prompt-button:hover {
+  background: #1e7e34;
+  transform: translateY(-1px);
+}
+
 .close-modal-button {
   background: #6c757d;
   color: white;

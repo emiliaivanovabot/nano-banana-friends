@@ -66,6 +66,14 @@ function GalleryPage() {
     document.body.removeChild(link);
   };
 
+  const copyPrompt = (prompt) => {
+    navigator.clipboard.writeText(prompt).then(() => {
+      console.log('✅ Prompt copied to clipboard');
+    }).catch(err => {
+      console.error('❌ Failed to copy prompt:', err);
+    });
+  };
+
   const handleKeyPress = (e) => {
     if (e.key === 'Escape') {
       closeModal();
@@ -424,6 +432,23 @@ function GalleryPage() {
                 >
                   📥 Download
                 </button>
+                {selectedImage.prompt && (
+                  <button
+                    onClick={() => copyPrompt(selectedImage.prompt)}
+                    style={{
+                      padding: '12px 24px',
+                      background: '#10b981',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '500',
+                      fontSize: '14px'
+                    }}
+                  >
+                    📋 Copy Prompt
+                  </button>
+                )}
                 <button
                   onClick={closeModal}
                   style={{

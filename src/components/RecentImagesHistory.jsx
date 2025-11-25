@@ -58,6 +58,14 @@ const RecentImagesHistory = ({ currentUser }) => {
     document.body.removeChild(link);
   };
 
+  const copyPrompt = (prompt) => {
+    navigator.clipboard.writeText(prompt).then(() => {
+      console.log('✅ Prompt copied to clipboard');
+    }).catch(err => {
+      console.error('❌ Failed to copy prompt:', err);
+    });
+  };
+
   const handleModalClick = (e) => {
     // Close modal when clicking outside the content
     if (e.target.className === 'image-modal') {
@@ -169,6 +177,14 @@ const RecentImagesHistory = ({ currentUser }) => {
               >
                 📥 Download
               </button>
+              {selectedImage.prompt && (
+                <button 
+                  className="copy-prompt-button"
+                  onClick={() => copyPrompt(selectedImage.prompt)}
+                >
+                  📋 Copy Prompt
+                </button>
+              )}
               <button 
                 className="close-modal-button"
                 onClick={closeModal}

@@ -6,6 +6,7 @@ const RecentImagesHistory = ({ currentUser }) => {
   const [recentImages, setRecentImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
     if (!currentUser?.username) return;
@@ -61,6 +62,8 @@ const RecentImagesHistory = ({ currentUser }) => {
   const copyPrompt = (prompt) => {
     navigator.clipboard.writeText(prompt).then(() => {
       console.log('✅ Prompt copied to clipboard');
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
     }).catch(err => {
       console.error('❌ Failed to copy prompt:', err);
     });
@@ -171,20 +174,22 @@ const RecentImagesHistory = ({ currentUser }) => {
             </div>
             
             <div className="modal-actions">
-              <button 
-                className="download-button"
-                onClick={() => downloadImage(selectedImage.result_image_url, selectedImage.original_filename)}
-              >
-                📥 Download
-              </button>
-              {selectedImage.prompt && (
+              <div className="action-buttons-row">
                 <button 
-                  className="copy-prompt-button"
-                  onClick={() => copyPrompt(selectedImage.prompt)}
+                  className="download-button"
+                  onClick={() => downloadImage(selectedImage.result_image_url, selectedImage.original_filename)}
                 >
-                  📋 Copy Prompt
+                  📥 Download
                 </button>
-              )}
+                {selectedImage.prompt && (
+                  <button 
+                    className="copy-prompt-button"
+                    onClick={() => copyPrompt(selectedImage.prompt)}
+                  >
+                    {copySuccess ? '✅ Copied!' : '📋 Copy Prompt'}
+                  </button>
+                )}
+              </div>
               <button 
                 className="close-modal-button"
                 onClick={closeModal}

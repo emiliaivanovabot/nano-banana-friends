@@ -9,6 +9,7 @@ function GalleryPage() {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all', 'single', '4x', '10x'
+  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
     const loadImages = async () => {
@@ -69,6 +70,8 @@ function GalleryPage() {
   const copyPrompt = (prompt) => {
     navigator.clipboard.writeText(prompt).then(() => {
       console.log('✅ Prompt copied to clipboard');
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
     }).catch(err => {
       console.error('❌ Failed to copy prompt:', err);
     });
@@ -457,7 +460,7 @@ function GalleryPage() {
                       maxWidth: window.innerWidth <= 768 ? '48%' : 'initial'
                     }}
                   >
-                    📋 Copy Prompt
+                    {copySuccess ? '✅ Copied!' : '📋 Copy Prompt'}
                   </button>
                 )}
                 <button

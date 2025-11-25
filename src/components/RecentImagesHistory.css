@@ -258,6 +258,27 @@
     max-height: 95vh;
   }
 
+  .modal-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .modal-actions .download-button,
+  .modal-actions .copy-prompt-button {
+    flex: 1;
+    min-width: 40%;
+    max-width: 48%;
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  .modal-actions .close-modal-button {
+    flex: 1;
+    width: 100%;
+    margin-top: 8px;
+  }
+}
+
   .modal-header {
     padding: 12px 15px;
   }

@@ -416,18 +416,26 @@ function GalleryPage() {
                 </p>
               )}
               
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <div style={{ 
+                display: 'flex', 
+                gap: '12px', 
+                justifyContent: 'center',
+                flexWrap: 'wrap'
+              }}>
                 <button
                   onClick={() => downloadImage(selectedImage.result_image_url, selectedImage.original_filename)}
                   style={{
-                    padding: '12px 24px',
+                    padding: window.innerWidth <= 768 ? '10px 8px' : '12px 24px',
                     background: '#8b5cf6',
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',
                     cursor: 'pointer',
                     fontWeight: '500',
-                    fontSize: '14px'
+                    fontSize: window.innerWidth <= 768 ? '12px' : '14px',
+                    flex: window.innerWidth <= 768 ? '1' : 'initial',
+                    minWidth: window.innerWidth <= 768 ? '40%' : 'initial',
+                    maxWidth: window.innerWidth <= 768 ? '48%' : 'initial'
                   }}
                 >
                   📥 Download
@@ -436,14 +444,17 @@ function GalleryPage() {
                   <button
                     onClick={() => copyPrompt(selectedImage.prompt)}
                     style={{
-                      padding: '12px 24px',
+                      padding: window.innerWidth <= 768 ? '10px 8px' : '12px 24px',
                       background: '#10b981',
                       color: 'white',
                       border: 'none',
                       borderRadius: '8px',
                       cursor: 'pointer',
                       fontWeight: '500',
-                      fontSize: '14px'
+                      fontSize: window.innerWidth <= 768 ? '12px' : '14px',
+                      flex: window.innerWidth <= 768 ? '1' : 'initial',
+                      minWidth: window.innerWidth <= 768 ? '40%' : 'initial',
+                      maxWidth: window.innerWidth <= 768 ? '48%' : 'initial'
                     }}
                   >
                     📋 Copy Prompt
@@ -452,8 +463,10 @@ function GalleryPage() {
                 <button
                   onClick={closeModal}
                   style={{
-                    padding: '12px 24px',
+                    padding: window.innerWidth <= 768 ? '10px 8px' : '12px 24px',
                     background: '#6b7280',
+                    width: window.innerWidth <= 768 ? '100%' : 'initial',
+                    marginTop: window.innerWidth <= 768 ? '8px' : '0',
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',

@@ -10,12 +10,12 @@
 
 ### 1. ✅ Automatisches Bild-Speichern - **VOLLSTÄNDIG IMPLEMENTIERT & GETESTET**
 - **Trigger**: Nach jeder erfolgreichen Bildgenerierung (1x, 4x, 10x)
-- **Storage Pipeline**: Browser → Supabase Storage (temp) → Vercel API → Boertlay FTP → Database
+- **Storage Pipeline**: Browser → Vercel API → Boertlay FTP → Database (**DIREKT, OHNE ZWISCHENSPEICHER**)
 - **Format**: Base64 → PNG Files über automatische Konvertierung  
 - **Naming**: `nano-banana-{type}-{index}-{timestamp}.png`
-- **Auto-Delete**: Temporäre Dateien werden nach FTP Transfer aus Supabase entfernt
-- **Production Status**: ✅ **LIVE auf Vercel** - Alle Environment Variables konfiguriert
-- **FTP Connection**: ✅ **GETESTET** - Upload zu Boertlay funktioniert
+- **Keine temporären Dateien**: Direkter Upload ohne Zwischenspeicherung
+- **Production Status**: ✅ **LIVE auf Vercel** - `/api/direct-ftp-upload` funktioniert
+- **FTP Connection**: ✅ **GETESTET** - Direkter Upload zu Boertlay funktioniert
 - **Database Integration**: ✅ **AKTIV** - Metadaten werden in `generations` Tabelle gespeichert
 
 ### 2. ✅ User Gallery - **VOLLSTÄNDIG IMPLEMENTIERT & GETESTET**
@@ -161,50 +161,31 @@ if (results && user?.username) {
 // - generate10Images() → ✅ Batch Upload 10 Images AKTIV
 ```
 
-#### 2. Complete Upload Pipeline - **✅ PRODUCTION READY**
+#### 2. Direct FTP Upload Pipeline - **✅ PRODUCTION READY & SIMPLIFIED**
 ```javascript
-// ✅ VOLLSTÄNDIG IMPLEMENTIERT: Komplette Upload Pipeline
+// ✅ NEUE DIREKTE PIPELINE: Browser → Vercel API → Boertlay FTP → Database
 
-// 1. Upload zu Supabase Storage (Temp)
-const uploadToSupabaseTemp = async (base64Image, filename) => {
-  const imageFile = base64ToFile(base64Image, filename)
-  const serviceSupabase = createClient(
-    import.meta.env.VITE_SUPABASE_URL,
-    import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY  // ✅ Service Role für RLS Bypass
-  )
-  
-  const { data, error } = await serviceSupabase.storage
-    .from('temp-uploads')
-    .upload(filename, imageFile, {
-      contentType: 'image/png',
-      upsert: false
-    })
-  
-  return { success: !error, path: data?.path, filename, size: imageFile.size }
-}
-
-// 2. Transfer über Vercel API zu Boertlay FTP
+// 1. Direkter Upload (KEINE ZWISCHENSPEICHERUNG)
 export const uploadAndSaveImage = async (base64Image, username, generationType, promptUsed, imageIndex = 0) => {
   const timestamp = Date.now()
   const filename = `nano-banana-${generationType}-${imageIndex + 1}-${timestamp}.png`
   
-  // Step 1: Upload to Supabase temp storage
-  const supabaseResult = await uploadToSupabaseTemp(base64Image, filename)
+  console.log('🚀 Starting direct upload process for:', filename)
   
-  // Step 2: Call Vercel API to transfer to Boertlay FTP
-  const apiResponse = await fetch('/api/transfer-to-boertlay', {
+  // Direkter Base64 → FTP Upload über Vercel API
+  const apiResponse = await fetch('/api/direct-ftp-upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      supabasePath: supabaseResult.path,
-      username: username,  // ✅ Username-based folders
+      base64Image: base64Image,    // ✅ Direkte Base64 Übergabe
+      username: username,          // ✅ Username-based folders
       filename: filename
     })
   })
   
   const apiResult = await apiResponse.json()
   
-  // Step 3: Save metadata to database
+  // Metadaten in Database speichern
   const dbResult = await saveImageToDatabase(
     apiResult.boertlayUrl, 
     username, 
@@ -216,8 +197,14 @@ export const uploadAndSaveImage = async (base64Image, username, generationType, 
   return { success: true, imageUrl: apiResult.boertlayUrl, databaseId: dbResult.id, filename }
 }
 
+// ✅ VERCEL API: /api/direct-ftp-upload
+// - Konvertiert Base64 → Buffer → Stream
+// - Direkter FTP Upload zu Boertlay
+// - Keine temporären Dateien
+// - Einfacher und zuverlässiger
+
 // ✅ GETESTET: Funktioniert mit allen Users
-// Users: emilia.ivanova, jessy.germany, tyra.foxi, selina.mueller, etc.
+// Users: emilia.ivanova, jessy.germany, tyra.foxi, selina.mueller, etc.  
 // URL Format: https://boertlay.de/user_pics/generated/{username}/2025/11/{filename}
 ```
 
@@ -511,18 +498,23 @@ const testBoertlayUpload = async () => {
 
 ## File Organization - **✅ VOLLSTÄNDIG IMPLEMENTIERT**
 
-### ✅ Erstellte Files - **ALLE LIVE**
+### ✅ Erstellte Files - **OPTIMIERT & LIVE**
 ```
 ✅ IMPLEMENTIERT:
 src/
   components/
     RecentImagesHistory.jsx   # ✅ Recent images component - INTEGRIERT in NonoBananaPage
   utils/
-    imageUpload.js            # ✅ Complete upload pipeline utilities - AKTIV
+    imageUpload.js            # ✅ Direct upload pipeline utilities - AKTIV
   pages/
     GalleryPage.jsx           # ✅ Full gallery page - LIVE auf /gallery
 api/
-  transfer-to-boertlay.js     # ✅ Vercel serverless function - LIVE auf Vercel
+  direct-ftp-upload.js        # ✅ Direkte FTP Upload API - LIVE auf Vercel
+  cleanup-storage.js          # ✅ Cleanup für alte Supabase Storage - VERWENDET
+
+🗑️ AUFGERÄUMT:
+api/
+  transfer-to-boertlay.js     # Gelöscht - war komplizierte Supabase Storage Pipeline
 
 ❌ NICHT BENÖTIGT:
   components/
@@ -649,12 +641,13 @@ This image storage system has **successfully solved** the critical UX issue of l
 4. ✅ Recent images sidebar integration **ACTIVE**
 5. ✅ Database integration with existing `generations` table **OPTIMIZED**
 
-**🚀 SYSTEM STATUS: PRODUCTION READY**
+**🚀 SYSTEM STATUS: PRODUCTION READY & OPTIMIZED**
 - **Storage**: Boertlay FTP with automatic folder organization
-- **Database**: Extended `generations` table with image metadata
-- **Pipeline**: Browser → Supabase Storage → Vercel API → Boertlay FTP → Database
+- **Database**: Extended `generations` table with image metadata  
+- **Pipeline**: Browser → Vercel API → Boertlay FTP → Database (**DIREKT & EINFACH**)
 - **UI**: Gallery page + Recent images component with download functionality
 - **Authentication**: Seamlessly integrated with existing user system
-- **Scalability**: Designed to handle thousands of users with proper cleanup
+- **Scalability**: Designed to handle thousands of users, optimized for reliability
+- **No Temp Storage**: Eliminiert komplexe Supabase Storage Zwischenschritte
 
-The system is **fully operational** and ready for production use. All core features have been implemented, tested, and deployed successfully.
+The system is **fully operational**, **simplified**, and ready for production use. All core features have been implemented, tested, and optimized for maximum reliability.

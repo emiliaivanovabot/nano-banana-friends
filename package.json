@@ -19,7 +19,6 @@
     "api:start": "cd api && npm start"
   },
   "dependencies": {
-    "@jsquash/avif": "^2.1.1",
     "@supabase/supabase-js": "^2.84.0",
     "basic-ftp": "^5.0.5",
     "bcryptjs": "^3.0.3",

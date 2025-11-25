@@ -175,92 +175,41 @@ export const saveImageToDatabase = async (imageUrl, username, generationType, pr
 // REMOVED: uploadToSupabaseTemp() - No longer needed with direct FTP upload
 
 /**
- * Convert base64 image to AVIF format using @jsquash/avif library
+ * Convert base64 image to WebP format using Canvas API
  * @param {string} base64Image - Base64 image data
- * @param {number} quality - AVIF quality (0-100, default 80)
- * @returns {Promise<string>} AVIF base64 image
+ * @param {number} quality - WebP quality (0-1, default 0.8)
+ * @returns {Promise<string>} WebP base64 image
  */
-const convertToAVIF = async (base64Image, quality = 80) => {
-  try {
-    // Dynamic import for @jsquash/avif
-    const { encode } = await import('@jsquash/avif')
+const convertToWebP = async (base64Image, quality = 0.8) => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
     
-    return new Promise((resolve, reject) => {
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-      const img = new Image()
+    img.onload = () => {
+      canvas.width = img.width
+      canvas.height = img.height
+      ctx.drawImage(img, 0, 0)
       
-      img.onload = async () => {
-        try {
-          // Set canvas size to image size
-          canvas.width = img.width
-          canvas.height = img.height
-          
-          // Draw image to canvas
-          ctx.drawImage(img, 0, 0)
-          
-          // Get ImageData from canvas
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-          
-          console.log('🔄 Encoding to AVIF with @jsquash/avif...')
-          
-          // Encode to AVIF using @jsquash/avif
-          const avifBuffer = await encode(imageData, { quality })
-          
-          // Convert ArrayBuffer to Base64
-          const avifBase64 = 'data:image/avif;base64,' + btoa(
-            String.fromCharCode(...new Uint8Array(avifBuffer))
-          )
-          
-          console.log('🚀 AVIF conversion successful:', {
+      // Try WebP first, fall back to JPEG if not supported
+      try {
+        const webpBase64 = canvas.toDataURL('image/webp', quality)
+        if (webpBase64.startsWith('data:image/webp')) {
+          console.log('🚀 WebP conversion successful:', {
             original: Math.round(base64Image.length / 1024) + 'KB',
-            avif: Math.round(avifBase64.length / 1024) + 'KB', 
+            webp: Math.round(webpBase64.length / 1024) + 'KB',
             quality: quality,
-            compression: Math.round((1 - avifBase64.length / base64Image.length) * 100) + '% smaller'
+            compression: Math.round((1 - webpBase64.length / base64Image.length) * 100) + '% smaller'
           })
-          
-          resolve(avifBase64)
-          
-        } catch (avifError) {
-          console.log('⚠️ AVIF encoding failed, falling back to JPEG:', avifError.message)
-          
-          // Fallback to JPEG
-          const jpegBase64 = canvas.toDataURL('image/jpeg', 0.9)
-          
-          console.log('📷 JPEG fallback:', {
-            original: Math.round(base64Image.length / 1024) + 'KB',
-            jpeg: Math.round(jpegBase64.length / 1024) + 'KB',
-            quality: 0.9
-          })
-          
-          resolve(jpegBase64)
+          resolve(webpBase64)
+        } else {
+          throw new Error('WebP not supported')
         }
-      }
-      
-      img.onerror = () => {
-        reject(new Error('Failed to load image for AVIF conversion'))
-      }
-      
-      img.src = base64Image
-    })
-    
-  } catch (importError) {
-    console.log('⚠️ @jsquash/avif not available, falling back to JPEG:', importError.message)
-    
-    // Fallback if library import fails
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-      const img = new Image()
-      
-      img.onload = () => {
-        canvas.width = img.width
-        canvas.height = img.height
-        ctx.drawImage(img, 0, 0)
-        
+      } catch (webpError) {
+        console.log('⚠️ WebP not supported, falling back to JPEG')
         const jpegBase64 = canvas.toDataURL('image/jpeg', 0.9)
         
-        console.log('📷 JPEG fallback (library unavailable):', {
+        console.log('📷 JPEG fallback:', {
           original: Math.round(base64Image.length / 1024) + 'KB',
           jpeg: Math.round(jpegBase64.length / 1024) + 'KB',
           quality: 0.9
@@ -268,10 +217,16 @@ const convertToAVIF = async (base64Image, quality = 80) => {
         
         resolve(jpegBase64)
       }
-      
-      img.src = base64Image
-    })
-  }
+    }
+    
+    img.onerror = () => {
+      console.log('⚠️ Image load failed, falling back to JPEG')
+      const jpegBase64 = canvas.toDataURL('image/jpeg', 0.9)
+      resolve(jpegBase64)
+    }
+    
+    img.src = base64Image
+  })
 }
 
 /**
@@ -291,26 +246,26 @@ export const uploadAndSaveImage = async (base64Image, username, generationType, 
     const originalSizeKB = Math.round(base64Image.length / 1024)
     console.log('📏 Original PNG size:', originalSizeKB + 'KB')
     
-    // Convert to AVIF for optimal compression
-    console.log('🔄 Converting to AVIF format...')
-    const avifImage = await convertToAVIF(base64Image, 0.8)
+    // Convert to WebP for optimal compression
+    console.log('🔄 Converting to WebP format...')
+    const webpImage = await convertToWebP(base64Image, 0.8)
     
     // Determine file extension based on conversion result
-    const isAVIF = avifImage.startsWith('data:image/avif')
-    const fileExtension = isAVIF ? 'avif' : 'jpg'
+    const isWebP = webpImage.startsWith('data:image/webp')
+    const fileExtension = isWebP ? 'webp' : 'jpg'
     const timestamp = Date.now()
     const filename = `nano-banana-${generationType}-${imageIndex + 1}-${timestamp}.${fileExtension}`
     
     console.log('📁 Final filename:', filename)
     
-    // Direct AVIF → FTP Upload
+    // Direct WebP → FTP Upload
     const apiResponse = await fetch('/api/direct-ftp-upload', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        base64Image: avifImage,
+        base64Image: webpImage,
         username: username,
         filename: filename
       })

@@ -190,6 +190,12 @@ function NonoBananaPage() {
   const [templatesCollapsed, setTemplatesCollapsed] = useState(true)
   const [showPersonalization, setShowPersonalization] = useState(true)
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+  const [multiResults, setMultiResults] = useState([])
+  const [multiLoading, setMultiLoading] = useState(false)
+  const [multiTimer, setMultiTimer] = useState(0)
+  const [multiResults10, setMultiResults10] = useState([])
+  const [multiLoading10, setMultiLoading10] = useState(false)
+  const [multiTimer10, setMultiTimer10] = useState(0)
   
   const fileRef = useRef(null)
 
@@ -748,6 +754,458 @@ function NonoBananaPage() {
         }
       }
     }
+  }
+
+  // 4x Parallel Generation Function - CORRECT VERSION
+  const generate4Images = async () => {
+    if (!prompt.trim()) {
+      alert('Bitte gib einen Prompt ein')
+      return
+    }
+
+    setMultiLoading(true)
+    setMultiResults([])
+    setMultiTimer(0)
+    const startTime = Date.now()
+
+    // Live Timer für 4x Generierung
+    const timerInterval = setInterval(() => {
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+      setMultiTimer(elapsed)
+    }, 100)
+
+    // Wake Lock für mobile
+    let wakeLock = null
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen')
+      }
+    } catch (err) {
+      console.log('Wake Lock failed:', err)
+    }
+
+    // Funktion für einzelne API-Call (EXAKTE KOPIE der echten generateImage Logik)
+    const makeSingleCall = async (index) => {
+      try {
+        const apiKey = userSettings?.gemini_api_key
+        const model = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-image'
+        
+        if (!apiKey) {
+          throw new Error('API Key fehlt')
+        }
+
+        // Build final prompt with personalization (EXAKT wie in generateImage)
+        let finalPrompt = prompt
+        if (showPersonalization && userSettings?.main_face_image_url && showMainFaceImage && userSettings) {
+          const personalizationText = generatePersonalizationText()
+          if (personalizationText) {
+            finalPrompt = `${personalizationText}. ${prompt}`
+          }
+        }
+        
+        // ECHTE Nano Banana Pro API Format (wie in generateImage)
+        const parts = [
+          { text: finalPrompt }
+        ]
+        
+        // Hauptgesichtsbild hinzufügen (EXAKT wie in generateImage)
+        if (userSettings?.main_face_image_url && showMainFaceImage) {
+          try {
+            const response = await fetch(userSettings.main_face_image_url)
+            const blob = await response.blob()
+            const base64Data = await new Promise((resolve) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve(reader.result)
+              reader.readAsDataURL(blob)
+            })
+            
+            const base64String = base64Data.split(',')[1]
+            const mimeType = base64Data.split(';')[0].split(':')[1]
+            
+            parts.push({
+              inline_data: {
+                mime_type: mimeType,
+                data: base64String
+              }
+            })
+          } catch (error) {
+            console.warn('Failed to load main face image for generation:', error)
+          }
+        }
+        
+        // Zusätzliche Bilder hinzufügen (EXAKT wie in generateImage)
+        images.forEach(img => {
+          const base64Data = img.base64.split(',')[1]
+          const mimeType = img.base64.split(';')[0].split(':')[1]
+          
+          parts.push({
+            inline_data: {
+              mime_type: mimeType,
+              data: base64Data
+            }
+          })
+        })
+
+        // ECHTE Gemini API Request Body (wie in generateImage)
+        const requestBody = {
+          contents: [{
+            role: "user",
+            parts: parts
+          }],
+          generationConfig: {
+            response_modalities: ['TEXT', 'IMAGE'],
+            image_config: {
+              aspect_ratio: aspectRatio,
+              image_size: resolution
+            }
+          }
+        }
+
+        // ECHTE Nano Banana Pro API Call (wie in generateImage)
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': apiKey
+            },
+            body: JSON.stringify(requestBody)
+          }
+        )
+
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        if (data.candidates && data.candidates[0]) {
+          // Safety Filter Check (EXAKT wie in generateImage)
+          if (data.candidates[0].finishReason === 'IMAGE_SAFETY') {
+            return {
+              success: false,
+              error: 'Safety Filter blockiert',
+              index
+            }
+          }
+          
+          // ECHTE Response Processing (wie in generateImage)
+          if (data.candidates[0].content && data.candidates[0].content.parts) {
+            const parts = data.candidates[0].content.parts
+            
+            let resultText = ''
+            let resultImage = null
+
+            parts.forEach((part, partIndex) => {
+              if (part.text) {
+                resultText += part.text + ' '
+              } else if (part.inline_data && part.inline_data.mime_type && part.inline_data.mime_type.startsWith('image/')) {
+                resultImage = `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`
+                console.log(`🖼️ Image found in part ${partIndex} (inline_data format)`)
+              } else if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/')) {
+                // Alternative naming format (EXAKT wie im einzelnen!)
+                resultImage = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
+                console.log(`🖼️ Image found in part ${partIndex} (inlineData format)`)
+              }
+            })
+
+            console.log(`🍌 Index ${index}: resultText="${resultText.trim()}", hasImage=${!!resultImage}`)
+
+            return {
+              success: true,
+              text: resultText.trim(),
+              image: resultImage,
+              index
+            }
+          }
+        }
+
+        throw new Error('Keine gültige Antwort erhalten')
+
+      } catch (error) {
+        return {
+          success: false,
+          error: error.message,
+          index
+        }
+      }
+    }
+
+    try {
+      // 4 parallele API-Calls
+      const promises = [0, 1, 2, 3].map(index => makeSingleCall(index))
+      const results = await Promise.all(promises)
+      
+      const endTime = Date.now()
+      const duration = ((endTime - startTime) / 1000).toFixed(1)
+
+      const finalResults = results.map(result => ({
+        ...result,
+        generationTime: duration
+      }))
+      
+      console.log('🍌🍌🍌🍌 4x Generation Results:', finalResults)
+      setMultiResults(finalResults)
+
+    } catch (error) {
+      console.error('4x Generation Error:', error)
+      alert('Fehler bei 4x Generierung: ' + error.message)
+    } finally {
+      setMultiLoading(false)
+      clearInterval(timerInterval)
+      
+      // Wake Lock freigeben
+      if (wakeLock) {
+        try {
+          await wakeLock.release()
+        } catch (err) {
+          console.log('Wake Lock release failed:', err)
+        }
+      }
+    }
+  }
+
+  // 10x Parallel Generation Function - EXAKTE KOPIE von 4x
+  const generate10Images = async () => {
+    if (!prompt.trim()) {
+      alert('Bitte gib einen Prompt ein')
+      return
+    }
+
+    setMultiLoading10(true)
+    setMultiResults10([])
+    setMultiTimer10(0)
+    const startTime = Date.now()
+
+    // Live Timer für 10x Generierung
+    const timerInterval = setInterval(() => {
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+      setMultiTimer10(elapsed)
+    }, 100)
+
+    // Wake Lock für mobile
+    let wakeLock = null
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen')
+      }
+    } catch (err) {
+      console.log('Wake Lock failed:', err)
+    }
+
+    // Funktion für einzelne API-Call (EXAKTE KOPIE der echten generateImage Logik)
+    const makeSingleCall = async (index) => {
+      try {
+        const apiKey = userSettings?.gemini_api_key
+        const model = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-image'
+        
+        if (!apiKey) {
+          throw new Error('API Key fehlt')
+        }
+
+        // Build final prompt with personalization (EXAKT wie in generateImage)
+        let finalPrompt = prompt
+        if (showPersonalization && userSettings?.main_face_image_url && showMainFaceImage && userSettings) {
+          const personalizationText = generatePersonalizationText()
+          if (personalizationText) {
+            finalPrompt = `${personalizationText}. ${prompt}`
+          }
+        }
+        
+        // ECHTE Nano Banana Pro API Format (wie in generateImage)
+        const parts = [
+          { text: finalPrompt }
+        ]
+        
+        // Hauptgesichtsbild hinzufügen (EXAKT wie in generateImage)
+        if (userSettings?.main_face_image_url && showMainFaceImage) {
+          try {
+            const response = await fetch(userSettings.main_face_image_url)
+            const blob = await response.blob()
+            const base64Data = await new Promise((resolve) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve(reader.result)
+              reader.readAsDataURL(blob)
+            })
+            
+            const base64String = base64Data.split(',')[1]
+            const mimeType = base64Data.split(';')[0].split(':')[1]
+            
+            parts.push({
+              inline_data: {
+                mime_type: mimeType,
+                data: base64String
+              }
+            })
+          } catch (error) {
+            console.warn('Failed to load main face image for generation:', error)
+          }
+        }
+        
+        // Zusätzliche Bilder hinzufügen (EXAKT wie in generateImage)
+        images.forEach(img => {
+          const base64Data = img.base64.split(',')[1]
+          const mimeType = img.base64.split(';')[0].split(':')[1]
+          
+          parts.push({
+            inline_data: {
+              mime_type: mimeType,
+              data: base64Data
+            }
+          })
+        })
+
+        // ECHTE Gemini API Request Body (wie in generateImage)
+        const requestBody = {
+          contents: [{
+            role: "user",
+            parts: parts
+          }],
+          generationConfig: {
+            response_modalities: ['TEXT', 'IMAGE'],
+            image_config: {
+              aspect_ratio: aspectRatio,
+              image_size: resolution
+            }
+          }
+        }
+
+        // ECHTE Nano Banana Pro API Call (wie in generateImage)
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': apiKey
+            },
+            body: JSON.stringify(requestBody)
+          }
+        )
+
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        if (data.candidates && data.candidates[0]) {
+          // Safety Filter Check (EXAKT wie in generateImage)
+          if (data.candidates[0].finishReason === 'IMAGE_SAFETY') {
+            return {
+              success: false,
+              error: 'Safety Filter blockiert',
+              index
+            }
+          }
+          
+          // ECHTE Response Processing (wie in generateImage)
+          if (data.candidates[0].content && data.candidates[0].content.parts) {
+            const parts = data.candidates[0].content.parts
+            
+            let resultText = ''
+            let resultImage = null
+
+            parts.forEach((part, partIndex) => {
+              if (part.text) {
+                resultText += part.text + ' '
+              } else if (part.inline_data && part.inline_data.mime_type && part.inline_data.mime_type.startsWith('image/')) {
+                resultImage = `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`
+                console.log(`🖼️ Image found in part ${partIndex} (inline_data format)`)
+              } else if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/')) {
+                // Alternative naming format (EXAKT wie im einzelnen!)
+                resultImage = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
+                console.log(`🖼️ Image found in part ${partIndex} (inlineData format)`)
+              }
+            })
+
+            console.log(`🍌 Index ${index}: resultText="${resultText.trim()}", hasImage=${!!resultImage}`)
+
+            return {
+              success: true,
+              text: resultText.trim(),
+              image: resultImage,
+              index
+            }
+          }
+        }
+
+        throw new Error('Keine gültige Antwort erhalten')
+
+      } catch (error) {
+        return {
+          success: false,
+          error: error.message,
+          index
+        }
+      }
+    }
+
+    try {
+      // 10 parallele API-Calls
+      const promises = Array.from({length: 10}, (_, i) => makeSingleCall(i))
+      const results = await Promise.all(promises)
+      
+      const endTime = Date.now()
+      const duration = ((endTime - startTime) / 1000).toFixed(1)
+
+      const finalResults = results.map(result => ({
+        ...result,
+        generationTime: duration
+      }))
+      
+      console.log('🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌 10x Generation Results:', finalResults)
+      setMultiResults10(finalResults)
+
+    } catch (error) {
+      console.error('10x Generation Error:', error)
+      alert('Fehler bei 10x Generierung: ' + error.message)
+    } finally {
+      setMultiLoading10(false)
+      clearInterval(timerInterval)
+      
+      // Wake Lock freigeben
+      if (wakeLock) {
+        try {
+          await wakeLock.release()
+        } catch (err) {
+          console.log('Wake Lock release failed:', err)
+        }
+      }
+    }
+  }
+
+  // Download function for multi images
+  const downloadMultiImage = (imageUrl, index) => {
+    if (imageUrl) {
+      const link = document.createElement('a')
+      link.href = imageUrl
+      link.download = `nano-banana-4x-${index + 1}-${Date.now()}.png`
+      link.click()
+    }
+  }
+
+  // Download all 4 images at once
+  const downloadAllImages = () => {
+    multiResults.forEach((result, index) => {
+      if (result.success && result.image) {
+        setTimeout(() => {
+          downloadMultiImage(result.image, index)
+        }, index * 100) // Kleine Verzögerung zwischen Downloads
+      }
+    })
+  }
+
+  // Download all 10 images at once
+  const downloadAll10Images = () => {
+    multiResults10.forEach((result, index) => {
+      if (result.success && result.image) {
+        setTimeout(() => {
+          downloadMultiImage(result.image, index)
+        }, index * 100) // Kleine Verzögerung zwischen Downloads
+      }
+    })
   }
 
   return (
@@ -1374,17 +1832,54 @@ function NonoBananaPage() {
 
 
 
-      {/* Mobile Optimized Generate Button */}
-      <button 
-        onClick={generateImage}
-        disabled={!prompt.trim() || loading}
-        className={`mobile-generate-button ${loading ? 'loading' : ''} ${!prompt.trim() ? 'disabled' : ''}`}
-      >
-        <span className="generate-icon">🍌</span>
-        <span className="generate-text">
-          {loading ? 'Generiere...' : 'Bild generieren'}
-        </span>
-      </button>
+      {/* Generate Buttons Container */}
+      <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+        {/* Single Generate Button */}
+        <button 
+          onClick={generateImage}
+          disabled={!prompt.trim() || loading || multiLoading || multiLoading10}
+          className={`mobile-generate-button ${loading ? 'loading' : ''} ${!prompt.trim() ? 'disabled' : ''}`}
+        >
+          <span className="generate-icon">🍌</span>
+          <span className="generate-text">
+            {loading ? 'Generiere...' : 'Bild generieren'}
+          </span>
+        </button>
+
+        {/* 4x Generate Button */}
+        <button 
+          onClick={generate4Images}
+          disabled={!prompt.trim() || loading || multiLoading || multiLoading10}
+          className={`mobile-generate-button ${multiLoading ? 'loading' : ''} ${!prompt.trim() ? 'disabled' : ''}`}
+          style={{ 
+            background: multiLoading ? 
+              'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 
+              'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+          }}
+        >
+          <span className="generate-icon">🍌🍌🍌🍌</span>
+          <span className="generate-text">
+            {multiLoading ? '4x Generiere...' : '4x Generierung'}
+          </span>
+        </button>
+
+        {/* 10x Generate Button */}
+        <button 
+          onClick={generate10Images}
+          disabled={!prompt.trim() || loading || multiLoading || multiLoading10}
+          className={`mobile-generate-button ${multiLoading10 ? 'loading' : ''} ${!prompt.trim() ? 'disabled' : ''}`}
+          style={{ 
+            background: multiLoading10 ? 
+              'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 
+              'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
+          }}
+        >
+          <span className="generate-icon">🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌</span>
+          <span className="generate-text">
+            {multiLoading10 ? '10x Generiere...' : '10x Generierung'}
+          </span>
+        </button>
+      </div>
 
 
       {/* Loading State mit Live Timer */}
@@ -1484,6 +1979,226 @@ function NonoBananaPage() {
               title="Klicken zum Download"
             />
           )}
+        </div>
+      )}
+
+      {/* Multi Loading State */}
+      {multiLoading && (
+        <div style={{ 
+          marginTop: '20px',
+          padding: '15px',
+          backgroundColor: '#FEF3C7',
+          borderRadius: '8px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🍌🍌🍌🍌</div>
+          <div style={{ color: '#D97706', fontWeight: '600' }}>
+            4x Generierung läuft...
+          </div>
+          <div style={{ color: '#92400E', fontSize: '14px', marginTop: '5px' }}>
+            Bitte warten, alle 4 Bilder werden parallel erstellt
+          </div>
+          <div style={{ 
+            color: '#92400E', 
+            fontSize: '16px', 
+            marginTop: '10px',
+            fontFamily: 'monospace',
+            fontWeight: 'bold'
+          }}>
+            ⏱️ {multiTimer}s
+          </div>
+        </div>
+      )}
+
+      {/* 10x Multi Loading State */}
+      {multiLoading10 && (
+        <div style={{ 
+          marginTop: '20px',
+          padding: '15px',
+          backgroundColor: '#EDE9FE',
+          borderRadius: '8px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '1.8rem', marginBottom: '10px' }}>🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌</div>
+          <div style={{ color: '#7c3aed', fontWeight: '600' }}>
+            10x Generierung läuft...
+          </div>
+          <div style={{ color: '#5b21b6', fontSize: '14px', marginTop: '5px' }}>
+            Bitte warten, alle 10 Bilder werden parallel erstellt
+          </div>
+          <div style={{ 
+            color: '#5b21b6', 
+            fontSize: '16px', 
+            marginTop: '10px',
+            fontFamily: 'monospace',
+            fontWeight: 'bold'
+          }}>
+            ⏱️ {multiTimer10}s
+          </div>
+        </div>
+      )}
+
+      {/* 4x Results - EXAKT wie einzelne Generierung */}
+      {multiResults.length > 0 && (
+        <div style={{ 
+          marginTop: '20px',
+          padding: '15px',
+          backgroundColor: '#F3F4F6',
+          borderRadius: '8px',
+          width: '100%',
+          maxWidth: '100%',
+          overflow: 'hidden',
+          boxSizing: 'border-box'
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: '10px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h3 style={{ margin: '0', color: '#1F2937' }}>4x Ergebnis:</h3>
+              {multiResults[0]?.generationTime && (
+                <span style={{
+                  backgroundColor: '#E5E7EB',
+                  color: '#6B7280',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontFamily: 'monospace'
+                }}>
+                  ⏱️ {multiResults[0].generationTime}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={downloadAllImages}
+              style={{
+                padding: '8px 15px',
+                backgroundColor: '#10B981',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px'
+              }}
+            >
+              📥 Alle downloaden
+            </button>
+          </div>
+          
+          <p style={{ marginBottom: '15px', color: '#374151' }}>Bilder erfolgreich generiert!</p>
+          
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(2, 1fr)',
+            gap: '10px'
+          }}>
+            {multiResults.map((result, index) => (
+              result.success && result.image ? (
+                <img 
+                  key={index}
+                  src={result.image} 
+                  alt={`Generated ${index + 1}`} 
+                  style={{ 
+                    width: '100%', 
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    cursor: 'pointer',
+                    height: 'auto',
+                    boxSizing: 'border-box'
+                  }}
+                  onClick={() => downloadMultiImage(result.image, index)}
+                  title="Klicken zum Download"
+                />
+              ) : null
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 10x Results - EXAKT wie 4x Generierung */}
+      {multiResults10.length > 0 && (
+        <div style={{ 
+          marginTop: '20px',
+          padding: '15px',
+          backgroundColor: '#F3F4F6',
+          borderRadius: '8px',
+          width: '100%',
+          maxWidth: '100%',
+          overflow: 'hidden',
+          boxSizing: 'border-box'
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: '10px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h3 style={{ margin: '0', color: '#1F2937' }}>10x Ergebnis:</h3>
+              {multiResults10[0]?.generationTime && (
+                <span style={{
+                  backgroundColor: '#E5E7EB',
+                  color: '#6B7280',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontFamily: 'monospace'
+                }}>
+                  ⏱️ {multiResults10[0].generationTime}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={downloadAll10Images}
+              style={{
+                padding: '8px 15px',
+                backgroundColor: '#8b5cf6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px'
+              }}
+            >
+              📥 Alle downloaden
+            </button>
+          </div>
+          
+          <p style={{ marginBottom: '15px', color: '#374151' }}>Bilder erfolgreich generiert!</p>
+          
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
+            gap: '10px'
+          }}>
+            {multiResults10.map((result, index) => (
+              result.success && result.image ? (
+                <img 
+                  key={index}
+                  src={result.image} 
+                  alt={`Generated ${index + 1}`} 
+                  style={{ 
+                    width: '100%', 
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    cursor: 'pointer',
+                    height: 'auto',
+                    boxSizing: 'border-box'
+                  }}
+                  onClick={() => downloadMultiImage(result.image, index)}
+                  title="Klicken zum Download"
+                />
+              ) : null
+            ))}
+          </div>
         </div>
       )}
 

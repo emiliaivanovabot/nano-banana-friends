@@ -175,47 +175,92 @@ export const saveImageToDatabase = async (imageUrl, username, generationType, pr
 // REMOVED: uploadToSupabaseTemp() - No longer needed with direct FTP upload
 
 /**
- * Convert base64 image to AVIF format for optimal compression
+ * Convert base64 image to AVIF format using @jsquash/avif library
  * @param {string} base64Image - Base64 image data
- * @param {number} quality - AVIF quality (0.1 - 1.0)
+ * @param {number} quality - AVIF quality (0-100, default 80)
  * @returns {Promise<string>} AVIF base64 image
  */
-const convertToAVIF = async (base64Image, quality = 0.8) => {
-  return new Promise((resolve) => {
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    const img = new Image()
+const convertToAVIF = async (base64Image, quality = 80) => {
+  try {
+    // Dynamic import for @jsquash/avif
+    const { encode } = await import('@jsquash/avif')
     
-    img.onload = () => {
-      // Set canvas size to image size
-      canvas.width = img.width
-      canvas.height = img.height
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
       
-      // Draw image to canvas
-      ctx.drawImage(img, 0, 0)
-      
-      // Try to convert to AVIF
-      try {
-        const avifBase64 = canvas.toDataURL('image/avif', quality)
-        
-        // Check if AVIF conversion actually worked (some browsers return empty or fallback)
-        if (avifBase64.startsWith('data:image/avif')) {
+      img.onload = async () => {
+        try {
+          // Set canvas size to image size
+          canvas.width = img.width
+          canvas.height = img.height
+          
+          // Draw image to canvas
+          ctx.drawImage(img, 0, 0)
+          
+          // Get ImageData from canvas
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+          
+          console.log('🔄 Encoding to AVIF with @jsquash/avif...')
+          
+          // Encode to AVIF using @jsquash/avif
+          const avifBuffer = await encode(imageData, { quality })
+          
+          // Convert ArrayBuffer to Base64
+          const avifBase64 = 'data:image/avif;base64,' + btoa(
+            String.fromCharCode(...new Uint8Array(avifBuffer))
+          )
+          
           console.log('🚀 AVIF conversion successful:', {
             original: Math.round(base64Image.length / 1024) + 'KB',
-            avif: Math.round(avifBase64.length / 1024) + 'KB',
+            avif: Math.round(avifBase64.length / 1024) + 'KB', 
             quality: quality,
             compression: Math.round((1 - avifBase64.length / base64Image.length) * 100) + '% smaller'
           })
           
           resolve(avifBase64)
-        } else {
-          throw new Error('AVIF not supported')
+          
+        } catch (avifError) {
+          console.log('⚠️ AVIF encoding failed, falling back to JPEG:', avifError.message)
+          
+          // Fallback to JPEG
+          const jpegBase64 = canvas.toDataURL('image/jpeg', 0.9)
+          
+          console.log('📷 JPEG fallback:', {
+            original: Math.round(base64Image.length / 1024) + 'KB',
+            jpeg: Math.round(jpegBase64.length / 1024) + 'KB',
+            quality: 0.9
+          })
+          
+          resolve(jpegBase64)
         }
-      } catch (error) {
-        console.log('⚠️ AVIF not supported, falling back to high-quality JPEG')
+      }
+      
+      img.onerror = () => {
+        reject(new Error('Failed to load image for AVIF conversion'))
+      }
+      
+      img.src = base64Image
+    })
+    
+  } catch (importError) {
+    console.log('⚠️ @jsquash/avif not available, falling back to JPEG:', importError.message)
+    
+    // Fallback if library import fails
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
+      
+      img.onload = () => {
+        canvas.width = img.width
+        canvas.height = img.height
+        ctx.drawImage(img, 0, 0)
+        
         const jpegBase64 = canvas.toDataURL('image/jpeg', 0.9)
         
-        console.log('📷 JPEG fallback:', {
+        console.log('📷 JPEG fallback (library unavailable):', {
           original: Math.round(base64Image.length / 1024) + 'KB',
           jpeg: Math.round(jpegBase64.length / 1024) + 'KB',
           quality: 0.9
@@ -223,10 +268,10 @@ const convertToAVIF = async (base64Image, quality = 0.8) => {
         
         resolve(jpegBase64)
       }
-    }
-    
-    img.src = base64Image
-  })
+      
+      img.src = base64Image
+    })
+  }
 }
 
 /**

@@ -189,6 +189,7 @@ function NonoBananaPage() {
   const [selectedTemplate, setSelectedTemplate] = useState(null)
   const [templatesCollapsed, setTemplatesCollapsed] = useState(true)
   const [showPersonalization, setShowPersonalization] = useState(true)
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
   
   const fileRef = useRef(null)
 
@@ -315,6 +316,58 @@ function NonoBananaPage() {
     }
   }, [location, images.length, userGender, userSettings?.main_face_image_url, showMainFaceImage])
 
+  // Mobile resize detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Touch gesture handling for mobile swipe navigation
+  useEffect(() => {
+    let touchStartX = 0
+    let touchStartY = 0
+    let touchEndX = 0
+    let touchEndY = 0
+
+    const handleTouchStart = (e) => {
+      touchStartX = e.changedTouches[0].screenX
+      touchStartY = e.changedTouches[0].screenY
+    }
+
+    const handleTouchEnd = (e) => {
+      touchEndX = e.changedTouches[0].screenX
+      touchEndY = e.changedTouches[0].screenY
+      handleSwipeGesture()
+    }
+
+    const handleSwipeGesture = () => {
+      const swipeThreshold = 30
+      const maxVerticalThreshold = 40
+      const swipeDistance = touchEndX - touchStartX
+      const verticalDistance = Math.abs(touchEndY - touchStartY)
+      
+      // Check if it's a horizontal swipe (not vertical scroll)
+      if (verticalDistance < maxVerticalThreshold && Math.abs(swipeDistance) > swipeThreshold) {
+        // Right swipe detected
+        if (swipeDistance > 0) {
+          navigate('/')
+        }
+      }
+    }
+
+    if (isMobile) {
+      document.addEventListener('touchstart', handleTouchStart, { passive: true })
+      document.addEventListener('touchend', handleTouchEnd, { passive: true })
+    }
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart)
+      document.removeEventListener('touchend', handleTouchEnd)
+    }
+  }, [isMobile, navigate])
 
   // Prompt-Vorlagen für AI Model Shootings
   const promptTemplates = [

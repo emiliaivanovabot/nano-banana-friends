@@ -39,12 +39,13 @@ function CommunityPromptsPage() {
     }
 
     const handleSwipeGesture = () => {
-      const swipeThreshold = 50
+      const swipeThreshold = 30
+      const maxVerticalThreshold = 40
       const swipeDistance = touchEndX - touchStartX
       const verticalDistance = Math.abs(touchEndY - touchStartY)
       
       // Check if it's a horizontal swipe (not vertical scroll)
-      if (verticalDistance < swipeThreshold && Math.abs(swipeDistance) > swipeThreshold) {
+      if (verticalDistance < maxVerticalThreshold && Math.abs(swipeDistance) > swipeThreshold) {
         // Right swipe detected
         if (swipeDistance > 0) {
           navigate('/nono-banana')

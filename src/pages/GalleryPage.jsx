@@ -263,86 +263,40 @@ function GalleryPage() {
           </div>
         ) : (
           <>
-            {/* Images Grid */}
+            {/* Instagram-style Images Grid */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: '20px',
+              gridTemplateColumns: window.innerWidth <= 768 ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)',
+              gap: '2px',
               marginBottom: '40px'
             }}>
               {filteredImages.map((image) => (
                 <div
                   key={image.id}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    backdropFilter: 'blur(20px)',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    position: 'relative',
+                    aspectRatio: '3/4',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease'
+                    overflow: 'hidden'
                   }}
                   onClick={() => openImageModal(image)}
-                  onMouseEnter={(e) => {
-                    e.target.style.transform = 'translateY(-4px)';
-                    e.target.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.2)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = 'none';
-                  }}
                 >
                   <img
                     src={image.result_image_url}
                     alt={`Generated ${image.generation_type}`}
                     style={{
                       width: '100%',
-                      height: '200px',
+                      height: '100%',
                       objectFit: 'cover',
-                      borderRadius: '8px',
-                      marginBottom: '12px'
+                      transition: 'transform 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'scale(1)';
                     }}
                   />
-                  
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '8px'
-                  }}>
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '4px 8px',
-                      fontSize: '11px',
-                      fontWeight: '600',
-                      borderRadius: '12px',
-                      background: image.generation_type === 'single' ? '#f97316' : 
-                                 image.generation_type === '4x' ? '#10b981' : '#8b5cf6',
-                      color: 'white'
-                    }}>
-                      {image.generation_type === 'single' ? '🍌 SINGLE' :
-                       image.generation_type === '4x' ? '🍌🍌🍌🍌 4X' : '🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌 10X'}
-                    </span>
-                    
-                    <span style={{
-                      fontSize: '11px',
-                      color: 'rgba(255, 255, 255, 0.7)'
-                    }}>
-                      {new Date(image.created_at).toLocaleDateString('de-DE')}
-                    </span>
-                  </div>
-                  
-                  <p style={{
-                    margin: 0,
-                    fontSize: '13px',
-                    color: 'rgba(255, 255, 255, 0.9)',
-                    lineHeight: '1.4',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    {image.prompt || 'Kein Prompt verfügbar'}
-                  </p>
                 </div>
               ))}
             </div>

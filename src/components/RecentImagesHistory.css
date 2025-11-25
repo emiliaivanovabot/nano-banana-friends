@@ -223,6 +223,10 @@
   color: #333;
   font-size: 0.9rem;
   line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
 }
 
 .modal-prompt strong {

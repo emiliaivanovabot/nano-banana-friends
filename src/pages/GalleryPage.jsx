@@ -347,8 +347,8 @@ function GalleryPage() {
               alignItems: 'center'
             }}>
               <h3 style={{ margin: 0, color: '#333' }}>
-                {selectedImage.generation_type === 'single' ? '🍌 Einzelne Generierung' :
-                 selectedImage.generation_type === '4x' ? '🍌🍌🍌🍌 4x Generierung' : '🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌 10x Generierung'}
+                {selectedImage.generation_type === 'single' ? 'Einzelne Generierung' :
+                 selectedImage.generation_type === '4x' ? '4x Generierung' : '10x Generierung'}
                 {(() => {
                   const imageNumber = getImageNumber(selectedImage.original_filename, selectedImage.generation_type);
                   return imageNumber ? (
@@ -417,7 +417,16 @@ function GalleryPage() {
                 {new Date(selectedImage.created_at).toLocaleString('de-DE')}
               </p>
               {selectedImage.prompt && (
-                <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#333', lineHeight: '1.4' }}>
+                <p style={{ 
+                  margin: '0 0 16px 0', 
+                  fontSize: '14px', 
+                  color: '#333', 
+                  lineHeight: '1.4',
+                  overflow: 'hidden',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: 'vertical'
+                }}>
                   <strong>Prompt:</strong> {selectedImage.prompt}
                 </p>
               )}

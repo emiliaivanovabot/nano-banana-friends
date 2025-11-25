@@ -172,7 +172,8 @@ const RecentImagesHistory = ({ currentUser }) => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h4>
-                {selectedImage.generation_type} Generierung
+                {selectedImage.generation_type === 'single' ? 'Einzelne' :
+                 selectedImage.generation_type === '4x' ? '4x' : '10x'} Generierung
                 {(() => {
                   const imageNumber = getImageNumber(selectedImage.original_filename, selectedImage.generation_type);
                   return imageNumber ? (
@@ -210,8 +211,7 @@ const RecentImagesHistory = ({ currentUser }) => {
               </p>
               {selectedImage.prompt && (
                 <p className="modal-prompt">
-                  <strong>Prompt:</strong> {selectedImage.prompt.substring(0, 100)}
-                  {selectedImage.prompt.length > 100 && '...'}
+                  <strong>Prompt:</strong> {selectedImage.prompt}
                 </p>
               )}
             </div>

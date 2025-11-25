@@ -175,6 +175,61 @@ export const saveImageToDatabase = async (imageUrl, username, generationType, pr
 // REMOVED: uploadToSupabaseTemp() - No longer needed with direct FTP upload
 
 /**
+ * Convert base64 image to AVIF format for optimal compression
+ * @param {string} base64Image - Base64 image data
+ * @param {number} quality - AVIF quality (0.1 - 1.0)
+ * @returns {Promise<string>} AVIF base64 image
+ */
+const convertToAVIF = async (base64Image, quality = 0.8) => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+    
+    img.onload = () => {
+      // Set canvas size to image size
+      canvas.width = img.width
+      canvas.height = img.height
+      
+      // Draw image to canvas
+      ctx.drawImage(img, 0, 0)
+      
+      // Try to convert to AVIF
+      try {
+        const avifBase64 = canvas.toDataURL('image/avif', quality)
+        
+        // Check if AVIF conversion actually worked (some browsers return empty or fallback)
+        if (avifBase64.startsWith('data:image/avif')) {
+          console.log('🚀 AVIF conversion successful:', {
+            original: Math.round(base64Image.length / 1024) + 'KB',
+            avif: Math.round(avifBase64.length / 1024) + 'KB',
+            quality: quality,
+            compression: Math.round((1 - avifBase64.length / base64Image.length) * 100) + '% smaller'
+          })
+          
+          resolve(avifBase64)
+        } else {
+          throw new Error('AVIF not supported')
+        }
+      } catch (error) {
+        console.log('⚠️ AVIF not supported, falling back to high-quality JPEG')
+        const jpegBase64 = canvas.toDataURL('image/jpeg', 0.9)
+        
+        console.log('📷 JPEG fallback:', {
+          original: Math.round(base64Image.length / 1024) + 'KB',
+          jpeg: Math.round(jpegBase64.length / 1024) + 'KB',
+          quality: 0.9
+        })
+        
+        resolve(jpegBase64)
+      }
+    }
+    
+    img.src = base64Image
+  })
+}
+
+/**
  * Complete image upload process: Direct Base64 → Vercel API → Boertlay → Database
  * @param {string} base64Image - Base64 image data
  * @param {string} username - Username (e.g., 'emilia.ivanova')
@@ -185,20 +240,32 @@ export const saveImageToDatabase = async (imageUrl, username, generationType, pr
  */
 export const uploadAndSaveImage = async (base64Image, username, generationType, promptUsed, imageIndex = 0) => {
   try {
-    // Create filename
+    console.log('🚀 Starting direct upload process with AVIF conversion...')
+    
+    // Check original size
+    const originalSizeKB = Math.round(base64Image.length / 1024)
+    console.log('📏 Original PNG size:', originalSizeKB + 'KB')
+    
+    // Convert to AVIF for optimal compression
+    console.log('🔄 Converting to AVIF format...')
+    const avifImage = await convertToAVIF(base64Image, 0.8)
+    
+    // Determine file extension based on conversion result
+    const isAVIF = avifImage.startsWith('data:image/avif')
+    const fileExtension = isAVIF ? 'avif' : 'jpg'
     const timestamp = Date.now()
-    const filename = `nano-banana-${generationType}-${imageIndex + 1}-${timestamp}.png`
+    const filename = `nano-banana-${generationType}-${imageIndex + 1}-${timestamp}.${fileExtension}`
     
-    console.log('🚀 Starting direct upload process for:', filename)
+    console.log('📁 Final filename:', filename)
     
-    // Direct Base64 → FTP Upload (Skip Supabase Storage)
+    // Direct AVIF → FTP Upload
     const apiResponse = await fetch('/api/direct-ftp-upload', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        base64Image: base64Image,
+        base64Image: avifImage,
         username: username,
         filename: filename
       })

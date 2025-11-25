@@ -20,6 +20,49 @@ function CommunityPromptsPage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  // Touch gesture handling for mobile swipe navigation
+  useEffect(() => {
+    let touchStartX = 0
+    let touchStartY = 0
+    let touchEndX = 0
+    let touchEndY = 0
+
+    const handleTouchStart = (e) => {
+      touchStartX = e.changedTouches[0].screenX
+      touchStartY = e.changedTouches[0].screenY
+    }
+
+    const handleTouchEnd = (e) => {
+      touchEndX = e.changedTouches[0].screenX
+      touchEndY = e.changedTouches[0].screenY
+      handleSwipeGesture()
+    }
+
+    const handleSwipeGesture = () => {
+      const swipeThreshold = 50
+      const swipeDistance = touchEndX - touchStartX
+      const verticalDistance = Math.abs(touchEndY - touchStartY)
+      
+      // Check if it's a horizontal swipe (not vertical scroll)
+      if (verticalDistance < swipeThreshold && Math.abs(swipeDistance) > swipeThreshold) {
+        // Right swipe detected
+        if (swipeDistance > 0) {
+          navigate('/nono-banana')
+        }
+      }
+    }
+
+    if (isMobile) {
+      document.addEventListener('touchstart', handleTouchStart, { passive: true })
+      document.addEventListener('touchend', handleTouchEnd, { passive: true })
+    }
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart)
+      document.removeEventListener('touchend', handleTouchEnd)
+    }
+  }, [isMobile, navigate])
+
   // Load community prompts from Supabase database
   useEffect(() => {
     const loadCommunityPrompts = async () => {

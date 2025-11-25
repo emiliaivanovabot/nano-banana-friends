@@ -150,10 +150,24 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('❌ Transfer process failed:', error)
     
+    // Include debug info in error response for troubleshooting
+    const debugInfo = {
+      SUPABASE_URL: !!process.env.SUPABASE_URL,
+      VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      VITE_SUPABASE_SERVICE_ROLE_KEY: !!process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+      BOERTLAY_FTP_HOST: !!process.env.BOERTLAY_FTP_HOST,
+      BOERTLAY_FTP_USER: !!process.env.BOERTLAY_FTP_USER,
+      BOERTLAY_FTP_PASSWORD: !!process.env.BOERTLAY_FTP_PASSWORD,
+      BOERTLAY_BASE_URL: !!process.env.BOERTLAY_BASE_URL
+    }
+    
     return res.status(500).json({
       success: false,
       error: error.message,
-      details: 'Image transfer from Supabase to Boertlay FTP failed'
+      details: 'Image transfer from Supabase to Boertlay FTP failed',
+      debug: debugInfo,
+      requestData: { supabasePath, username, filename }
     })
   }
 }

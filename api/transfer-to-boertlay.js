@@ -36,21 +36,21 @@ export default async function handler(req, res) {
       })
     }
 
-  console.log('🚀 Starting FTP transfer process:', { supabasePath, username, filename })
+    console.log('🚀 Starting FTP transfer process:', { supabasePath, username, filename })
 
-  // Debug Environment Variables
-  console.log('🔍 Environment Debug:', {
-    SUPABASE_URL: !!process.env.SUPABASE_URL,
-    VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    VITE_SUPABASE_SERVICE_ROLE_KEY: !!process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
-    BOERTLAY_FTP_HOST: !!process.env.BOERTLAY_FTP_HOST,
-    BOERTLAY_FTP_USER: !!process.env.BOERTLAY_FTP_USER,
-    BOERTLAY_FTP_PASSWORD: !!process.env.BOERTLAY_FTP_PASSWORD,
-    BOERTLAY_BASE_URL: !!process.env.BOERTLAY_BASE_URL
-  })
+    // Debug Environment Variables
+    const debugInfo = {
+      SUPABASE_URL: !!process.env.SUPABASE_URL,
+      VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      VITE_SUPABASE_SERVICE_ROLE_KEY: !!process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+      BOERTLAY_FTP_HOST: !!process.env.BOERTLAY_FTP_HOST,
+      BOERTLAY_FTP_USER: !!process.env.BOERTLAY_FTP_USER,
+      BOERTLAY_FTP_PASSWORD: !!process.env.BOERTLAY_FTP_PASSWORD,
+      BOERTLAY_BASE_URL: !!process.env.BOERTLAY_BASE_URL
+    }
+    console.log('🔍 Environment Debug:', debugInfo)
 
-  try {
     // Initialize Supabase client with service role key - try both possible env names
     const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY

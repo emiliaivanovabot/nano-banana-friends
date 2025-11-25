@@ -221,7 +221,7 @@ export const uploadToSupabaseTemp = async (base64Image, filename) => {
 }
 
 /**
- * Complete image upload process: Supabase → Vercel API → Boertlay → Database
+ * Complete image upload process: Direct Base64 → Vercel API → Boertlay → Database
  * @param {string} base64Image - Base64 image data
  * @param {string} username - Username (e.g., 'emilia.ivanova')
  * @param {string} generationType - 'single', '4x', or '10x'
@@ -235,37 +235,32 @@ export const uploadAndSaveImage = async (base64Image, username, generationType, 
     const timestamp = Date.now()
     const filename = `nano-banana-${generationType}-${imageIndex + 1}-${timestamp}.png`
     
-    console.log('🚀 Starting upload process for:', filename)
+    console.log('🚀 Starting direct upload process for:', filename)
     
-    // Step 1: Upload to Supabase temp storage
-    const supabaseResult = await uploadToSupabaseTemp(base64Image, filename)
-    if (!supabaseResult.success) {
-      throw new Error(`Supabase upload failed: ${supabaseResult.error}`)
-    }
-    
-    // Step 2: Call Vercel API to transfer to Boertlay FTP
-    const apiResponse = await fetch('/api/transfer-to-boertlay', {
+    // Direct Base64 → FTP Upload (Skip Supabase Storage)
+    const apiResponse = await fetch('/api/direct-ftp-upload', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        supabasePath: supabaseResult.path,
+        base64Image: base64Image,
         username: username,
         filename: filename
       })
     })
     
     if (!apiResponse.ok) {
-      throw new Error(`API transfer failed: ${apiResponse.statusText}`)
+      const errorText = await apiResponse.text()
+      throw new Error(`Direct FTP upload failed: ${apiResponse.statusText} - ${errorText}`)
     }
     
     const apiResult = await apiResponse.json()
     if (!apiResult.success) {
-      throw new Error(`FTP transfer failed: ${apiResult.error}`)
+      throw new Error(`FTP upload failed: ${apiResult.error}`)
     }
     
-    // Step 3: Save metadata to database
+    // Save metadata to database
     const dbResult = await saveImageToDatabase(
       apiResult.boertlayUrl, 
       username, 
@@ -274,7 +269,7 @@ export const uploadAndSaveImage = async (base64Image, username, generationType, 
       filename
     )
     
-    console.log('✅ Complete upload process successful!', {
+    console.log('✅ Direct upload process successful!', {
       filename,
       boertlayUrl: apiResult.boertlayUrl,
       databaseId: dbResult.id
@@ -288,7 +283,7 @@ export const uploadAndSaveImage = async (base64Image, username, generationType, 
     }
     
   } catch (error) {
-    console.error('❌ Complete upload process failed:', error)
+    console.error('❌ Direct upload process failed:', error)
     return {
       success: false,
       error: error.message

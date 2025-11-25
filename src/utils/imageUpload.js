@@ -4,6 +4,7 @@
 
 import { supabase } from '../lib/supabase'
 import { createClient } from '@supabase/supabase-js'
+import { updateDailyUsage } from './usageTracking.js'
 
 /**
  * Convert base64 image data to File object
@@ -258,9 +259,11 @@ const convertToOptimalFormat = async (base64Image, quality = 0.8) => {
  * @param {string} generationType - 'single', '4x', or '10x'
  * @param {string} promptUsed - User's prompt
  * @param {number} imageIndex - Index for batch uploads (0 for single)
+ * @param {string} resolution - '1K', '2K', or '4K' (optional)
+ * @param {number} generationTimeSeconds - Generation time for batch (optional, only for first image)
  * @returns {Promise<Object>} Complete upload result
  */
-export const uploadAndSaveImage = async (base64Image, username, generationType, promptUsed, imageIndex = 0) => {
+export const uploadAndSaveImage = async (base64Image, username, generationType, promptUsed, imageIndex = 0, resolution = '4K', generationTimeSeconds = null) => {
   try {
     console.log('🚀 Starting direct upload process with AVIF conversion...')
     
@@ -315,6 +318,19 @@ export const uploadAndSaveImage = async (base64Image, username, generationType, 
       filename,
       fileSizeBytes
     )
+    
+    // Update daily usage statistics (only for first image in batch to avoid duplicates)
+    if (imageIndex === 0 && generationTimeSeconds) {
+      const generationCount = generationType === 'single' ? 1 : 
+                              generationType === '4x' ? 4 : 10
+      
+      await updateDailyUsage(
+        username,
+        resolution,
+        generationCount,
+        generationTimeSeconds
+      )
+    }
     
     console.log('✅ Direct upload process successful!', {
       filename,

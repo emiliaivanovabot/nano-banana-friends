@@ -725,7 +725,7 @@ function NonoBananaPage() {
             
             // Auto-save image to database and FTP (non-blocking)
             if (resultImage && user?.username) {
-              uploadAndSaveImage(resultImage, user.username, 'single', prompt)
+              uploadAndSaveImage(resultImage, user.username, 'single', prompt, 0, resolution, generationTime)
                 .then(result => {
                   if (result.success) {
                     console.log('✅ Image automatically saved:', result.filename)
@@ -969,7 +969,7 @@ function NonoBananaPage() {
       if (user?.username) {
         finalResults.forEach((result, index) => {
           if (result.success && result.image) {
-            uploadAndSaveImage(result.image, user.username, '4x', prompt, index)
+            uploadAndSaveImage(result.image, user.username, '4x', prompt, index, resolution, index === 0 ? generationTime : null)
               .then(uploadResult => {
                 if (uploadResult.success) {
                   console.log(`✅ 4x Image ${index + 1} automatically saved:`, uploadResult.filename)
@@ -1198,7 +1198,7 @@ function NonoBananaPage() {
       if (user?.username) {
         finalResults.forEach((result, index) => {
           if (result.success && result.image) {
-            uploadAndSaveImage(result.image, user.username, '10x', prompt, index)
+            uploadAndSaveImage(result.image, user.username, '10x', prompt, index, resolution, index === 0 ? generationTime : null)
               .then(uploadResult => {
                 if (uploadResult.success) {
                   console.log(`✅ 10x Image ${index + 1} automatically saved:`, uploadResult.filename)

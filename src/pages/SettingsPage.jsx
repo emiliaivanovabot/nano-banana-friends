@@ -1041,9 +1041,12 @@ export default function SettingsPage() {
                 }}
               >
                 <option value="1:1">1:1 (Quadrat)</option>
-                <option value="9:16">9:16 (Hochformat)</option>
-                <option value="16:9">16:9 (Querformat)</option>
+                <option value="9:16">9:16 (Hochformat/Story)</option>
+                <option value="16:9">16:9 (Querformat/Widescreen)</option>
+                <option value="4:3">4:3 (Post)</option>
                 <option value="3:4">3:4 (Portrait)</option>
+                <option value="2:3">2:3 (Portrait)</option>
+                <option value="3:2">3:2 (Landscape)</option>
               </select>
             </div>
           </div>

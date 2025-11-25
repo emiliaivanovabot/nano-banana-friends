@@ -707,11 +707,13 @@ function NonoBananaPageAsync() {
           
           <button
             onClick={() => {
-              if (aspectRatio === '9:16') setAspectRatio('4:3')
-              else if (aspectRatio === '4:3') setAspectRatio('2:3')
+              if (aspectRatio === '9:16') setAspectRatio('16:9')
+              else if (aspectRatio === '16:9') setAspectRatio('4:3')
+              else if (aspectRatio === '4:3') setAspectRatio('3:4')
+              else if (aspectRatio === '3:4') setAspectRatio('2:3')
               else if (aspectRatio === '2:3') setAspectRatio('3:2')
               else setAspectRatio('9:16')
-            }}
+            }
             disabled={isGenerating}
             style={{
               padding: '10px 14px',
@@ -729,7 +731,9 @@ function NonoBananaPageAsync() {
               <span style={{ fontWeight: '600' }}>{aspectRatio}</span>
               <span style={{ fontSize: '0.75rem', color: '#6B7280' }}>
                 {aspectRatio === '9:16' ? 'Story' : 
+                 aspectRatio === '16:9' ? 'Widescreen' :
                  aspectRatio === '4:3' ? 'Post' :
+                 aspectRatio === '3:4' ? 'Portrait' :
                  aspectRatio === '2:3' ? 'Portrait' : 'Landscape'}
               </span>
             </div>

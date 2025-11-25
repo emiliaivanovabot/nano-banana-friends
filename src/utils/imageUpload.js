@@ -138,9 +138,10 @@ export const uploadImageBatch = async (results, modelId, generationType, batchId
  * @param {string} generationType - 'single', '4x', or '10x'
  * @param {string} promptUsed - User's prompt
  * @param {string} originalFilename - Original filename
+ * @param {number} fileSize - File size in bytes
  * @returns {Promise<Object>} Supabase insert result
  */
-export const saveImageToDatabase = async (imageUrl, username, generationType, promptUsed, originalFilename) => {
+export const saveImageToDatabase = async (imageUrl, username, generationType, promptUsed, originalFilename, fileSize = null) => {
   try {
     const { data, error } = await supabase
       .from('generations')
@@ -153,6 +154,7 @@ export const saveImageToDatabase = async (imageUrl, username, generationType, pr
           result_image_url: imageUrl,
           generation_type: generationType,
           original_filename: originalFilename,
+          file_size: fileSize,
           created_at: new Date().toISOString(),
           completed_at: new Date().toISOString()
         }
@@ -301,13 +303,17 @@ export const uploadAndSaveImage = async (base64Image, username, generationType, 
       throw new Error(`FTP upload failed: ${apiResult.error}`)
     }
     
+    // Calculate file size from compressed image
+    const fileSizeBytes = Math.round((conversionResult.image.length - conversionResult.image.indexOf(',') - 1) * 0.75)
+    
     // Save metadata to database
     const dbResult = await saveImageToDatabase(
       apiResult.boertlayUrl, 
       username, 
       generationType, 
       promptUsed, 
-      filename
+      filename,
+      fileSizeBytes
     )
     
     console.log('✅ Direct upload process successful!', {

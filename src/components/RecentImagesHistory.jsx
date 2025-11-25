@@ -7,6 +7,7 @@ const RecentImagesHistory = ({ currentUser }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     if (!currentUser?.username) return;
@@ -47,6 +48,11 @@ const RecentImagesHistory = ({ currentUser }) => {
 
   const closeModal = () => {
     setSelectedImage(null);
+    setIsFullscreen(false);
+  };
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
   };
 
   const downloadImage = (imageUrl, filename) => {
@@ -158,7 +164,9 @@ const RecentImagesHistory = ({ currentUser }) => {
             <img 
               src={selectedImage.result_image_url} 
               alt="Generated Image"
-              className="modal-image"
+              className={isFullscreen ? "modal-image fullscreen-image" : "modal-image"}
+              onClick={toggleFullscreen}
+              style={{ cursor: 'pointer' }}
             />
             
             <div className="modal-info">

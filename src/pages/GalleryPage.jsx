@@ -10,6 +10,7 @@ function GalleryPage() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all', 'single', '4x', '10x'
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     const loadImages = async () => {
@@ -55,6 +56,11 @@ function GalleryPage() {
 
   const closeModal = () => {
     setSelectedImage(null);
+    setIsFullscreen(false);
+  };
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
   };
 
   const downloadImage = (imageUrl, filename) => {
@@ -401,10 +407,27 @@ function GalleryPage() {
             <img
               src={selectedImage.result_image_url}
               alt="Generated Image"
+              onClick={toggleFullscreen}
               style={{
                 maxWidth: '100%',
                 maxHeight: '60vh',
-                objectFit: 'contain'
+                objectFit: 'contain',
+                cursor: 'zoom-in',
+                transition: 'all 0.3s ease',
+                ...(isFullscreen && {
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  width: '100vw',
+                  height: '100vh',
+                  maxWidth: '100vw',
+                  maxHeight: '100vh',
+                  objectFit: 'contain',
+                  background: 'rgba(0, 0, 0, 0.95)',
+                  zIndex: 9999,
+                  borderRadius: 0,
+                  cursor: 'zoom-out'
+                })
               }}
             />
 

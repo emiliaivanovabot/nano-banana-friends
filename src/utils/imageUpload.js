@@ -175,58 +175,77 @@ export const saveImageToDatabase = async (imageUrl, username, generationType, pr
 // REMOVED: uploadToSupabaseTemp() - No longer needed with direct FTP upload
 
 /**
- * Convert base64 image to WebP format using Canvas API
+ * Convert base64 image to AVIF format using server-side conversion
  * @param {string} base64Image - Base64 image data
- * @param {number} quality - WebP quality (0-1, default 0.8)
- * @returns {Promise<string>} WebP base64 image
+ * @param {number} quality - AVIF quality (1-100, default 80)
+ * @returns {Promise<string>} AVIF base64 image
  */
-const convertToWebP = async (base64Image, quality = 0.8) => {
-  return new Promise((resolve) => {
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    const img = new Image()
+const convertToAVIF = async (base64Image, quality = 80) => {
+  try {
+    console.log('🔄 Converting to AVIF via server...')
     
-    img.onload = () => {
-      canvas.width = img.width
-      canvas.height = img.height
-      ctx.drawImage(img, 0, 0)
+    const response = await fetch('/api/convert-to-avif', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        base64Image: base64Image,
+        quality: quality
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`AVIF conversion API failed: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+    
+    if (!result.success) {
+      throw new Error(`AVIF conversion failed: ${result.error}`)
+    }
+
+    console.log(`🚀 ${result.format.toUpperCase()} conversion successful:`, {
+      original: result.originalSize + 'KB',
+      compressed: result.compressedSize + 'KB',
+      compression: result.compressionRatio + '% smaller'
+    })
+
+    return {
+      image: result.convertedImage,
+      format: result.format
+    }
+
+  } catch (error) {
+    console.log('⚠️ Server-side conversion failed, falling back to JPEG:', error.message)
+    
+    // Client-side JPEG fallback
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
       
-      // Try WebP first, fall back to JPEG if not supported
-      try {
-        const webpBase64 = canvas.toDataURL('image/webp', quality)
-        if (webpBase64.startsWith('data:image/webp')) {
-          console.log('🚀 WebP conversion successful:', {
-            original: Math.round(base64Image.length / 1024) + 'KB',
-            webp: Math.round(webpBase64.length / 1024) + 'KB',
-            quality: quality,
-            compression: Math.round((1 - webpBase64.length / base64Image.length) * 100) + '% smaller'
-          })
-          resolve(webpBase64)
-        } else {
-          throw new Error('WebP not supported')
-        }
-      } catch (webpError) {
-        console.log('⚠️ WebP not supported, falling back to JPEG')
+      img.onload = () => {
+        canvas.width = img.width
+        canvas.height = img.height
+        ctx.drawImage(img, 0, 0)
+        
         const jpegBase64 = canvas.toDataURL('image/jpeg', 0.9)
         
         console.log('📷 JPEG fallback:', {
           original: Math.round(base64Image.length / 1024) + 'KB',
-          jpeg: Math.round(jpegBase64.length / 1024) + 'KB',
-          quality: 0.9
+          jpeg: Math.round(jpegBase64.length / 1024) + 'KB'
         })
         
-        resolve(jpegBase64)
+        resolve({
+          image: jpegBase64,
+          format: 'jpeg'
+        })
       }
-    }
-    
-    img.onerror = () => {
-      console.log('⚠️ Image load failed, falling back to JPEG')
-      const jpegBase64 = canvas.toDataURL('image/jpeg', 0.9)
-      resolve(jpegBase64)
-    }
-    
-    img.src = base64Image
-  })
+      
+      img.src = base64Image
+    })
+  }
 }
 
 /**
@@ -246,26 +265,26 @@ export const uploadAndSaveImage = async (base64Image, username, generationType, 
     const originalSizeKB = Math.round(base64Image.length / 1024)
     console.log('📏 Original PNG size:', originalSizeKB + 'KB')
     
-    // Convert to WebP for optimal compression
-    console.log('🔄 Converting to WebP format...')
-    const webpImage = await convertToWebP(base64Image, 0.8)
+    // Convert to AVIF for optimal compression
+    console.log('🔄 Converting to AVIF format...')
+    const conversionResult = await convertToAVIF(base64Image, 80)
     
     // Determine file extension based on conversion result
-    const isWebP = webpImage.startsWith('data:image/webp')
-    const fileExtension = isWebP ? 'webp' : 'jpg'
+    const fileExtension = conversionResult.format === 'avif' ? 'avif' : 
+                         conversionResult.format === 'webp' ? 'webp' : 'jpg'
     const timestamp = Date.now()
     const filename = `nano-banana-${generationType}-${imageIndex + 1}-${timestamp}.${fileExtension}`
     
     console.log('📁 Final filename:', filename)
     
-    // Direct WebP → FTP Upload
+    // Direct AVIF/WebP/JPEG → FTP Upload
     const apiResponse = await fetch('/api/direct-ftp-upload', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        base64Image: webpImage,
+        base64Image: conversionResult.image,
         username: username,
         filename: filename
       })

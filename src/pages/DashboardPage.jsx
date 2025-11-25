@@ -36,6 +36,18 @@ function DashboardPage() {
       sectionTitle: 'Nano Banana Pro'
     },
     {
+      id: 'gallery',
+      path: '/gallery',
+      title: 'Meine Bilder',
+      description: 'Alle generierten Bilder',
+      icon: '🖼️',
+      color: '#ffffff',
+      bgColor: '#8b5cf6',
+      borderColor: '#7c3aed',
+      hoverBg: '#7c3aed',
+      sectionTitle: 'Bilder Galerie'
+    },
+    {
       id: 'wan-video',
       path: '/wan-video',
       title: 'Video Generation',

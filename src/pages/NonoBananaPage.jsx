@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { SecureLogger, ApiLogger } from '../utils/secure-logger.js'
 import { createClient } from '@supabase/supabase-js'
+import RecentImagesHistory from '../components/RecentImagesHistory.jsx'
+import { uploadAndSaveImage } from '../utils/imageUpload.js'
 
 // Premium Dropdown Component - Bulletproof Portal-based
 function PremiumDropdown({ label, value, onChange, options }) {
@@ -720,6 +722,21 @@ function NonoBananaPage() {
               text: resultText.trim() || 'Bild erfolgreich generiert!',
               image: resultImage
             })
+            
+            // Auto-save image to database and FTP (non-blocking)
+            if (resultImage && user?.username) {
+              uploadAndSaveImage(resultImage, user.username, 'single', prompt)
+                .then(result => {
+                  if (result.success) {
+                    console.log('✅ Image automatically saved:', result.filename)
+                  } else {
+                    console.error('❌ Auto-save failed:', result.error)
+                  }
+                })
+                .catch(error => {
+                  console.error('❌ Auto-save error:', error)
+                })
+            }
           } else {
             SecureLogger.warn('No valid image or text found in response parts')
             throw new Error('Keine gültigen Daten in der Antwort erhalten')
@@ -947,6 +964,25 @@ function NonoBananaPage() {
       
       console.log('🍌🍌🍌🍌 4x Generation Results:', finalResults)
       setMultiResults(finalResults)
+      
+      // Auto-save all successful images (non-blocking)
+      if (user?.username) {
+        finalResults.forEach((result, index) => {
+          if (result.success && result.image) {
+            uploadAndSaveImage(result.image, user.username, '4x', prompt, index)
+              .then(uploadResult => {
+                if (uploadResult.success) {
+                  console.log(`✅ 4x Image ${index + 1} automatically saved:`, uploadResult.filename)
+                } else {
+                  console.error(`❌ 4x Auto-save failed for image ${index + 1}:`, uploadResult.error)
+                }
+              })
+              .catch(error => {
+                console.error(`❌ 4x Auto-save error for image ${index + 1}:`, error)
+              })
+          }
+        })
+      }
 
     } catch (error) {
       console.error('4x Generation Error:', error)
@@ -1157,6 +1193,25 @@ function NonoBananaPage() {
       
       console.log('🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌 10x Generation Results:', finalResults)
       setMultiResults10(finalResults)
+      
+      // Auto-save all successful images (non-blocking)
+      if (user?.username) {
+        finalResults.forEach((result, index) => {
+          if (result.success && result.image) {
+            uploadAndSaveImage(result.image, user.username, '10x', prompt, index)
+              .then(uploadResult => {
+                if (uploadResult.success) {
+                  console.log(`✅ 10x Image ${index + 1} automatically saved:`, uploadResult.filename)
+                } else {
+                  console.error(`❌ 10x Auto-save failed for image ${index + 1}:`, uploadResult.error)
+                }
+              })
+              .catch(error => {
+                console.error(`❌ 10x Auto-save error for image ${index + 1}:`, error)
+              })
+          }
+        })
+      }
 
     } catch (error) {
       console.error('10x Generation Error:', error)
@@ -2202,6 +2257,8 @@ function NonoBananaPage() {
         </div>
       )}
 
+      {/* Recent Images History - ganz unten nach allen Generation Results */}
+      <RecentImagesHistory currentUser={user} />
 
     </div>
   )

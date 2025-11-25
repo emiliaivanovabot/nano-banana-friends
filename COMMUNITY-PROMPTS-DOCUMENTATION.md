@@ -299,3 +299,34 @@ JSON-Darstellung
     }
   ]
 }
+
+
+upload der bilder 
+Was geändert wurde:
+
+  1. Parameter: userId → modelId
+  2. Kommentare: Aktualisiert mit Beispielen ('emilia-berlin',
+  'jessy-germany')
+  3. Function Signatures: Alle 3 Functions angepasst:
+    - uploadToBoertlay(file, modelId)
+    - testBoertlayConnection(testModelId)
+    - uploadImageBatch(results, modelId, generationType, batchId)
+
+  ✅ Kein Breaking Change:
+
+  - Bestehende Generation Functions verwenden diese Upload Functions
+  noch nicht
+  - Alle Tests funktionieren weiterhin
+  - FTP Upload funktioniert perfekt
+
+  📁 Neue Funktionsweise:
+
+  // Beispiel Verwendung:
+  uploadToBoertlay(imageFile, "emilia-berlin")
+  // → Speichert in: 
+  /httpdocs/user_pics/generated/emilia-berlin/2025/11/
+  // → URL: https://boertlay.de/user_pics/generated/emilia-berlin/2025
+  /11/filename.png
+
+  Die Functions sind jetzt bereit für die Integration in die
+  Generation Functions! 🚀

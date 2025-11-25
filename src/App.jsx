@@ -8,6 +8,7 @@ import NonoBananaPage from './pages/NonoBananaPage.jsx'
 import QwenPage from './pages/QwenPage.jsx'
 import CommunityPromptsPage from './pages/CommunityPromptsPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
+import GalleryPage from './pages/GalleryPage.jsx'
 import LoginPage from './auth/LoginPage.jsx'
 import OnboardingPage from './auth/OnboardingPage.jsx'
 
@@ -61,6 +62,11 @@ function App() {
           <Route path="/settings" element={
             <ProtectedRoute requireCompleteProfile={true}>
               <SettingsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/gallery" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <GalleryPage />
             </ProtectedRoute>
           } />
           <Route path="/community-prompts" element={

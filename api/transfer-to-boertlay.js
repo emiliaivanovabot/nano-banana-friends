@@ -70,10 +70,20 @@ export default async function handler(req, res) {
     
     if (listError) {
       console.error('❌ Bucket access error:', listError)
-      throw new Error(`Cannot access temp-uploads bucket: ${listError.message}`)
+      console.log('🔧 Attempting to create temp-uploads bucket...')
+      
+      // Try to create the bucket if it doesn't exist
+      const { data: bucketCreate, error: createError } = await supabase.storage
+        .createBucket('temp-uploads', { public: false, allowedMimeTypes: ['image/png', 'image/jpeg'] })
+      
+      if (createError && !createError.message.includes('already exists')) {
+        throw new Error(`Cannot create temp-uploads bucket: ${createError.message}`)
+      }
+      
+      console.log('✅ Bucket created or already exists')
+    } else {
+      console.log('🗂️ Files in temp-uploads bucket:', bucketFiles?.map(f => f.name) || [])
     }
-    
-    console.log('🗂️ Files in temp-uploads bucket:', bucketFiles?.map(f => f.name) || [])
 
     // Download image from Supabase Storage
     console.log('🔍 Attempting download:', { bucket: 'temp-uploads', path: supabasePath })

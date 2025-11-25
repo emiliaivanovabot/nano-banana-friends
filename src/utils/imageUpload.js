@@ -172,53 +172,7 @@ export const saveImageToDatabase = async (imageUrl, username, generationType, pr
   }
 };
 
-/**
- * Upload base64 image to Supabase Storage (temporary)
- * @param {string} base64Image - Base64 image data
- * @param {string} filename - Filename for storage
- * @returns {Promise<Object>} Upload result with file path
- */
-export const uploadToSupabaseTemp = async (base64Image, filename) => {
-  try {
-    // Convert base64 to file
-    const imageFile = base64ToFile(base64Image, filename)
-    
-    console.log('🔄 Uploading to Supabase temp storage:', filename)
-    
-    // Create Supabase client with service role key to bypass RLS
-    const serviceSupabase = createClient(
-      import.meta.env.VITE_SUPABASE_URL,
-      import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
-    )
-    
-    const { data, error } = await serviceSupabase.storage
-      .from('temp-uploads')
-      .upload(filename, imageFile, {
-        contentType: 'image/png',
-        upsert: false
-      })
-    
-    if (error) {
-      throw error
-    }
-    
-    console.log('✅ Uploaded to Supabase temp storage:', data.path)
-    
-    return {
-      success: true,
-      path: data.path,
-      filename: filename,
-      size: imageFile.size
-    }
-    
-  } catch (error) {
-    console.error('❌ Supabase temp upload failed:', error)
-    return {
-      success: false,
-      error: error.message
-    }
-  }
-}
+// REMOVED: uploadToSupabaseTemp() - No longer needed with direct FTP upload
 
 /**
  * Complete image upload process: Direct Base64 → Vercel API → Boertlay → Database

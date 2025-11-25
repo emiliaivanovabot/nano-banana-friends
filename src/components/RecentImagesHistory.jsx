@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import './RecentImagesHistory.css';
 
@@ -119,7 +120,7 @@ const RecentImagesHistory = ({ currentUser }) => {
   if (!currentUser?.username) {
     return (
       <div className="recent-images-history">
-        <h3>Letzte 20 Bilder</h3>
+        <h3>Deine letzten 20 Bilder</h3>
         <div className="no-images-container">
           <p>Benutzer wird geladen...</p>
         </div>
@@ -130,7 +131,15 @@ const RecentImagesHistory = ({ currentUser }) => {
   return (
     <>
       <div className="recent-images-history">
-        <h3>Letzte 20 Bilder</h3>
+        <div className="recent-images-header">
+          <h3>Deine letzten 20 Bilder</h3>
+          <Link 
+            to="/gallery" 
+            className="gallery-link-button"
+          >
+            🖼️ Zur Galerie
+          </Link>
+        </div>
         
         {loading ? (
           <div className="loading-container">

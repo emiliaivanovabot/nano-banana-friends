@@ -76,14 +76,8 @@ function GalleryPage() {
     return null;
   };
 
-  const downloadImage = (imageUrl, filename) => {
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = filename || 'generated-image.png';
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const openImage = (imageUrl) => {
+    window.open(imageUrl, '_blank');
   };
 
   const copyPrompt = (prompt) => {
@@ -144,7 +138,7 @@ function GalleryPage() {
               fontWeight: '600', 
               color: 'white' 
             }}>
-              🖼️ Meine Bilder
+              Meine Bilder
             </h1>
             <p style={{ 
               margin: 0, 
@@ -181,10 +175,10 @@ function GalleryPage() {
           flexWrap: 'wrap'
         }}>
           {[
-            { key: 'all', label: '🖼️ Alle', count: images.length },
-            { key: 'single', label: '🍌 Einzeln', count: images.filter(img => img.generation_type === 'single').length },
-            { key: '4x', label: '🍌🍌🍌🍌 4x', count: images.filter(img => img.generation_type === '4x').length },
-            { key: '10x', label: '🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌 10x', count: images.filter(img => img.generation_type === '10x').length }
+            { key: 'all', label: 'Alle', count: images.length },
+            { key: 'single', label: 'Einzeln', count: images.filter(img => img.generation_type === 'single').length },
+            { key: '4x', label: '4x', count: images.filter(img => img.generation_type === '4x').length },
+            { key: '10x', label: '10x', count: images.filter(img => img.generation_type === '10x').length }
           ].map(filterOption => (
             <button
               key={filterOption.key}
@@ -222,7 +216,7 @@ function GalleryPage() {
             textAlign: 'center'
           }}>
             <p style={{ color: 'white', margin: 0, fontSize: '18px' }}>
-              🔄 Lade Bilder...
+              Lade Bilder...
             </p>
           </div>
         ) : filteredImages.length === 0 ? (
@@ -234,7 +228,7 @@ function GalleryPage() {
             textAlign: 'center'
           }}>
             <h2 style={{ color: 'white', margin: '0 0 16px 0', fontSize: '20px' }}>
-              📭 Keine Bilder gefunden
+              Keine Bilder gefunden
             </h2>
             <p style={{ 
               color: 'rgba(255, 255, 255, 0.8)', 
@@ -258,7 +252,7 @@ function GalleryPage() {
                 fontSize: '14px'
               }}
             >
-              🍌 Erstes Bild generieren
+              Erstes Bild generieren
             </Link>
           </div>
         ) : (
@@ -347,8 +341,8 @@ function GalleryPage() {
               alignItems: 'center'
             }}>
               <h3 style={{ margin: 0, color: '#333' }}>
-                {selectedImage.generation_type === 'single' ? 'Einzelne Generierung' :
-                 selectedImage.generation_type === '4x' ? '4x Generierung' : '10x Generierung'}
+                {selectedImage.generation_type === 'single' ? 'Einzelne' :
+                 selectedImage.generation_type === '4x' ? '4x' : '10x'} Generierung
                 {(() => {
                   const imageNumber = getImageNumber(selectedImage.original_filename, selectedImage.generation_type);
                   return imageNumber ? (
@@ -390,7 +384,7 @@ function GalleryPage() {
               onClick={toggleFullscreen}
               style={{
                 maxWidth: '100%',
-                maxHeight: '60vh',
+                maxHeight: window.innerWidth <= 768 ? '40vh' : '60vh',
                 objectFit: 'contain',
                 cursor: 'zoom-in',
                 transition: 'all 0.3s ease',
@@ -438,7 +432,10 @@ function GalleryPage() {
                 flexWrap: 'wrap'
               }}>
                 <button
-                  onClick={() => downloadImage(selectedImage.result_image_url, selectedImage.original_filename)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openImage(selectedImage.result_image_url);
+                  }}
                   style={{
                     padding: window.innerWidth <= 768 ? '10px 8px' : '12px 24px',
                     background: '#8b5cf6',
@@ -453,11 +450,14 @@ function GalleryPage() {
                     maxWidth: window.innerWidth <= 768 ? '48%' : 'initial'
                   }}
                 >
-                  📥 Download
+                  Im neuen Tab öffnen
                 </button>
                 {selectedImage.prompt && (
                   <button
-                    onClick={() => copyPrompt(selectedImage.prompt)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyPrompt(selectedImage.prompt);
+                    }}
                     style={{
                       padding: window.innerWidth <= 768 ? '10px 8px' : '12px 24px',
                       background: '#10b981',

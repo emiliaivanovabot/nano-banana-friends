@@ -69,14 +69,8 @@ const RecentImagesHistory = ({ currentUser }) => {
     return null;
   };
 
-  const downloadImage = (imageUrl, filename) => {
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = filename || 'generated-image.png';
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const openImage = (imageUrl) => {
+    window.open(imageUrl, '_blank');
   };
 
   const copyPrompt = (prompt) => {
@@ -220,14 +214,20 @@ const RecentImagesHistory = ({ currentUser }) => {
               <div className="action-buttons-row">
                 <button 
                   className="download-button"
-                  onClick={() => downloadImage(selectedImage.result_image_url, selectedImage.original_filename)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openImage(selectedImage.result_image_url);
+                  }}
                 >
-                  📥 Download
+                  Im neuen Tab öffnen
                 </button>
                 {selectedImage.prompt && (
                   <button 
                     className="copy-prompt-button"
-                    onClick={() => copyPrompt(selectedImage.prompt)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyPrompt(selectedImage.prompt);
+                    }}
                   >
                     {copySuccess ? '✅ Copied!' : '📋 Copy Prompt'}
                   </button>

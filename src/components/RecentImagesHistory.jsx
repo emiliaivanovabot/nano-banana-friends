@@ -55,6 +55,19 @@ const RecentImagesHistory = ({ currentUser }) => {
     setIsFullscreen(!isFullscreen);
   };
 
+  const getImageNumber = (filename, generationType) => {
+    if (!filename || generationType === 'single') return null;
+    
+    // Extract number from filename like "nano-banana-4x-3-1764109853661.webp"
+    const match = filename.match(/nano-banana-\w+-(\d+)-\d+\.(webp|jpg|png|avif)/);
+    if (match) {
+      const imageNum = parseInt(match[1]);
+      const total = generationType === '4x' ? 4 : 10;
+      return { current: imageNum, total };
+    }
+    return null;
+  };
+
   const downloadImage = (imageUrl, filename) => {
     const link = document.createElement('a');
     link.href = imageUrl;
@@ -151,6 +164,19 @@ const RecentImagesHistory = ({ currentUser }) => {
             <div className="modal-header">
               <h4>
                 {selectedImage.generation_type} Generierung
+                {(() => {
+                  const imageNumber = getImageNumber(selectedImage.original_filename, selectedImage.generation_type);
+                  return imageNumber ? (
+                    <span style={{ 
+                      fontWeight: 'normal', 
+                      fontSize: '0.8em', 
+                      color: '#666',
+                      marginLeft: '8px'
+                    }}>
+                      {imageNumber.current} von {imageNumber.total}
+                    </span>
+                  ) : null;
+                })()}
               </h4>
               <button 
                 className="close-button"

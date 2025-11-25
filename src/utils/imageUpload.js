@@ -175,77 +175,78 @@ export const saveImageToDatabase = async (imageUrl, username, generationType, pr
 // REMOVED: uploadToSupabaseTemp() - No longer needed with direct FTP upload
 
 /**
- * Convert base64 image to AVIF format using server-side conversion
+ * Convert base64 image to optimal format (AVIF/WebP/JPEG) using client-side Canvas
  * @param {string} base64Image - Base64 image data
- * @param {number} quality - AVIF quality (1-100, default 80)
- * @returns {Promise<string>} AVIF base64 image
+ * @param {number} quality - Image quality (0-1, default 0.8)
+ * @returns {Promise<Object>} Converted image with format info
  */
-const convertToAVIF = async (base64Image, quality = 80) => {
-  try {
-    console.log('🔄 Converting to AVIF via server...')
+const convertToOptimalFormat = async (base64Image, quality = 0.8) => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
     
-    const response = await fetch('/api/convert-to-avif', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        base64Image: base64Image,
-        quality: quality
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`AVIF conversion API failed: ${response.statusText}`)
-    }
-
-    const result = await response.json()
-    
-    if (!result.success) {
-      throw new Error(`AVIF conversion failed: ${result.error}`)
-    }
-
-    console.log(`🚀 ${result.format.toUpperCase()} conversion successful:`, {
-      original: result.originalSize + 'KB',
-      compressed: result.compressedSize + 'KB',
-      compression: result.compressionRatio + '% smaller'
-    })
-
-    return {
-      image: result.convertedImage,
-      format: result.format
-    }
-
-  } catch (error) {
-    console.log('⚠️ Server-side conversion failed, falling back to JPEG:', error.message)
-    
-    // Client-side JPEG fallback
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-      const img = new Image()
+    img.onload = () => {
+      canvas.width = img.width
+      canvas.height = img.height
+      ctx.drawImage(img, 0, 0)
       
-      img.onload = () => {
-        canvas.width = img.width
-        canvas.height = img.height
-        ctx.drawImage(img, 0, 0)
-        
-        const jpegBase64 = canvas.toDataURL('image/jpeg', 0.9)
-        
-        console.log('📷 JPEG fallback:', {
-          original: Math.round(base64Image.length / 1024) + 'KB',
-          jpeg: Math.round(jpegBase64.length / 1024) + 'KB'
-        })
-        
-        resolve({
-          image: jpegBase64,
-          format: 'jpeg'
-        })
+      let resultImage, format
+      
+      // Try AVIF first (most modern browsers support it)
+      try {
+        resultImage = canvas.toDataURL('image/avif', quality)
+        if (resultImage.startsWith('data:image/avif') && resultImage.length < base64Image.length * 0.9) {
+          format = 'avif'
+          console.log('🚀 AVIF conversion successful:', {
+            original: Math.round(base64Image.length / 1024) + 'KB',
+            avif: Math.round(resultImage.length / 1024) + 'KB',
+            compression: Math.round((1 - resultImage.length / base64Image.length) * 100) + '% smaller'
+          })
+          resolve({ image: resultImage, format })
+          return
+        }
+      } catch (avifError) {
+        // AVIF not supported, continue to WebP
       }
       
-      img.src = base64Image
-    })
-  }
+      // Try WebP as fallback
+      try {
+        resultImage = canvas.toDataURL('image/webp', quality)
+        if (resultImage.startsWith('data:image/webp') && resultImage.length < base64Image.length * 0.9) {
+          format = 'webp'
+          console.log('🚀 WebP conversion successful:', {
+            original: Math.round(base64Image.length / 1024) + 'KB',
+            webp: Math.round(resultImage.length / 1024) + 'KB',
+            compression: Math.round((1 - resultImage.length / base64Image.length) * 100) + '% smaller'
+          })
+          resolve({ image: resultImage, format })
+          return
+        }
+      } catch (webpError) {
+        // WebP not supported, continue to JPEG
+      }
+      
+      // JPEG as final fallback
+      resultImage = canvas.toDataURL('image/jpeg', 0.9)
+      format = 'jpeg'
+      
+      console.log('📷 JPEG fallback:', {
+        original: Math.round(base64Image.length / 1024) + 'KB',
+        jpeg: Math.round(resultImage.length / 1024) + 'KB',
+        compression: Math.round((1 - resultImage.length / base64Image.length) * 100) + '% smaller'
+      })
+      
+      resolve({ image: resultImage, format })
+    }
+    
+    img.onerror = () => {
+      console.log('⚠️ Image load failed, returning original')
+      resolve({ image: base64Image, format: 'png' })
+    }
+    
+    img.src = base64Image
+  })
 }
 
 /**
@@ -265,9 +266,9 @@ export const uploadAndSaveImage = async (base64Image, username, generationType, 
     const originalSizeKB = Math.round(base64Image.length / 1024)
     console.log('📏 Original PNG size:', originalSizeKB + 'KB')
     
-    // Convert to AVIF for optimal compression
-    console.log('🔄 Converting to AVIF format...')
-    const conversionResult = await convertToAVIF(base64Image, 80)
+    // Convert to optimal format (AVIF/WebP/JPEG)
+    console.log('🔄 Converting to optimal format...')
+    const conversionResult = await convertToOptimalFormat(base64Image, 0.8)
     
     // Determine file extension based on conversion result
     const fileExtension = conversionResult.format === 'avif' ? 'avif' : 

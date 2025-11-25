@@ -137,7 +137,7 @@ const RecentImagesHistory = ({ currentUser }) => {
             to="/gallery" 
             className="gallery-link-button"
           >
-            🖼️ Zur Galerie
+            Zur Galerie
           </Link>
         </div>
         

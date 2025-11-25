@@ -290,7 +290,14 @@ function NonoBananaPage() {
     const searchParams = new URLSearchParams(location.search)
     const importedPrompt = searchParams.get('prompt')
     if (importedPrompt) {
-      const decodedPrompt = decodeURIComponent(importedPrompt)
+      // Safe decoding with try/catch to prevent crashes
+      let decodedPrompt = importedPrompt
+      try {
+        decodedPrompt = decodeURIComponent(importedPrompt)
+      } catch (error) {
+        console.warn('Failed to decode prompt, using as-is:', error)
+        // Use the prompt as-is if decoding fails
+      }
       
       // If user has uploaded images OR has saved face image AND it's visible, automatically add face instructions
       if (images.length > 0 || (userSettings?.main_face_image_url && showMainFaceImage)) {

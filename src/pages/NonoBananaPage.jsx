@@ -339,14 +339,14 @@ function NonoBananaPage() {
     if (!isMobile) return
 
     const swipeHandler = new SwipeHandler({
-      minSwipeDistance: 120,
-      maxVerticalMovement: 80,
+      minSwipeDistance: 180, // Increased from 120px - requires longer swipe distance
+      maxVerticalMovement: 60, // Reduced from 80px - more strict vertical tolerance
       maxSwipeTime: 1000,
-      minVelocity: 0.3,
+      minVelocity: 0.5, // Increased from 0.3 - requires faster/more deliberate swipe
       edgeThreshold: 30,
       maxTransform: 15,
       maxOpacity: 0.15,
-      transformThreshold: 25,
+      transformThreshold: 40, // Increased from 25px - visual feedback starts later
       feedbackDuration: 300,
       navigationDelay: 180,
       debug: false, // Set to true for debugging

@@ -13,13 +13,17 @@ function GalleryPage() {
   const [filter, setFilter] = useState('all'); // 'all', 'single', '4x', '10x'
   const [copySuccess, setCopySuccess] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [isMobile, setIsMobile] = useState(false);
   const [imageErrors, setImageErrors] = useState(new Set());
 
   useEffect(() => {
-    if (!user?.username) return;
+    if (!user?.username) {
+      console.log('Gallery: No user or username, skipping image load');
+      setLoading(false);
+      return;
+    }
 
-    const abortController = new AbortController();
+    let isMounted = true;
     const loadImages = async () => {
       try {
         setLoading(true);
@@ -27,16 +31,15 @@ function GalleryPage() {
         console.log('Loading gallery images for user:', user?.username);
         
         // Optimized query - only fetch needed columns
-        const { data, error, signal } = await supabase
+        const { data, error } = await supabase
           .from('generations')
           .select('id, result_image_url, prompt, generation_type, created_at, original_filename')
           .eq('username', user.username)
           .eq('status', 'completed')
           .order('created_at', { ascending: false })
-          .limit(100) // Pagination - load first 100 images
-          .abortSignal(abortController.signal);
+          .limit(100); // Pagination - load first 100 images
 
-        if (abortController.signal.aborted) return;
+        if (!isMounted) return;
 
         if (error) {
           console.error('Error loading images:', error);
@@ -46,11 +49,12 @@ function GalleryPage() {
 
         setImages(data || []);
       } catch (error) {
-        if (error.name !== 'AbortError') {
+        if (isMounted) {
           console.error('Error loading images:', error);
+          setImages([]);
         }
       } finally {
-        if (!abortController.signal.aborted) {
+        if (isMounted) {
           setLoading(false);
         }
       }
@@ -59,13 +63,14 @@ function GalleryPage() {
     loadImages();
 
     return () => {
-      abortController.abort();
+      isMounted = false;
     };
   }, [user?.username]); // Dependency on username
 
   const filteredImages = useMemo(() => {
+    if (!images || !Array.isArray(images)) return [];
     if (filter === 'all') return images;
-    return images.filter(img => img.generation_type === filter);
+    return images.filter(img => img && img.generation_type === filter);
   }, [images, filter]);
 
   const openImageModal = (image) => {
@@ -148,6 +153,10 @@ function GalleryPage() {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
     };
+    
+    // Set initial value
+    handleResize();
+    
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -359,7 +368,12 @@ function GalleryPage() {
               gap: '2px',
               marginBottom: '40px'
             }}>
-              {filteredImages.map((image) => (
+              {filteredImages.map((image) => {
+                if (!image || !image.id) {
+                  console.warn('Gallery: Found invalid image data', image);
+                  return null;
+                }
+                return (
                 <div
                   key={image.id}
                   style={{
@@ -407,7 +421,8 @@ function GalleryPage() {
                     />
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}

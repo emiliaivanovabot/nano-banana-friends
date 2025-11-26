@@ -316,7 +316,7 @@ export default function LoginPage() {
               padding: '18px',
               background: isSubmitting ? 
                 'hsl(var(--muted))' : 
-                'linear-gradient(135deg, hsl(47 100% 65%) 0%, hsl(280 70% 60%) 100%)',
+                '#8B4B9F',
               color: 'white',
               border: 'none',
               borderRadius: '14px',
@@ -326,7 +326,7 @@ export default function LoginPage() {
               transition: 'all 0.3s ease',
               boxShadow: isSubmitting ? 
                 'none' : 
-                '0 8px 16px hsl(47 100% 65% / 0.3)',
+                '0 8px 16px rgba(139, 75, 159, 0.3)',
               fontFamily: "'Space Grotesk', sans-serif",
               letterSpacing: '0.5px',
               display: 'flex',
@@ -339,13 +339,13 @@ export default function LoginPage() {
             onMouseEnter={(e) => {
               if (!isSubmitting) {
                 e.target.style.transform = 'translateY(-2px)'
-                e.target.style.boxShadow = '0 12px 24px hsl(47 100% 65% / 0.4)'
+                e.target.style.boxShadow = '0 12px 24px rgba(139, 75, 159, 0.4)'
               }
             }}
             onMouseLeave={(e) => {
               if (!isSubmitting) {
                 e.target.style.transform = 'translateY(0)'
-                e.target.style.boxShadow = '0 8px 16px hsl(47 100% 65% / 0.3)'
+                e.target.style.boxShadow = '0 8px 16px rgba(139, 75, 159, 0.3)'
               }
             }}
           >
@@ -363,7 +363,6 @@ export default function LoginPage() {
               </>
             ) : (
               <>
-                <span>🚀</span>
                 Anmelden
               </>
             )}

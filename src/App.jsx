@@ -11,6 +11,7 @@ import SettingsPage from './pages/SettingsPage.jsx'
 import GalleryPage from './pages/GalleryPage.jsx'
 import LoginPage from './auth/LoginPage.jsx'
 import OnboardingPage from './auth/OnboardingPage.jsx'
+import MobileErrorBoundary from './components/MobileErrorBoundary.jsx'
 
 function App() {
   return (
@@ -66,7 +67,9 @@ function App() {
           } />
           <Route path="/gallery" element={
             <ProtectedRoute requireCompleteProfile={true}>
-              <GalleryPage />
+              <MobileErrorBoundary>
+                <GalleryPage />
+              </MobileErrorBoundary>
             </ProtectedRoute>
           } />
           <Route path="/community-prompts" element={

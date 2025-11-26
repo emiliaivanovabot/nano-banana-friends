@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { supabase } from '../lib/supabase';
@@ -15,57 +15,60 @@ function GalleryPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [imageErrors, setImageErrors] = useState(new Set());
+  const [isNavigating, setIsNavigating] = useState(false);
+  
+  // Refs for cleanup and performance
+  const swipeHandlerRef = useRef(null);
+  const resizeTimeoutRef = useRef(null);
+  const componentMountedRef = useRef(true);
 
-  useEffect(() => {
-    if (!user?.username) {
+  // Optimized image loading with mobile memory management
+  const loadImages = useCallback(async () => {
+    if (!user?.username || !componentMountedRef.current) {
       console.log('Gallery: No user or username, skipping image load');
       setLoading(false);
       return;
     }
 
-    let isMounted = true;
-    const loadImages = async () => {
-      try {
-        setLoading(true);
-        
-        console.log('Loading gallery images for user:', user?.username);
-        
-        // Optimized query - only fetch needed columns
-        const { data, error } = await supabase
-          .from('generations')
-          .select('id, result_image_url, prompt, generation_type, created_at, original_filename')
-          .eq('username', user.username)
-          .eq('status', 'completed')
-          .order('created_at', { ascending: false })
-          .limit(100); // Pagination - load first 100 images
+    try {
+      setLoading(true);
+      
+      console.log('Loading gallery images for user:', user?.username);
+      
+      // Mobile-optimized query - load fewer images initially for performance
+      const limit = window.innerWidth <= 768 ? 50 : 100;
+      const { data, error } = await supabase
+        .from('generations')
+        .select('id, result_image_url, prompt, generation_type, created_at, original_filename')
+        .eq('username', user.username)
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
-        if (!isMounted) return;
+      if (!componentMountedRef.current) return;
 
-        if (error) {
-          console.error('Error loading images:', error);
-          setImages([]);
-          return;
-        }
-
-        setImages(data || []);
-      } catch (error) {
-        if (isMounted) {
-          console.error('Error loading images:', error);
-          setImages([]);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+      if (error) {
+        console.error('Error loading images:', error);
+        setImages([]);
+        return;
       }
-    };
 
+      setImages(data || []);
+    } catch (error) {
+      if (componentMountedRef.current) {
+        console.error('Error loading images:', error);
+        setImages([]);
+      }
+    } finally {
+      if (componentMountedRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [user?.username]);
+
+  useEffect(() => {
     loadImages();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.username]); // Dependency on username
+  }, [loadImages]);
 
   const filteredImages = useMemo(() => {
     if (!images || !Array.isArray(images)) return [];
@@ -73,14 +76,15 @@ function GalleryPage() {
     return images.filter(img => img && img.generation_type === filter);
   }, [images, filter]);
 
-  const openImageModal = (image) => {
+  const openImageModal = useCallback((image) => {
+    if (isNavigating) return; // Prevent modal opening during navigation
     setSelectedImage(image);
-  };
+  }, [isNavigating]);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setSelectedImage(null);
     setIsFullscreen(false);
-  };
+  }, []);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -113,25 +117,27 @@ function GalleryPage() {
     });
   };
 
-  const handleImageError = (imageId) => {
+  const handleImageError = useCallback((imageId) => {
+    if (!componentMountedRef.current) return;
     console.error(`Failed to load image: ${imageId}`);
     setImageErrors(prev => new Set([...prev, imageId]));
-  };
+  }, []);
 
-  const handleImageLoad = (imageId) => {
+  const handleImageLoad = useCallback((imageId) => {
+    if (!componentMountedRef.current) return;
     // Remove from error set if image loads successfully after retry
     setImageErrors(prev => {
       const newSet = new Set(prev);
       newSet.delete(imageId);
       return newSet;
     });
-  };
+  }, []);
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = useCallback((e) => {
     if (e.key === 'Escape') {
       closeModal();
     }
-  };
+  }, [closeModal]);
 
   useEffect(() => {
     if (selectedImage) {
@@ -148,59 +154,107 @@ function GalleryPage() {
     };
   }, [selectedImage]);
 
-  // Mobile resize detection
+  // Debounced mobile resize detection for performance
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      resizeTimeoutRef.current = setTimeout(() => {
+        if (componentMountedRef.current) {
+          setIsMobile(window.innerWidth <= 768);
+        }
+      }, 100); // Debounce resize events
     };
     
     // Set initial value
-    handleResize();
+    setIsMobile(window.innerWidth <= 768);
     
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+    };
   }, []);
 
-  // Optimized touch gesture handling for mobile swipe navigation
+  // Mobile swipe navigation with enhanced cleanup and error handling
   useEffect(() => {
-    if (!isMobile) return;
+    if (!isMobile || !componentMountedRef.current) {
+      return;
+    }
 
-    const swipeHandler = new SwipeHandler({
-      minSwipeDistance: 120,
-      maxVerticalMovement: 80,
-      maxSwipeTime: 1000,
-      minVelocity: 0.3,
-      edgeThreshold: 30,
-      maxTransform: 15,
-      maxOpacity: 0.15,
-      transformThreshold: 25,
-      feedbackDuration: 300,
-      navigationDelay: 180,
-      debug: false, // Set to true for debugging
-      
-      onSwipeRight: () => {
-        navigate('/dashboard');
-      },
-      
-      onSwipeStart: () => {
-        // Optional: Add any start feedback
-        console.log('Gallery swipe gesture started');
-      },
-      
-      onSwipeCancel: () => {
-        // Optional: Handle cancelled swipes
-        console.log('Gallery swipe gesture cancelled');
-      }
-    });
+    try {
+      const swipeHandler = new SwipeHandler({
+        minSwipeDistance: 120,
+        maxVerticalMovement: 80,
+        maxSwipeTime: 1000,
+        minVelocity: 0.3,
+        edgeThreshold: 30,
+        maxTransform: 15,
+        maxOpacity: 0.15,
+        transformThreshold: 25,
+        feedbackDuration: 300,
+        navigationDelay: 180,
+        debug: false,
+        
+        onSwipeRight: () => {
+          if (componentMountedRef.current && !selectedImage) { // Don't navigate if modal is open
+            setIsNavigating(true);
+            navigate('/dashboard');
+          }
+        },
+        
+        onSwipeStart: () => {
+          if (!selectedImage) { // Only log if no modal open
+            console.log('Gallery swipe gesture started');
+          }
+        },
+        
+        onSwipeCancel: () => {
+          console.log('Gallery swipe gesture cancelled');
+        }
+      });
 
-    swipeHandler.attach();
+      swipeHandlerRef.current = swipeHandler;
+      swipeHandler.attach();
 
+      return () => {
+        if (swipeHandlerRef.current) {
+          try {
+            swipeHandlerRef.current.detach();
+          } catch (error) {
+            console.warn('Error detaching swipe handler:', error);
+          }
+          swipeHandlerRef.current = null;
+        }
+      };
+    } catch (error) {
+      console.error('Error setting up swipe handler:', error);
+    }
+  }, [isMobile, navigate, selectedImage]);
+
+  // Cleanup on component unmount
+  useEffect(() => {
     return () => {
-      swipeHandler.detach();
+      componentMountedRef.current = false;
+      
+      // Clean up timeouts
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      
+      // Clean up swipe handler
+      if (swipeHandlerRef.current) {
+        try {
+          swipeHandlerRef.current.detach();
+        } catch (error) {
+          console.warn('Error cleaning up swipe handler:', error);
+        }
+      }
     };
-  }, [isMobile, navigate]);
-
-  // REMOVED: Bullshit Login Check - User is already authenticated!
+  }, []);
 
   return (
     <div style={{ 
@@ -368,7 +422,7 @@ function GalleryPage() {
               gap: '2px',
               marginBottom: '40px'
             }}>
-              {filteredImages.map((image) => {
+              {filteredImages.map((image, index) => {
                 if (!image || !image.id) {
                   console.warn('Gallery: Found invalid image data', image);
                   return null;
@@ -379,10 +433,11 @@ function GalleryPage() {
                   style={{
                     position: 'relative',
                     aspectRatio: '3/4',
-                    cursor: 'pointer',
+                    cursor: isNavigating ? 'default' : 'pointer',
+                    pointerEvents: isNavigating ? 'none' : 'auto',
                     overflow: 'hidden'
                   }}
-                  onClick={() => openImageModal(image)}
+                  onClick={() => !isNavigating && openImageModal(image)}
                 >
                   {imageErrors.has(image.id) ? (
                     <div style={{
@@ -418,6 +473,8 @@ function GalleryPage() {
                       onError={() => handleImageError(image.id)}
                       onLoad={() => handleImageLoad(image.id)}
                       loading="lazy"
+                      decoding="async"
+                      fetchPriority={index < 12 ? 'high' : 'low'} // Prioritize first visible images
                     />
                   )}
                 </div>
@@ -446,7 +503,7 @@ function GalleryPage() {
             animation: 'fadeIn 0.2s ease'
           }}
           onClick={(e) => {
-            if (e.target.style.position === 'fixed') {
+            if (e.target === e.currentTarget) { // More reliable check for backdrop click
               closeModal();
             }
           }}

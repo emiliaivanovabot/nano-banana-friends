@@ -90,49 +90,77 @@ export default function LoginPage() {
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        background: 'hsl(var(--background))',
+        color: 'hsl(var(--foreground))'
       }}>
-        <div style={{ color: 'white', fontSize: '18px' }}>Loading...</div>
+        <div style={{ 
+          fontSize: '18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          <div style={{
+            width: '20px',
+            height: '20px',
+            border: '2px solid hsl(var(--muted))',
+            borderTop: '2px solid hsl(var(--foreground))',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }}></div>
+          Loading...
+        </div>
       </div>
     )
   }
 
   return (
     <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '20px'
+      minHeight: '100vh',
+      background: 'hsl(var(--background))',
+      color: 'hsl(var(--foreground))',
+      padding: '20px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
     }}>
       <div style={{
-        background: 'rgba(255, 255, 255, 0.95)',
+        background: 'hsl(var(--card))',
+        borderRadius: '24px',
         padding: '40px',
-        borderRadius: '16px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+        boxShadow: '0 25px 50px -12px hsl(var(--background) / 0.4)',
+        border: '1px solid hsl(var(--border))',
         width: '100%',
-        maxWidth: '400px'
+        maxWidth: '420px',
+        backdropFilter: 'blur(20px)'
       }}>
         
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '35px' }}>
           <div style={{ 
-            fontSize: '40px', 
-            marginBottom: '10px' 
+            fontSize: '48px', 
+            marginBottom: '16px',
+            filter: 'drop-shadow(0 4px 8px rgba(251, 191, 36, 0.3))'
           }}>🍌</div>
           <h1 style={{ 
-            margin: '0', 
-            fontSize: '24px', 
-            fontWeight: '600',
-            color: '#333'
+            margin: '0 0 12px 0', 
+            fontSize: '28px', 
+            fontWeight: '700',
+            color: 'hsl(var(--foreground))',
+            fontFamily: "'Space Grotesk', sans-serif",
+            background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            letterSpacing: '-0.5px'
           }}>
-            neuronalworks Alpha Login
+            neuronalworks Alpha
           </h1>
           <p style={{ 
-            margin: '8px 0 0 0', 
-            color: '#666', 
-            fontSize: '14px' 
+            margin: '0', 
+            color: 'hsl(var(--muted-foreground))', 
+            fontSize: '16px',
+            fontWeight: '500',
+            lineHeight: '1.5'
           }}>
             Anmelden um auf deine KI-Tools zuzugreifen
           </p>
@@ -141,14 +169,19 @@ export default function LoginPage() {
         {/* Error Message */}
         {error && (
           <div style={{
-            background: '#fee',
-            border: '1px solid #fcc',
-            padding: '12px',
-            borderRadius: '8px',
-            marginBottom: '20px',
-            color: '#c33',
-            fontSize: '14px'
+            background: 'hsl(var(--destructive) / 0.1)',
+            border: '1px solid hsl(var(--destructive) / 0.2)',
+            padding: '16px',
+            borderRadius: '12px',
+            marginBottom: '24px',
+            color: 'hsl(var(--destructive))',
+            fontSize: '14px',
+            fontWeight: '500',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
           }}>
+            <span style={{ fontSize: '16px' }}>⚠️</span>
             {error}
           </div>
         )}
@@ -157,15 +190,16 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit}>
           
           {/* Username */}
-          <div style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '24px' }}>
             <label style={{ 
               display: 'block', 
-              marginBottom: '8px', 
+              marginBottom: '12px', 
               fontSize: '14px',
-              fontWeight: '500',
-              color: '#333'
+              fontWeight: '600',
+              color: 'hsl(var(--foreground))',
+              letterSpacing: '0.5px'
             }}>
-              Benutzername
+              👤 Benutzername
             </label>
             <input
               type="text"
@@ -174,33 +208,57 @@ export default function LoginPage() {
               onChange={handleInputChange}
               style={{
                 width: '100%',
-                padding: '12px',
-                border: formErrors.username ? '2px solid #f56565' : '1px solid #ddd',
-                borderRadius: '8px',
-                fontSize: '14px',
+                padding: '16px',
+                border: formErrors.username ? '2px solid hsl(var(--destructive))' : '1px solid hsl(var(--border))',
+                borderRadius: '12px',
+                fontSize: '16px',
                 outline: 'none',
-                transition: 'border-color 0.2s',
-                boxSizing: 'border-box'
+                transition: 'all 0.2s ease',
+                boxSizing: 'border-box',
+                background: 'hsl(var(--background))',
+                color: 'hsl(var(--foreground))',
+                fontFamily: 'inherit'
               }}
               placeholder="Gib deinen Benutzernamen ein"
+              onFocus={(e) => {
+                if (!formErrors.username) {
+                  e.target.style.borderColor = 'hsl(47 100% 65%)'
+                  e.target.style.boxShadow = '0 0 0 3px hsl(47 100% 65% / 0.1)'
+                }
+              }}
+              onBlur={(e) => {
+                if (!formErrors.username) {
+                  e.target.style.borderColor = 'hsl(var(--border))'
+                  e.target.style.boxShadow = 'none'
+                }
+              }}
             />
             {formErrors.username && (
-              <div style={{ color: '#f56565', fontSize: '12px', marginTop: '4px' }}>
-                {formErrors.username}
+              <div style={{ 
+                color: 'hsl(var(--destructive))', 
+                fontSize: '12px', 
+                marginTop: '8px',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <span>⚠️</span> {formErrors.username}
               </div>
             )}
           </div>
 
           {/* Password */}
-          <div style={{ marginBottom: '30px' }}>
+          <div style={{ marginBottom: '32px' }}>
             <label style={{ 
               display: 'block', 
-              marginBottom: '8px', 
+              marginBottom: '12px', 
               fontSize: '14px',
-              fontWeight: '500',
-              color: '#333'
+              fontWeight: '600',
+              color: 'hsl(var(--foreground))',
+              letterSpacing: '0.5px'
             }}>
-              Passwort
+              🔒 Passwort
             </label>
             <input
               type="password"
@@ -209,19 +267,42 @@ export default function LoginPage() {
               onChange={handleInputChange}
               style={{
                 width: '100%',
-                padding: '12px',
-                border: formErrors.password ? '2px solid #f56565' : '1px solid #ddd',
-                borderRadius: '8px',
-                fontSize: '14px',
+                padding: '16px',
+                border: formErrors.password ? '2px solid hsl(var(--destructive))' : '1px solid hsl(var(--border))',
+                borderRadius: '12px',
+                fontSize: '16px',
                 outline: 'none',
-                transition: 'border-color 0.2s',
-                boxSizing: 'border-box'
+                transition: 'all 0.2s ease',
+                boxSizing: 'border-box',
+                background: 'hsl(var(--background))',
+                color: 'hsl(var(--foreground))',
+                fontFamily: 'inherit'
               }}
-              placeholder="••••"
+              placeholder="••••••••"
+              onFocus={(e) => {
+                if (!formErrors.password) {
+                  e.target.style.borderColor = 'hsl(280 70% 60%)'
+                  e.target.style.boxShadow = '0 0 0 3px hsl(280 70% 60% / 0.1)'
+                }
+              }}
+              onBlur={(e) => {
+                if (!formErrors.password) {
+                  e.target.style.borderColor = 'hsl(var(--border))'
+                  e.target.style.boxShadow = 'none'
+                }
+              }}
             />
             {formErrors.password && (
-              <div style={{ color: '#f56565', fontSize: '12px', marginTop: '4px' }}>
-                {formErrors.password}
+              <div style={{ 
+                color: 'hsl(var(--destructive))', 
+                fontSize: '12px', 
+                marginTop: '8px',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <span>⚠️</span> {formErrors.password}
               </div>
             )}
           </div>
@@ -232,21 +313,80 @@ export default function LoginPage() {
             disabled={isSubmitting}
             style={{
               width: '100%',
-              padding: '12px',
-              background: isSubmitting ? '#ccc' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              padding: '18px',
+              background: isSubmitting ? 
+                'hsl(var(--muted))' : 
+                'linear-gradient(135deg, hsl(47 100% 65%) 0%, hsl(280 70% 60%) 100%)',
               color: 'white',
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '14px',
               fontSize: '16px',
-              fontWeight: '600',
+              fontWeight: '700',
               cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s'
+              transition: 'all 0.3s ease',
+              boxShadow: isSubmitting ? 
+                'none' : 
+                '0 8px 16px hsl(47 100% 65% / 0.3)',
+              fontFamily: "'Space Grotesk', sans-serif",
+              letterSpacing: '0.5px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+            onMouseEnter={(e) => {
+              if (!isSubmitting) {
+                e.target.style.transform = 'translateY(-2px)'
+                e.target.style.boxShadow = '0 12px 24px hsl(47 100% 65% / 0.4)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSubmitting) {
+                e.target.style.transform = 'translateY(0)'
+                e.target.style.boxShadow = '0 8px 16px hsl(47 100% 65% / 0.3)'
+              }
             }}
           >
-            {isSubmitting ? 'Anmeldung läuft...' : 'Anmelden'}
+            {isSubmitting ? (
+              <>
+                <div style={{
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  borderTop: '2px solid white',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+                Anmeldung läuft...
+              </>
+            ) : (
+              <>
+                <span>🚀</span>
+                Anmelden
+              </>
+            )}
           </button>
         </form>
       </div>
+      
+      {/* CSS Animations */}
+      <style>
+        {`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          
+          /* Responsive adjustments */
+          @media (max-width: 768px) {
+            .login-container {
+              padding: 16px;
+            }
+          }
+        `}
+      </style>
     </div>
   )
 }

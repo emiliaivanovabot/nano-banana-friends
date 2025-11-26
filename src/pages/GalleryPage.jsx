@@ -16,11 +16,16 @@ function GalleryPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [imageErrors, setImageErrors] = useState(new Set());
   const [isNavigating, setIsNavigating] = useState(false);
+  const [visibleImages, setVisibleImages] = useState(new Set());
+  const [scrolling, setScrolling] = useState(false);
   
   // Refs for cleanup and performance
   const swipeHandlerRef = useRef(null);
   const resizeTimeoutRef = useRef(null);
+  const scrollTimeoutRef = useRef(null);
   const componentMountedRef = useRef(true);
+  const intersectionObserverRef = useRef(null);
+  const galleryContainerRef = useRef(null);
 
   // Optimized image loading with mobile memory management
   const loadImages = useCallback(async () => {
@@ -35,8 +40,8 @@ function GalleryPage() {
       
       console.log('Loading gallery images for user:', user?.username);
       
-      // Mobile-optimized query - load fewer images initially for performance
-      const limit = window.innerWidth <= 768 ? 50 : 100;
+      // Aggressive mobile optimization - load much fewer images initially
+      const limit = window.innerWidth <= 768 ? 20 : 40;
       const { data, error } = await supabase
         .from('generations')
         .select('id, result_image_url, prompt, generation_type, created_at, original_filename')
@@ -117,21 +122,32 @@ function GalleryPage() {
     });
   };
 
+  // Throttled image error handler to prevent scroll-blocking state updates
   const handleImageError = useCallback((imageId) => {
-    if (!componentMountedRef.current) return;
+    if (!componentMountedRef.current || scrolling) return;
     console.error(`Failed to load image: ${imageId}`);
-    setImageErrors(prev => new Set([...prev, imageId]));
-  }, []);
-
-  const handleImageLoad = useCallback((imageId) => {
-    if (!componentMountedRef.current) return;
-    // Remove from error set if image loads successfully after retry
-    setImageErrors(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(imageId);
-      return newSet;
+    // Defer state update to avoid blocking scroll
+    requestIdleCallback(() => {
+      if (componentMountedRef.current) {
+        setImageErrors(prev => new Set([...prev, imageId]));
+      }
     });
-  }, []);
+  }, [scrolling]);
+
+  // Throttled image load handler to prevent scroll-blocking state updates
+  const handleImageLoad = useCallback((imageId) => {
+    if (!componentMountedRef.current || scrolling) return;
+    // Defer state update to avoid blocking scroll
+    requestIdleCallback(() => {
+      if (componentMountedRef.current) {
+        setImageErrors(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(imageId);
+          return newSet;
+        });
+      }
+    });
+  }, [scrolling]);
 
   const handleKeyPress = useCallback((e) => {
     if (e.key === 'Escape') {
@@ -154,6 +170,39 @@ function GalleryPage() {
     };
   }, [selectedImage]);
 
+  // Scroll detection for iPhone Safari optimization
+  useEffect(() => {
+    let scrollTimeout;
+    
+    const handleScroll = () => {
+      if (!scrolling) {
+        setScrolling(true);
+      }
+      
+      // Clear existing timeout
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+      
+      // Debounce scroll end detection
+      scrollTimeout = setTimeout(() => {
+        if (componentMountedRef.current) {
+          setScrolling(false);
+        }
+      }, 150);
+    };
+    
+    // Use passive listener for better scroll performance
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+    };
+  }, [scrolling]);
+  
   // Debounced mobile resize detection for performance
   useEffect(() => {
     const handleResize = () => {
@@ -164,7 +213,7 @@ function GalleryPage() {
         if (componentMountedRef.current) {
           setIsMobile(window.innerWidth <= 768);
         }
-      }, 100); // Debounce resize events
+      }, 200); // Increased debounce for better performance
     };
     
     // Set initial value
@@ -179,7 +228,7 @@ function GalleryPage() {
     };
   }, []);
 
-  // Mobile swipe navigation with enhanced cleanup and error handling
+  // Mobile swipe navigation with scroll-aware optimization
   useEffect(() => {
     if (!isMobile || !componentMountedRef.current) {
       return;
@@ -188,26 +237,26 @@ function GalleryPage() {
     try {
       const swipeHandler = new SwipeHandler({
         minSwipeDistance: 120,
-        maxVerticalMovement: 80,
-        maxSwipeTime: 1000,
-        minVelocity: 0.3,
-        edgeThreshold: 30,
-        maxTransform: 15,
-        maxOpacity: 0.15,
-        transformThreshold: 25,
-        feedbackDuration: 300,
-        navigationDelay: 180,
+        maxVerticalMovement: 60, // Reduced to prevent scroll conflicts
+        maxSwipeTime: 800, // Reduced for quicker response
+        minVelocity: 0.4, // Increased to prevent accidental triggers
+        edgeThreshold: 40, // Increased edge protection
+        maxTransform: 10, // Reduced visual feedback during scroll
+        maxOpacity: 0.1,
+        transformThreshold: 35, // Increased threshold
+        feedbackDuration: 200, // Faster feedback
+        navigationDelay: 100, // Faster navigation
         debug: false,
         
         onSwipeRight: () => {
-          if (componentMountedRef.current && !selectedImage) { // Don't navigate if modal is open
+          if (componentMountedRef.current && !selectedImage && !scrolling) {
             setIsNavigating(true);
             navigate('/dashboard');
           }
         },
         
         onSwipeStart: () => {
-          if (!selectedImage) { // Only log if no modal open
+          if (!selectedImage && !scrolling) {
             console.log('Gallery swipe gesture started');
           }
         },
@@ -218,12 +267,15 @@ function GalleryPage() {
       });
 
       swipeHandlerRef.current = swipeHandler;
-      swipeHandler.attach();
+      // Only attach to gallery container to avoid scroll conflicts
+      if (galleryContainerRef.current) {
+        swipeHandler.attach(galleryContainerRef.current);
+      }
 
       return () => {
         if (swipeHandlerRef.current) {
           try {
-            swipeHandlerRef.current.detach();
+            swipeHandlerRef.current.detach(galleryContainerRef.current);
           } catch (error) {
             console.warn('Error detaching swipe handler:', error);
           }
@@ -233,36 +285,56 @@ function GalleryPage() {
     } catch (error) {
       console.error('Error setting up swipe handler:', error);
     }
-  }, [isMobile, navigate, selectedImage]);
+  }, [isMobile, navigate, selectedImage, scrolling]);
 
-  // Cleanup on component unmount
+  // Comprehensive cleanup on component unmount
   useEffect(() => {
     return () => {
       componentMountedRef.current = false;
       
-      // Clean up timeouts
+      // Clean up all timeouts
       if (resizeTimeoutRef.current) {
         clearTimeout(resizeTimeoutRef.current);
+      }
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      // Clean up intersection observer
+      if (intersectionObserverRef.current) {
+        intersectionObserverRef.current.disconnect();
       }
       
       // Clean up swipe handler
       if (swipeHandlerRef.current) {
         try {
-          swipeHandlerRef.current.detach();
+          swipeHandlerRef.current.detach(galleryContainerRef.current);
         } catch (error) {
           console.warn('Error cleaning up swipe handler:', error);
         }
       }
+      
+      // Reset scroll state
+      setScrolling(false);
+      
+      // Clear image error state to free memory
+      setImageErrors(new Set());
     };
   }, []);
 
   return (
-    <div style={{ 
-      minHeight: '100vh',
-      background: 'hsl(var(--background))',
-      padding: '20px',
-      color: 'hsl(var(--foreground))'
-    }}>
+    <div 
+      className={scrolling ? 'scrolling' : ''}
+      style={{ 
+        minHeight: '100vh',
+        background: 'hsl(var(--background))',
+        padding: '20px',
+        color: 'hsl(var(--foreground))',
+        // iPhone Safari optimizations
+        WebkitOverflowScrolling: 'touch',
+        overscrollBehavior: 'contain'
+      }}
+    >
       {/* Header */}
       <div style={{
         maxWidth: '1200px',
@@ -415,13 +487,22 @@ function GalleryPage() {
           </div>
         ) : (
           <>
-            {/* Instagram-style Images Grid */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)',
-              gap: '2px',
-              marginBottom: '40px'
-            }}>
+            {/* iPhone Safari-Optimized Images Grid */}
+            <div 
+              ref={galleryContainerRef}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)',
+                gap: '2px',
+                marginBottom: '40px',
+                // iPhone Safari scroll performance optimizations
+                transform: 'translate3d(0, 0, 0)', // Force hardware acceleration
+                WebkitBackfaceVisibility: 'hidden',
+                WebkitPerspective: '1000',
+                WebkitTransform: 'translate3d(0, 0, 0)',
+                willChange: scrolling ? 'auto' : 'transform' // Dynamic will-change
+              }}
+            >
               {filteredImages.map((image, index) => {
                 if (!image || !image.id) {
                   console.warn('Gallery: Found invalid image data', image);
@@ -433,11 +514,16 @@ function GalleryPage() {
                   style={{
                     position: 'relative',
                     aspectRatio: '3/4',
-                    cursor: isNavigating ? 'default' : 'pointer',
-                    pointerEvents: isNavigating ? 'none' : 'auto',
-                    overflow: 'hidden'
+                    cursor: (isNavigating || scrolling) ? 'default' : 'pointer',
+                    pointerEvents: (isNavigating || scrolling) ? 'none' : 'auto',
+                    overflow: 'hidden',
+                    // iPhone Safari optimizations
+                    transform: 'translate3d(0, 0, 0)',
+                    WebkitBackfaceVisibility: 'hidden',
+                    // Disable hover effects during scroll for performance
+                    transition: scrolling ? 'none' : 'transform 0.2s ease'
                   }}
-                  onClick={() => !isNavigating && openImageModal(image)}
+                  onClick={() => !isNavigating && !scrolling && openImageModal(image)}
                 >
                   {imageErrors.has(image.id) ? (
                     <div style={{
@@ -462,19 +548,29 @@ function GalleryPage() {
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
-                        transition: 'transform 0.2s ease'
+                        // Disable transitions during scroll for iPhone Safari performance
+                        transition: scrolling ? 'none' : 'transform 0.2s ease',
+                        // Hardware acceleration for images
+                        transform: 'translate3d(0, 0, 0)',
+                        WebkitBackfaceVisibility: 'hidden'
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.transform = 'scale(1.05)';
+                        // Disable hover effects during scroll and on mobile
+                        if (!scrolling && !isMobile) {
+                          e.target.style.transform = 'scale(1.05) translate3d(0, 0, 0)';
+                        }
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.transform = 'scale(1)';
+                        if (!scrolling && !isMobile) {
+                          e.target.style.transform = 'translate3d(0, 0, 0)';
+                        }
                       }}
                       onError={() => handleImageError(image.id)}
                       onLoad={() => handleImageLoad(image.id)}
                       loading="lazy"
                       decoding="async"
-                      fetchPriority={index < 12 ? 'high' : 'low'} // Prioritize first visible images
+                      // More aggressive prioritization for mobile
+                      fetchPriority={index < (isMobile ? 6 : 8) ? 'high' : 'low'}
                     />
                   )}
                 </div>
@@ -500,7 +596,11 @@ function GalleryPage() {
             justifyContent: 'center',
             zIndex: 1000,
             backdropFilter: 'blur(4px)',
-            animation: 'fadeIn 0.2s ease'
+            animation: 'fadeIn 0.2s ease',
+            // iPhone Safari modal optimizations
+            WebkitOverflowScrolling: 'touch',
+            transform: 'translate3d(0, 0, 0)',
+            WebkitBackfaceVisibility: 'hidden'
           }}
           onClick={(e) => {
             if (e.target === e.currentTarget) { // More reliable check for backdrop click
@@ -720,6 +820,32 @@ function GalleryPage() {
 
       <style>
         {`
+          /* iPhone Safari Scroll Performance Optimizations */
+          * {
+            /* Improve scroll performance on iOS */
+            -webkit-overflow-scrolling: touch;
+            /* Prevent iOS bounce scrolling issues */
+            overscroll-behavior: contain;
+          }
+          
+          /* Optimize touch targets for mobile */
+          @media (max-width: 768px) {
+            img {
+              /* Force GPU layer for smooth scrolling */
+              transform: translate3d(0, 0, 0);
+              -webkit-backface-visibility: hidden;
+              /* Disable image drag on mobile to prevent scroll conflicts */
+              -webkit-user-drag: none;
+              -webkit-touch-callout: none;
+            }
+            
+            /* Reduce motion during scroll for better performance */
+            .scrolling img {
+              transition: none !important;
+              transform: translate3d(0, 0, 0) !important;
+            }
+          }
+          
           @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -727,11 +853,11 @@ function GalleryPage() {
           
           @keyframes slideUp {
             from { 
-              transform: translateY(20px);
+              transform: translate3d(0, 20px, 0);
               opacity: 0;
             }
             to { 
-              transform: translateY(0);
+              transform: translate3d(0, 0, 0);
               opacity: 1;
             }
           }

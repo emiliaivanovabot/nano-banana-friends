@@ -199,6 +199,8 @@ function NonoBananaPage() {
   const [multiResults10, setMultiResults10] = useState([])
   const [multiLoading10, setMultiLoading10] = useState(false)
   const [multiTimer10, setMultiTimer10] = useState(0)
+  const [personalAppearanceText, setPersonalAppearanceText] = useState('')
+  const [isEditingPersonalText, setIsEditingPersonalText] = useState(false)
   
   const fileRef = useRef(null)
 
@@ -236,14 +238,22 @@ function NonoBananaPage() {
       details.push(`${userSettings.skin_tone.toLowerCase()} skin tone`)
     }
     
-    // Build the final sentence
+    // Build the base sentence
+    let baseText = ""
     if (parts.length === 0) parts.push("A woman")
     
     if (details.length > 0) {
-      return `${parts[0]} with ${details.join(", ")}`
+      baseText = `${parts[0]} with ${details.join(", ")}`
+    } else {
+      baseText = parts[0]
     }
     
-    return parts[0]
+    // Add personal appearance text if available
+    if (personalAppearanceText.trim()) {
+      return `${baseText}, ${personalAppearanceText.trim()}`
+    }
+    
+    return baseText
   }
 
   // Load user settings on component mount
@@ -260,7 +270,7 @@ function NonoBananaPage() {
 
         const { data, error } = await supabase
           .from('users')
-          .select('default_resolution, default_aspect_ratio, main_face_image_url, gemini_api_key, hair_color, eye_color, skin_tone, age_range')
+          .select('default_resolution, default_aspect_ratio, main_face_image_url, gemini_api_key, hair_color, eye_color, skin_tone, age_range, personal_appearance_text')
           .eq('id', user.id)
           .single()
 
@@ -282,7 +292,7 @@ function NonoBananaPage() {
           setUserSettings(data)
           setResolution(data.default_resolution || '2K')
           setAspectRatio(data.default_aspect_ratio || '9:16')
-          
+          setPersonalAppearanceText(data.personal_appearance_text || '')
           
         } else {
           console.log('No user settings data found')
@@ -294,6 +304,29 @@ function NonoBananaPage() {
 
     loadUserSettings()
   }, [user?.id])
+
+  // Save personal appearance text to database
+  const savePersonalAppearanceText = async (newText) => {
+    if (!user?.id) return
+
+    try {
+      const supabase = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+      )
+
+      const { error } = await supabase
+        .from('users')
+        .update({ personal_appearance_text: newText })
+        .eq('id', user.id)
+
+      if (error) throw error
+
+      console.log('Personal appearance text saved successfully')
+    } catch (error) {
+      console.error('Error saving personal appearance text:', error)
+    }
+  }
 
   // Handle imported prompts from URL parameters
   useEffect(() => {
@@ -1920,13 +1953,164 @@ function NonoBananaPage() {
             {showPersonalization && (
               <div style={{
                 padding: '15px',
-                fontSize: '14px',
-                color: '#4B5563',
-                lineHeight: '1.5',
-                fontStyle: 'italic',
                 background: 'rgba(251, 191, 36, 0.05)'
               }}>
-                {generatePersonalizationText()}
+                {/* Auto-generated base text */}
+                <div style={{
+                  fontSize: '14px',
+                  color: '#6B7280',
+                  lineHeight: '1.5',
+                  fontStyle: 'italic',
+                  marginBottom: '10px',
+                  padding: '8px',
+                  background: 'rgba(107, 114, 128, 0.1)',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(107, 114, 128, 0.2)'
+                }}>
+                  {(() => {
+                    // Generate base text without personal additions
+                    if (!userSettings) return ""
+                    
+                    const parts = []
+                    if (userSettings.age_range) {
+                      switch(userSettings.age_range) {
+                        case 'under-20': parts.push("A teenage woman"); break;
+                        case 'young-adult': parts.push("A young adult woman"); break;
+                        case 'adult': parts.push("A confident woman"); break;
+                        case 'over-40': parts.push("A mature woman"); break;
+                        default: parts.push("A woman"); break;
+                      }
+                    }
+                    
+                    const details = []
+                    if (userSettings.hair_color) details.push(`${userSettings.hair_color.toLowerCase()} hair`)
+                    if (userSettings.eye_color) details.push(`${userSettings.eye_color.toLowerCase()} eyes`)
+                    if (userSettings.skin_tone) details.push(`${userSettings.skin_tone.toLowerCase()} skin tone`)
+                    
+                    if (parts.length === 0) parts.push("A woman")
+                    
+                    if (details.length > 0) {
+                      return `${parts[0]} with ${details.join(", ")}`
+                    }
+                    return parts[0]
+                  })()}
+                </div>
+                
+                {/* Personal text input */}
+                <div style={{
+                  marginBottom: '10px'
+                }}>
+                  <div style={{
+                    fontSize: '12px',
+                    color: '#6B7280',
+                    fontWeight: '500',
+                    marginBottom: '6px'
+                  }}>
+                    + Deine persönliche Ergänzung:
+                  </div>
+                  {isEditingPersonalText ? (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <textarea
+                        value={personalAppearanceText}
+                        onChange={(e) => setPersonalAppearanceText(e.target.value)}
+                        placeholder="z.B. wearing elegant jewelry, confident posture, professional makeup..."
+                        style={{
+                          flex: 1,
+                          minHeight: '60px',
+                          padding: '8px',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '6px',
+                          background: 'hsl(var(--background))',
+                          color: 'hsl(var(--foreground))',
+                          fontSize: '13px',
+                          resize: 'vertical',
+                          fontFamily: 'inherit'
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && e.ctrlKey) {
+                            setIsEditingPersonalText(false)
+                            savePersonalAppearanceText(personalAppearanceText)
+                          }
+                          if (e.key === 'Escape') {
+                            setIsEditingPersonalText(false)
+                          }
+                        }}
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <button
+                          onClick={() => {
+                            setIsEditingPersonalText(false)
+                            savePersonalAppearanceText(personalAppearanceText)
+                          }}
+                          style={{
+                            padding: '4px 8px',
+                            background: '#10B981',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          ✓
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsEditingPersonalText(false)
+                            setPersonalAppearanceText(userSettings?.personal_appearance_text || '')
+                          }}
+                          style={{
+                            padding: '4px 8px',
+                            background: '#EF4444',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => setIsEditingPersonalText(true)}
+                      style={{
+                        padding: '8px',
+                        minHeight: '40px',
+                        border: '1px solid rgba(251, 191, 36, 0.3)',
+                        borderRadius: '6px',
+                        background: personalAppearanceText.trim() ? 'hsl(var(--card))' : 'rgba(251, 191, 36, 0.1)',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        color: personalAppearanceText.trim() ? 'hsl(var(--foreground))' : '#9CA3AF',
+                        fontStyle: personalAppearanceText.trim() ? 'normal' : 'italic',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      {personalAppearanceText.trim() || "Klicken um persönliche Details hinzuzufügen..."}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Combined preview */}
+                {personalAppearanceText.trim() && (
+                  <div style={{
+                    marginTop: '10px',
+                    padding: '8px',
+                    background: 'rgba(34, 197, 94, 0.1)',
+                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    color: '#059669',
+                    fontWeight: '500'
+                  }}>
+                    <div style={{ marginBottom: '4px', fontWeight: '600' }}>Endresultat:</div>
+                    {generatePersonalizationText()}
+                  </div>
+                )}
               </div>
             )}
           </div>

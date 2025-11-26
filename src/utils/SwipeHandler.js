@@ -320,17 +320,28 @@ class SwipeHandler {
     element.removeEventListener('touchend', this.handleTouchEnd)
     element.removeEventListener('touchcancel', this.handleTouchCancel)
     
-    // Cleanup
+    // Enhanced cleanup to prevent memory leaks
     if (this.animationId) {
       cancelAnimationFrame(this.animationId)
+      this.animationId = null
     }
     
-    if (this.feedbackContainer && this.feedbackContainer.parentNode) {
-      this.feedbackContainer.parentNode.removeChild(this.feedbackContainer)
+    if (this.feedbackContainer) {
+      if (this.feedbackContainer.parentNode) {
+        this.feedbackContainer.parentNode.removeChild(this.feedbackContainer)
+      }
+      this.feedbackContainer = null
     }
     
+    // Reset all state
     this.isSwipeInProgress = false
     this.isNavigating = false
+    this.touchStartX = 0
+    this.touchStartY = 0
+    this.touchEndX = 0
+    this.touchEndY = 0
+    this.touchStartTime = 0
+    this.lastMoveTime = 0
   }
   
   // Update options dynamically

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { supabase } from '../lib/supabase';
@@ -14,22 +14,29 @@ function GalleryPage() {
   const [copySuccess, setCopySuccess] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [imageErrors, setImageErrors] = useState(new Set());
 
   useEffect(() => {
+    if (!user?.username) return;
+
+    const abortController = new AbortController();
     const loadImages = async () => {
       try {
         setLoading(true);
         
-        // Use username directly as modelId (emilia.ivanova → emilia.ivanova)
-        const currentModelId = user?.username || 'unknown';
-        console.log('Loading gallery images for user:', user?.username, '→ modelId:', currentModelId);
+        console.log('Loading gallery images for user:', user?.username);
         
-        const { data, error } = await supabase
+        // Optimized query - only fetch needed columns
+        const { data, error, signal } = await supabase
           .from('generations')
-          .select('*')
-          .eq('username', user?.username)
+          .select('id, result_image_url, prompt, generation_type, created_at, original_filename')
+          .eq('username', user.username)
           .eq('status', 'completed')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(100) // Pagination - load first 100 images
+          .abortSignal(abortController.signal);
+
+        if (abortController.signal.aborted) return;
 
         if (error) {
           console.error('Error loading images:', error);
@@ -39,19 +46,27 @@ function GalleryPage() {
 
         setImages(data || []);
       } catch (error) {
-        console.error('Error loading images:', error);
+        if (error.name !== 'AbortError') {
+          console.error('Error loading images:', error);
+        }
       } finally {
-        setLoading(false);
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     loadImages();
-  }, []); // Load images once when component mounts
 
-  const filteredImages = images.filter(img => {
-    if (filter === 'all') return true;
-    return img.generation_type === filter;
-  });
+    return () => {
+      abortController.abort();
+    };
+  }, [user?.username]); // Dependency on username
+
+  const filteredImages = useMemo(() => {
+    if (filter === 'all') return images;
+    return images.filter(img => img.generation_type === filter);
+  }, [images, filter]);
 
   const openImageModal = (image) => {
     setSelectedImage(image);
@@ -90,6 +105,20 @@ function GalleryPage() {
       setTimeout(() => setCopySuccess(false), 2000);
     }).catch(err => {
       console.error('❌ Failed to copy prompt:', err);
+    });
+  };
+
+  const handleImageError = (imageId) => {
+    console.error(`Failed to load image: ${imageId}`);
+    setImageErrors(prev => new Set([...prev, imageId]));
+  };
+
+  const handleImageLoad = (imageId) => {
+    // Remove from error set if image loads successfully after retry
+    setImageErrors(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(imageId);
+      return newSet;
     });
   };
 
@@ -341,22 +370,42 @@ function GalleryPage() {
                   }}
                   onClick={() => openImageModal(image)}
                 >
-                  <img
-                    src={image.result_image_url}
-                    alt={`Generated ${image.generation_type}`}
-                    style={{
+                  {imageErrors.has(image.id) ? (
+                    <div style={{
                       width: '100%',
                       height: '100%',
-                      objectFit: 'cover',
-                      transition: 'transform 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'scale(1.05)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'scale(1)';
-                    }}
-                  />
+                      background: 'linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--muted-foreground) / 0.1) 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'hsl(var(--muted-foreground))',
+                      fontSize: '12px',
+                      textAlign: 'center',
+                      padding: '8px'
+                    }}>
+                      📷<br/>Bild konnte<br/>nicht geladen<br/>werden
+                    </div>
+                  ) : (
+                    <img
+                      src={image.result_image_url}
+                      alt={`Generated ${image.generation_type}`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        transition: 'transform 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.transform = 'scale(1.05)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.transform = 'scale(1)';
+                      }}
+                      onError={() => handleImageError(image.id)}
+                      onLoad={() => handleImageLoad(image.id)}
+                      loading="lazy"
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -450,32 +499,59 @@ function GalleryPage() {
             </div>
 
             {/* Image */}
-            <img
-              src={selectedImage.result_image_url}
-              alt="Generated Image"
-              onClick={toggleFullscreen}
-              style={{
+            {imageErrors.has(selectedImage.id) ? (
+              <div style={{
                 maxWidth: '100%',
                 maxHeight: isMobile ? '40vh' : '60vh',
-                objectFit: 'contain',
-                cursor: 'zoom-in',
-                transition: 'all 0.3s ease',
-                ...(isFullscreen && {
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  width: '100vw',
-                  height: '100vh',
-                  maxWidth: '100vw',
-                  maxHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--muted-foreground) / 0.1) 100%)',
+                color: 'hsl(var(--muted-foreground))',
+                fontSize: '16px',
+                textAlign: 'center',
+                padding: '40px',
+                borderRadius: '12px',
+                margin: '20px'
+              }}>
+                <div>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>📷</div>
+                  <div>Bild konnte nicht geladen werden</div>
+                  <div style={{ fontSize: '14px', opacity: 0.7, marginTop: '8px' }}>
+                    Möglicherweise ist das Bild beschädigt oder nicht mehr verfügbar
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <img
+                src={selectedImage.result_image_url}
+                alt="Generated Image"
+                onClick={toggleFullscreen}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: isMobile ? '40vh' : '60vh',
                   objectFit: 'contain',
-                  background: 'rgba(0, 0, 0, 0.95)',
-                  zIndex: 9999,
-                  borderRadius: 0,
-                  cursor: 'zoom-out'
-                })
-              }}
-            />
+                  cursor: 'zoom-in',
+                  transition: 'all 0.3s ease',
+                  ...(isFullscreen && {
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    maxWidth: '100vw',
+                    maxHeight: '100vh',
+                    objectFit: 'contain',
+                    background: 'rgba(0, 0, 0, 0.95)',
+                    zIndex: 9999,
+                    borderRadius: 0,
+                    cursor: 'zoom-out'
+                  })
+                }}
+                onError={() => handleImageError(selectedImage.id)}
+                onLoad={() => handleImageLoad(selectedImage.id)}
+              />
+            )}
 
             {/* Modal Info */}
             <div style={{ padding: '20px', borderTop: '1px solid hsl(var(--border))' }}>

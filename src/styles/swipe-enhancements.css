@@ -1,0 +1,249 @@
+/*
+ * Mobile Swipe Enhancement Styles
+ * Optimized for performance and native-like feel
+ */
+
+/* Prevent text selection during swipe gestures */
+.swipe-container,
+.swipe-container * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Optimize scrolling performance */
+.swipe-container {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: none; /* Prevent horizontal bounce */
+  overscroll-behavior-y: contain; /* Allow vertical bounce only */
+}
+
+/* Hardware acceleration for smooth animations */
+.swipe-target {
+  will-change: transform, opacity;
+  transform: translateZ(0); /* Force GPU layer */
+  backface-visibility: hidden;
+}
+
+/* Touch-friendly interactive elements */
+.touch-target {
+  min-height: 44px; /* Apple's minimum touch target */
+  min-width: 44px;
+  position: relative;
+}
+
+/* Visual feedback for touch interactions */
+.touch-feedback {
+  position: relative;
+  overflow: hidden;
+}
+
+.touch-feedback::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(59, 130, 246, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.touch-feedback:active::before {
+  width: 200px;
+  height: 200px;
+}
+
+/* Swipe hint animations */
+@keyframes swipeHint {
+  0% {
+    transform: translateX(0);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateX(20px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 0.7;
+  }
+}
+
+.swipe-hint {
+  animation: swipeHint 2s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+/* Edge swipe indicators */
+.swipe-edge-indicator {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  width: 4px;
+  height: 60px;
+  background: linear-gradient(180deg, transparent 0%, rgba(59, 130, 246, 0.5) 50%, transparent 100%);
+  border-radius: 0 4px 4px 0;
+  transform: translateY(-50%) translateX(-100%);
+  transition: transform 0.3s ease;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.swipe-edge-indicator.visible {
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Loading states optimized for mobile */
+.mobile-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  will-change: opacity;
+  transform: translateZ(0);
+}
+
+.mobile-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  transform: translateZ(0);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Improved button states for mobile */
+.mobile-button {
+  position: relative;
+  overflow: hidden;
+  transform: translateZ(0);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.mobile-button:active {
+  transform: scale(0.98) translateZ(0);
+}
+
+.mobile-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+  pointer-events: none;
+}
+
+.mobile-button:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Swipe progress indicator */
+.swipe-progress {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.swipe-progress.visible {
+  opacity: 1;
+}
+
+.swipe-progress::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #06b6d4);
+  border-radius: 2px;
+  width: 0;
+  transition: width 0.1s ease;
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .touch-feedback::before,
+  .mobile-button::after,
+  .swipe-hint {
+    animation: none;
+    transition: none;
+  }
+  
+  .swipe-progress::before {
+    transition: width 0.3s ease;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .swipe-edge-indicator {
+    background: linear-gradient(180deg, transparent 0%, #000 50%, transparent 100%);
+  }
+  
+  .touch-feedback::before {
+    background: rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+  .mobile-loading-overlay {
+    background: rgba(0, 0, 0, 0.7);
+  }
+  
+  .swipe-progress {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Performance hints for browsers */
+.performance-layer {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Prevent layout shifts during animations */
+.stable-layout {
+  contain: layout style paint;
+}

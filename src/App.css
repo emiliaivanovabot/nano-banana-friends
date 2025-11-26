@@ -1,4 +1,6 @@
 /* Nano Banana Friends - Premium CSS */
+@import './styles/swipe-enhancements.css';
+
 body {
   margin: 0;
   padding: 0;

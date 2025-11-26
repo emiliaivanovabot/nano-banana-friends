@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { supabase } from '../lib/supabase';
+import SwipeHandler from '../utils/SwipeHandler.js';
 
 function GalleryPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all', 'single', '4x', '10x'
   const [copySuccess, setCopySuccess] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {
     const loadImages = async () => {
@@ -111,6 +114,54 @@ function GalleryPage() {
     };
   }, [selectedImage]);
 
+  // Mobile resize detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Optimized touch gesture handling for mobile swipe navigation
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const swipeHandler = new SwipeHandler({
+      minSwipeDistance: 120,
+      maxVerticalMovement: 80,
+      maxSwipeTime: 1000,
+      minVelocity: 0.3,
+      edgeThreshold: 30,
+      maxTransform: 15,
+      maxOpacity: 0.15,
+      transformThreshold: 25,
+      feedbackDuration: 300,
+      navigationDelay: 180,
+      debug: false, // Set to true for debugging
+      
+      onSwipeRight: () => {
+        navigate('/dashboard');
+      },
+      
+      onSwipeStart: () => {
+        // Optional: Add any start feedback
+        console.log('Gallery swipe gesture started');
+      },
+      
+      onSwipeCancel: () => {
+        // Optional: Handle cancelled swipes
+        console.log('Gallery swipe gesture cancelled');
+      }
+    });
+
+    swipeHandler.attach();
+
+    return () => {
+      swipeHandler.detach();
+    };
+  }, [isMobile, navigate]);
+
   // REMOVED: Bullshit Login Check - User is already authenticated!
 
   return (
@@ -163,13 +214,13 @@ function GalleryPage() {
               background: 'hsl(var(--secondary) / 0.3)',
               border: '1px solid hsl(var(--border))',
               borderRadius: '12px',
-              padding: window.innerWidth <= 768 ? '12px 15px' : '12px 18px',
+              padding: isMobile ? '12px 15px' : '12px 18px',
               color: 'hsl(var(--foreground))',
               textDecoration: 'none',
               fontWeight: '600',
               fontSize: '14px',
               transition: 'all 0.3s ease',
-              minWidth: window.innerWidth <= 768 ? '100px' : 'auto',
+              minWidth: isMobile ? '100px' : 'auto',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
@@ -181,11 +232,11 @@ function GalleryPage() {
 
         {/* Filter Buttons */}
         <div style={{ 
-          marginTop: window.innerWidth <= 768 ? '15px' : '20px',
+          marginTop: isMobile ? '15px' : '20px',
           display: 'flex',
-          gap: window.innerWidth <= 768 ? '6px' : '8px',
+          gap: isMobile ? '6px' : '8px',
           flexWrap: 'wrap',
-          justifyContent: window.innerWidth <= 768 ? 'center' : 'flex-start'
+          justifyContent: isMobile ? 'center' : 'flex-start'
         }}>
           {[
             { key: 'all', label: 'Alle', count: images.length },
@@ -197,8 +248,8 @@ function GalleryPage() {
               key={filterOption.key}
               onClick={() => setFilter(filterOption.key)}
               style={{
-                padding: window.innerWidth <= 768 ? '6px 12px' : '8px 16px',
-                fontSize: window.innerWidth <= 768 ? '12px' : '13px',
+                padding: isMobile ? '6px 12px' : '8px 16px',
+                fontSize: isMobile ? '12px' : '13px',
                 border: 'none',
                 borderRadius: '20px',
                 cursor: 'pointer',
@@ -275,7 +326,7 @@ function GalleryPage() {
             {/* Instagram-style Images Grid */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: window.innerWidth <= 768 ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)',
+              gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)',
               gap: '2px',
               marginBottom: '40px'
             }}>
@@ -405,7 +456,7 @@ function GalleryPage() {
               onClick={toggleFullscreen}
               style={{
                 maxWidth: '100%',
-                maxHeight: window.innerWidth <= 768 ? '40vh' : '60vh',
+                maxHeight: isMobile ? '40vh' : '60vh',
                 objectFit: 'contain',
                 cursor: 'zoom-in',
                 transition: 'all 0.3s ease',
@@ -458,17 +509,17 @@ function GalleryPage() {
                     openImage(selectedImage.result_image_url);
                   }}
                   style={{
-                    padding: window.innerWidth <= 768 ? '10px 8px' : '12px 24px',
+                    padding: isMobile ? '10px 8px' : '12px 24px',
                     background: 'hsl(var(--secondary))',
                     color: 'hsl(var(--secondary-foreground))',
                     border: 'none',
                     borderRadius: '8px',
                     cursor: 'pointer',
                     fontWeight: '500',
-                    fontSize: window.innerWidth <= 768 ? '12px' : '14px',
-                    flex: window.innerWidth <= 768 ? '1' : 'initial',
-                    minWidth: window.innerWidth <= 768 ? '40%' : 'initial',
-                    maxWidth: window.innerWidth <= 768 ? '48%' : 'initial'
+                    fontSize: isMobile ? '12px' : '14px',
+                    flex: isMobile ? '1' : 'initial',
+                    minWidth: isMobile ? '40%' : 'initial',
+                    maxWidth: isMobile ? '48%' : 'initial'
                   }}
                 >
                   Im neuen Tab öffnen
@@ -480,17 +531,17 @@ function GalleryPage() {
                       copyPrompt(selectedImage.prompt);
                     }}
                     style={{
-                      padding: window.innerWidth <= 768 ? '10px 8px' : '12px 24px',
+                      padding: isMobile ? '10px 8px' : '12px 24px',
                       background: 'hsl(var(--primary))',
                       color: 'hsl(var(--primary-foreground))',
                       border: 'none',
                       borderRadius: '8px',
                       cursor: 'pointer',
                       fontWeight: '500',
-                      fontSize: window.innerWidth <= 768 ? '12px' : '14px',
-                      flex: window.innerWidth <= 768 ? '1' : 'initial',
-                      minWidth: window.innerWidth <= 768 ? '40%' : 'initial',
-                      maxWidth: window.innerWidth <= 768 ? '48%' : 'initial'
+                      fontSize: isMobile ? '12px' : '14px',
+                      flex: isMobile ? '1' : 'initial',
+                      minWidth: isMobile ? '40%' : 'initial',
+                      maxWidth: isMobile ? '48%' : 'initial'
                     }}
                   >
                     {copySuccess ? '✅ Copied!' : '📋 Copy Prompt'}
@@ -499,10 +550,10 @@ function GalleryPage() {
                 <button
                   onClick={closeModal}
                   style={{
-                    padding: window.innerWidth <= 768 ? '10px 8px' : '12px 24px',
+                    padding: isMobile ? '10px 8px' : '12px 24px',
                     background: 'hsl(var(--muted))',
-                    width: window.innerWidth <= 768 ? '100%' : 'initial',
-                    marginTop: window.innerWidth <= 768 ? '8px' : '0',
+                    width: isMobile ? '100%' : 'initial',
+                    marginTop: isMobile ? '8px' : '0',
                     color: 'hsl(var(--muted-foreground))',
                     border: 'none',
                     borderRadius: '8px',

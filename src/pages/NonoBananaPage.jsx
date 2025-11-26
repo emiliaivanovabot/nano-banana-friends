@@ -6,6 +6,7 @@ import { SecureLogger, ApiLogger } from '../utils/secure-logger.js'
 import { createClient } from '@supabase/supabase-js'
 import RecentImagesHistory from '../components/RecentImagesHistory.jsx'
 import { uploadAndSaveImage } from '../utils/imageUpload.js'
+import SwipeHandler from '../utils/SwipeHandler.js'
 
 // Premium Dropdown Component - Bulletproof Portal-based
 function PremiumDropdown({ label, value, onChange, options }) {
@@ -333,47 +334,42 @@ function NonoBananaPage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Touch gesture handling for mobile swipe navigation
+  // Optimized touch gesture handling for mobile swipe navigation
   useEffect(() => {
-    let touchStartX = 0
-    let touchStartY = 0
-    let touchEndX = 0
-    let touchEndY = 0
+    if (!isMobile) return
 
-    const handleTouchStart = (e) => {
-      touchStartX = e.changedTouches[0].screenX
-      touchStartY = e.changedTouches[0].screenY
-    }
-
-    const handleTouchEnd = (e) => {
-      touchEndX = e.changedTouches[0].screenX
-      touchEndY = e.changedTouches[0].screenY
-      handleSwipeGesture()
-    }
-
-    const handleSwipeGesture = () => {
-      const swipeThreshold = 30
-      const maxVerticalThreshold = 40
-      const swipeDistance = touchEndX - touchStartX
-      const verticalDistance = Math.abs(touchEndY - touchStartY)
+    const swipeHandler = new SwipeHandler({
+      minSwipeDistance: 120,
+      maxVerticalMovement: 80,
+      maxSwipeTime: 1000,
+      minVelocity: 0.3,
+      edgeThreshold: 30,
+      maxTransform: 15,
+      maxOpacity: 0.15,
+      transformThreshold: 25,
+      feedbackDuration: 300,
+      navigationDelay: 180,
+      debug: false, // Set to true for debugging
       
-      // Check if it's a horizontal swipe (not vertical scroll)
-      if (verticalDistance < maxVerticalThreshold && Math.abs(swipeDistance) > swipeThreshold) {
-        // Right swipe detected
-        if (swipeDistance > 0) {
-          navigate('/')
-        }
+      onSwipeRight: () => {
+        navigate('/')
+      },
+      
+      onSwipeStart: () => {
+        // Optional: Add any start feedback
+        console.log('Swipe gesture started')
+      },
+      
+      onSwipeCancel: () => {
+        // Optional: Handle cancelled swipes
+        console.log('Swipe gesture cancelled')
       }
-    }
+    })
 
-    if (isMobile) {
-      document.addEventListener('touchstart', handleTouchStart, { passive: true })
-      document.addEventListener('touchend', handleTouchEnd, { passive: true })
-    }
+    swipeHandler.attach()
 
     return () => {
-      document.removeEventListener('touchstart', handleTouchStart)
-      document.removeEventListener('touchend', handleTouchEnd)
+      swipeHandler.detach()
     }
   }, [isMobile, navigate])
 

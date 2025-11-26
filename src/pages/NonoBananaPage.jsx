@@ -1264,64 +1264,74 @@ function NonoBananaPage() {
   }
 
   return (
-    <div className="nano-banana-container">
+    <div className="nano-banana-container" style={{
+      background: 'hsl(var(--background))',
+      color: 'hsl(var(--foreground))',
+      minHeight: '100vh',
+      padding: '20px'
+    }}>
       
       {/* Header with user info and navigation */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginBottom: '20px',
+        marginBottom: '30px',
         flexWrap: 'wrap',
         gap: '10px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          width: '100%'
+        }}>
+          {/* Left - Dashboard Link */}
           <Link 
-            to="/" 
+            to="/dashboard" 
             style={{ 
-              color: '#6B7280',
+              color: 'hsl(var(--muted-foreground))',
               textDecoration: 'none',
               fontSize: '14px',
               fontWeight: '500'
             }}
           >
-            ← Home
+            ← Dashboard
           </Link>
           
-          {/* User info */}
-          {user && (
-            <div style={{
-              padding: '6px 12px',
-              backgroundColor: '#F3F4F6',
-              borderRadius: '20px',
-              fontSize: '14px',
-              color: '#374151',
-              fontWeight: '500'
-            }}>
-              👋 {user.username}
-            </div>
-          )}
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          {/* Right - Community Link */}
           <Link 
             to="/community-prompts" 
             style={{ 
-              color: '#6B7280',
+              color: 'hsl(var(--muted-foreground))',
               textDecoration: 'none',
               fontSize: '14px',
               fontWeight: '500'
             }}
           >
-            🌟 Community →
+            Community →
           </Link>
-          
         </div>
+        
       </div>
       
       <h1 className="nano-banana-title">
         🍌 nano banana pro
       </h1>
+
+      {/* Username Display */}
+      {user && (
+        <div style={{
+          textAlign: 'center',
+          marginBottom: '16px',
+          fontSize: '1.1rem',
+          fontWeight: '600',
+          color: 'hsl(var(--foreground))',
+          fontFamily: "'Space Grotesk', sans-serif"
+        }}>
+          👋 {user.username}
+        </div>
+      )}
 
       {/* Compact Settings - No White Box */}
       <div style={{ 
@@ -1333,83 +1343,98 @@ function NonoBananaPage() {
         </h3>
         <div style={{ 
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr 80px',
-          gap: '8px'
+          gridTemplateColumns: '1fr 80px',
+          gap: '12px',
+          alignItems: 'start'
         }}>
-          <button
-            onClick={() => {
-              if (resolution === '1K') setResolution('2K')
-              else if (resolution === '2K') setResolution('4K')
-              else setResolution('1K')
-            }}
-            style={{
-              padding: '10px 14px',
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%)',
-              border: '1px solid rgba(251, 191, 36, 0.3)',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '500',
-              fontSize: '0.9rem',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'scale(1.02)'
-              e.target.style.boxShadow = '0 2px 8px rgba(251, 113, 133, 0.15)'
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'scale(1)'
-              e.target.style.boxShadow = 'none'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-              <span style={{ fontWeight: '600' }}>{resolution}</span>
-              <span style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                {resolution === '1K' ? 'Fast' : resolution === '2K' ? 'Optimal' : 'Max'}
-              </span>
-            </div>
-          </button>
-          
-          <button
-            onClick={() => {
-              if (aspectRatio === '9:16') setAspectRatio('16:9')
-              else if (aspectRatio === '16:9') setAspectRatio('4:3')
-              else if (aspectRatio === '4:3') setAspectRatio('3:4')
-              else if (aspectRatio === '3:4') setAspectRatio('2:3')
-              else if (aspectRatio === '2:3') setAspectRatio('3:2')
-              else setAspectRatio('9:16')
-            }}
-            style={{
-              padding: '10px 14px',
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%)',
-              border: '1px solid rgba(251, 191, 36, 0.3)',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '500',
-              fontSize: '0.9rem',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'scale(1.02)'
-              e.target.style.boxShadow = '0 2px 8px rgba(251, 113, 133, 0.15)'
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'scale(1)'
-              e.target.style.boxShadow = 'none'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-              <span style={{ fontWeight: '600' }}>{aspectRatio}</span>
-              <span style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                {aspectRatio === '9:16' ? 'Story' : 
-                 aspectRatio === '16:9' ? 'Widescreen' :
-                 aspectRatio === '4:3' ? 'Post' :
-                 aspectRatio === '3:4' ? 'Portrait' :
-                 aspectRatio === '2:3' ? 'Portrait' : 'Landscape'}
-              </span>
-            </div>
-          </button>
-          
-          {/* Main Face Image Display */}
+          {/* Left Column: Stacked Buttons */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            height: '80px'
+          }}>
+            <button
+              onClick={() => {
+                if (resolution === '1K') setResolution('2K')
+                else if (resolution === '2K') setResolution('4K')
+                else setResolution('1K')
+              }}
+              style={{
+                padding: '6px 10px',
+                background: 'hsl(47 100% 65%)',
+                color: 'hsl(var(--primary-foreground))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '500',
+                fontSize: '0.8rem',
+                transition: 'all 0.2s ease',
+                height: '36px',
+                flex: '1'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.transform = 'scale(1.02)'
+                e.target.style.boxShadow = '0 2px 8px rgba(251, 113, 133, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'scale(1)'
+                e.target.style.boxShadow = 'none'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                <span style={{ fontWeight: '600', color: 'hsl(var(--primary-foreground))' }}>{resolution}</span>
+                <span style={{ fontSize: '0.7rem', color: 'hsl(var(--primary-foreground))' }}>
+                  {resolution === '1K' ? 'Fast' : resolution === '2K' ? 'Optimal' : 'Max'}
+                </span>
+              </div>
+            </button>
+            
+            <button
+              onClick={() => {
+                if (aspectRatio === '9:16') setAspectRatio('16:9')
+                else if (aspectRatio === '16:9') setAspectRatio('4:3')
+                else if (aspectRatio === '4:3') setAspectRatio('3:4')
+                else if (aspectRatio === '3:4') setAspectRatio('2:3')
+                else if (aspectRatio === '2:3') setAspectRatio('3:2')
+                else setAspectRatio('9:16')
+              }}
+              style={{
+                padding: '6px 10px',
+                background: 'hsl(280 70% 60%)',
+                color: 'hsl(var(--secondary-foreground))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '500',
+                fontSize: '0.8rem',
+                transition: 'all 0.2s ease',
+                height: '36px',
+                flex: '1'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.transform = 'scale(1.02)'
+                e.target.style.boxShadow = '0 2px 8px rgba(251, 113, 133, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'scale(1)'
+                e.target.style.boxShadow = 'none'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                <span style={{ fontWeight: '600', color: 'hsl(var(--secondary-foreground))' }}>{aspectRatio}</span>
+                <span style={{ fontSize: '0.7rem', color: 'hsl(var(--secondary-foreground))' }}>
+                  {aspectRatio === '9:16' ? 'Story' : 
+                   aspectRatio === '16:9' ? 'Widescreen' :
+                   aspectRatio === '4:3' ? 'Post' :
+                   aspectRatio === '3:4' ? 'Portrait' :
+                   aspectRatio === '2:3' ? 'Portrait' : 'Landscape'}
+                </span>
+              </div>
+            </button>
+          </div>
+
+          {/* Right Column: Main Face Image Display */}
           <div style={{
             position: 'relative',
             width: '80px',
@@ -1417,7 +1442,7 @@ function NonoBananaPage() {
             borderRadius: '8px',
             overflow: 'hidden',
             border: '1px solid rgba(251, 191, 36, 0.3)',
-            background: 'rgba(249, 250, 251, 0.9)'
+            background: 'hsl(var(--card))'
           }}>
             {userSettings?.main_face_image_url && showMainFaceImage ? (
               <>
@@ -1507,9 +1532,9 @@ function NonoBananaPage() {
       <div style={{ 
         marginBottom: '20px',
         padding: '16px',
-        background: 'rgba(255, 255, 255, 0.7)',
+        background: 'hsl(var(--card))',
         borderRadius: '12px',
-        border: '1px solid rgba(251, 191, 36, 0.2)'
+        border: '1px solid hsl(var(--border))'
       }}>
         <label style={{ 
           display: 'flex', 
@@ -1518,6 +1543,7 @@ function NonoBananaPage() {
           marginBottom: '12px', 
           fontWeight: '600',
           fontSize: '0.95rem',
+          fontFamily: "'Space Grotesk', sans-serif",
           background: 'linear-gradient(135deg, #ec4899 0%, #f59e0b 100%)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
@@ -1602,8 +1628,8 @@ function NonoBananaPage() {
               onClick={() => document.getElementById('neutral-upload').click()}
               style={{
                 padding: '10px 15px',
-                backgroundColor: '#6B7280',
-                color: 'white',
+                background: '#9CA3AF',
+                color: 'black',
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
@@ -1612,7 +1638,7 @@ function NonoBananaPage() {
                 gap: '6px'
               }}
             >
-              📎 Weitere Bilder hinzufügen
+              Weitere Bilder hinzufügen
             </button>
           )}
           
@@ -1705,9 +1731,9 @@ function NonoBananaPage() {
           style={{ 
             cursor: 'pointer', 
             padding: '8px 16px',
-            backgroundColor: 'rgba(255, 255, 255, 0.6)',
+            background: 'hsl(var(--card))',
             borderRadius: '8px',
-            border: '1px solid rgba(251, 191, 36, 0.2)',
+            border: '1px solid hsl(var(--border))',
             marginBottom: templatesCollapsed ? '8px' : '16px'
           }}
         >
@@ -1717,7 +1743,7 @@ function NonoBananaPage() {
             </h3>
             <span style={{ 
               fontSize: '0.8rem', 
-              color: '#6B7280', 
+              color: 'hsl(var(--muted-foreground))', 
               transition: 'transform 0.3s ease', 
               transform: templatesCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' 
             }}>
@@ -1789,12 +1815,22 @@ function NonoBananaPage() {
       <div style={{ 
         marginBottom: '20px',
         padding: '16px',
-        background: 'rgba(255, 255, 255, 0.7)',
+        background: 'hsl(var(--card))',
         borderRadius: '12px',
-        border: '1px solid rgba(251, 191, 36, 0.2)'
+        border: '1px solid hsl(var(--border))'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <h3 className="mobile-templates-title" style={{ margin: 0, textAlign: 'left' }}>
+          <h3 className="mobile-templates-title" style={{ 
+            margin: 0, 
+            textAlign: 'left',
+            fontWeight: '600',
+            fontSize: '1.1rem',
+            fontFamily: "'Space Grotesk', sans-serif",
+            background: 'linear-gradient(135deg, #ec4899 0%, #f59e0b 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             Prompt
           </h3>
           {(prompt || selectedTemplate) && (
@@ -1836,7 +1872,7 @@ function NonoBananaPage() {
             border: '1px solid rgba(251, 191, 36, 0.3)',
             borderRadius: '8px',
             overflow: 'hidden',
-            background: 'rgba(249, 250, 251, 0.9)'
+            background: 'hsl(var(--card))'
           }}>
             <button
               onClick={() => setShowPersonalization(!showPersonalization)}
@@ -1846,9 +1882,10 @@ function NonoBananaPage() {
                 background: showPersonalization ? 'rgba(251, 191, 36, 0.1)' : 'rgba(239, 68, 68, 0.1)',
                 border: 'none',
                 borderBottom: showPersonalization ? '1px solid rgba(251, 191, 36, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#1F2937',
+                fontSize: '16px',
+                fontWeight: '600',
+                color: 'hsl(var(--muted-foreground))',
+                fontFamily: "'Space Grotesk', sans-serif",
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
@@ -1856,10 +1893,32 @@ function NonoBananaPage() {
                 textAlign: 'left'
               }}
             >
-              <span>{showPersonalization ? '✓' : '○'} Mein Aussehen verwenden</span>
-              <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#6B7280' }}>
-                {showPersonalization ? 'Ein' : 'Aus'}
-              </span>
+              <span>Mein Aussehen verwenden</span>
+              <div style={{
+                marginLeft: 'auto',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: showPersonalization ? '#00ff41' : '#ff073a',
+                  textShadow: showPersonalization ? '0 0 6px #00ff41' : '0 0 6px #ff073a'
+                }}>
+                  {showPersonalization ? 'Ein' : 'Aus'}
+                </span>
+                <div style={{
+                  fontSize: '16px',
+                  color: showPersonalization ? '#00ff41' : '#ff073a',
+                  textShadow: showPersonalization ? '0 0 8px #00ff41' : '0 0 8px #ff073a',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  transform: showPersonalization ? 'scale(1.1)' : 'scale(1.0)'
+                }}>
+                  ⏻
+                </div>
+              </div>
             </button>
             
             {showPersonalization && (
@@ -1894,6 +1953,11 @@ function NonoBananaPage() {
           onClick={generateImage}
           disabled={!prompt.trim() || loading || multiLoading || multiLoading10}
           className={`mobile-generate-button ${loading ? 'loading' : ''} ${!prompt.trim() ? 'disabled' : ''}`}
+          style={{ 
+            background: loading ? 
+              'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 
+              'linear-gradient(135deg, hsl(47 100% 65%) 0%, #f59e0b 100%)'
+          }}
         >
           <span className="generate-icon">🍌</span>
           <span className="generate-text">
@@ -1909,7 +1973,7 @@ function NonoBananaPage() {
           style={{ 
             background: multiLoading ? 
               'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 
-              'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+              'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)'
           }}
         >
           <span className="generate-icon">🍌🍌🍌🍌</span>
@@ -1926,7 +1990,7 @@ function NonoBananaPage() {
           style={{ 
             background: multiLoading10 ? 
               'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 
-              'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
+              'linear-gradient(135deg, hsl(280 70% 60%) 0%, #7c3aed 100%)'
           }}
         >
           <span className="generate-icon">🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌</span>
@@ -1984,7 +2048,7 @@ function NonoBananaPage() {
               {generationTime && (
                 <span style={{
                   backgroundColor: '#E5E7EB',
-                  color: '#6B7280',
+                  color: 'hsl(var(--muted-foreground))',
                   padding: '4px 8px',
                   borderRadius: '4px',
                   fontSize: '12px',
@@ -2015,7 +2079,7 @@ function NonoBananaPage() {
             )}
           </div>
           
-          <p style={{ marginBottom: '15px', color: '#374151' }}>{result.text}</p>
+          <p style={{ marginBottom: '15px', color: 'hsl(var(--foreground))' }}>{result.text}</p>
           
           {result.image && (
             <img 
@@ -2116,7 +2180,7 @@ function NonoBananaPage() {
               {multiResults[0]?.generationTime && (
                 <span style={{
                   backgroundColor: '#E5E7EB',
-                  color: '#6B7280',
+                  color: 'hsl(var(--muted-foreground))',
                   padding: '4px 8px',
                   borderRadius: '4px',
                   fontSize: '12px',
@@ -2145,7 +2209,7 @@ function NonoBananaPage() {
             </button>
           </div>
           
-          <p style={{ marginBottom: '15px', color: '#374151' }}>Bilder erfolgreich generiert!</p>
+          <p style={{ marginBottom: '15px', color: 'hsl(var(--foreground))' }}>Bilder erfolgreich generiert!</p>
           
           <div style={{ 
             display: 'grid', 
@@ -2198,7 +2262,7 @@ function NonoBananaPage() {
               {multiResults10[0]?.generationTime && (
                 <span style={{
                   backgroundColor: '#E5E7EB',
-                  color: '#6B7280',
+                  color: 'hsl(var(--muted-foreground))',
                   padding: '4px 8px',
                   borderRadius: '4px',
                   fontSize: '12px',
@@ -2227,7 +2291,7 @@ function NonoBananaPage() {
             </button>
           </div>
           
-          <p style={{ marginBottom: '15px', color: '#374151' }}>Bilder erfolgreich generiert!</p>
+          <p style={{ marginBottom: '15px', color: 'hsl(var(--foreground))' }}>Bilder erfolgreich generiert!</p>
           
           <div style={{ 
             display: 'grid', 

@@ -136,15 +136,20 @@ function CommunityPromptsPage() {
         }
       `}</style>
       
-      <div className="nano-banana-container">
+      <div className="nano-banana-container" style={{
+        background: 'hsl(var(--background))',
+        color: 'hsl(var(--foreground))',
+        minHeight: '100vh'
+      }}>
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <Link 
             to="/nono-banana" 
             style={{ 
-              color: '#6B7280',
+              color: 'hsl(var(--muted-foreground))',
               textDecoration: 'none',
-              fontSize: '14px'
+              fontSize: '14px',
+              fontWeight: '500'
             }}
           >
             ← Zurück zu nano banana
@@ -155,9 +160,10 @@ function CommunityPromptsPage() {
             target="_blank" 
             rel="noopener noreferrer"
             style={{ 
-              color: '#6B7280',
+              color: 'hsl(var(--muted-foreground))',
               textDecoration: 'none',
-              fontSize: '14px'
+              fontSize: '14px',
+              fontWeight: '500'
             }}
           >
             bananaprompts.xyz →
@@ -170,11 +176,11 @@ function CommunityPromptsPage() {
         
         <p style={{ 
           textAlign: 'center', 
-          color: '#6B7280', 
+          color: 'hsl(var(--muted-foreground))', 
           marginBottom: '24px',
           fontSize: '0.9rem'
         }}>
-          Echte Prompts von bananaprompts.xyz - Ein Klick und der Prompt wird in nano banana eingefügt
+          Ein Klick und der Prompt wird in nano banana eingefügt
         </p>
 
         {/* Loading State */}
@@ -182,7 +188,7 @@ function CommunityPromptsPage() {
           <div style={{ textAlign: 'center', padding: '40px' }}>
             <div style={{ 
               fontSize: '1rem', 
-              color: '#6B7280',
+              color: 'hsl(var(--muted-foreground))',
               marginBottom: '12px' 
             }}>
               🍌 Lädt Community Prompts...
@@ -190,8 +196,8 @@ function CommunityPromptsPage() {
             <div style={{
               width: '40px',
               height: '40px',
-              border: '3px solid #f3f3f3',
-              borderTop: '3px solid #f472b6',
+              border: '3px solid hsl(var(--muted))',
+              borderTop: '3px solid hsl(var(--primary))',
               borderRadius: '50%',
               animation: 'spin 1s linear infinite',
               margin: '0 auto'
@@ -204,10 +210,10 @@ function CommunityPromptsPage() {
           <div style={{ 
             textAlign: 'center', 
             padding: '40px',
-            color: '#ef4444',
-            backgroundColor: '#fef2f2',
+            color: 'hsl(var(--destructive-foreground))',
+            backgroundColor: 'hsl(var(--destructive) / 0.1)',
             borderRadius: '12px',
-            border: '1px solid #fecaca',
+            border: '1px solid hsl(var(--destructive) / 0.3)',
             marginBottom: '24px'
           }}>
             <div style={{ fontSize: '1.2rem', marginBottom: '8px' }}>⚠️</div>
@@ -220,7 +226,7 @@ function CommunityPromptsPage() {
           <div style={{ 
             textAlign: 'center', 
             padding: '40px',
-            color: '#6B7280'
+            color: 'hsl(var(--muted-foreground))'
           }}>
             <div style={{ fontSize: '1.2rem', marginBottom: '8px' }}>💭</div>
             <div style={{ fontSize: '0.9rem' }}>Noch keine Community Prompts verfügbar.</div>
@@ -243,14 +249,15 @@ function CommunityPromptsPage() {
                 onClick={() => setSelectedCategory(category)}
                 style={{
                   padding: '6px 16px',
-                  border: selectedCategory === category ? '2px solid #f472b6' : '1px solid rgba(251, 191, 36, 0.3)',
+                  border: selectedCategory === category ? '2px solid hsl(var(--primary))' : '1px solid hsl(var(--border))',
                   borderRadius: '20px',
                   background: selectedCategory === category 
-                    ? 'linear-gradient(135deg, #f472b6 0%, #fb7185 100%)' 
-                    : 'rgba(255, 255, 255, 0.8)',
-                  color: selectedCategory === category ? 'white' : '#374151',
+                    ? 'linear-gradient(135deg, hsl(var(--primary)) 0%, #f59e0b 100%)' 
+                    : 'hsl(var(--muted))',
+                  color: selectedCategory === category ? 'hsl(var(--primary-foreground))' : 'hsl(var(--foreground))',
                   fontSize: '0.8rem',
                   fontWeight: '500',
+                  fontFamily: "'Space Grotesk', sans-serif",
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
@@ -266,8 +273,8 @@ function CommunityPromptsPage() {
         {!loading && !error && filteredPrompts.length > 0 && (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: isMobile ? '8px' : '12px',
+          gridTemplateColumns: isMobile ? 'repeat(4, 1fr)' : 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: isMobile ? '4px' : '12px',
           marginBottom: '40px'
         }}>
           {sortedPrompts.map(promptData => (
@@ -276,22 +283,23 @@ function CommunityPromptsPage() {
               style={{
                 position: 'relative',
                 backgroundImage: `url(${promptData.image_url})`,
-                backgroundSize: 'contain',
+                backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
                 backgroundColor: 'rgba(0, 0, 0, 0.1)',
                 borderRadius: '12px',
-                padding: isMobile ? '12px' : '16px',
-                border: '1px solid rgba(251, 191, 36, 0.2)',
+                padding: isMobile ? '6px' : '16px',
+                border: '1px solid hsl(var(--border))',
                 transition: 'all 0.2s ease',
                 cursor: 'pointer',
-                minHeight: isMobile ? '160px' : '200px',
-                aspectRatio: isMobile ? '1' : 'auto',
-                overflow: 'hidden'
+                minHeight: isMobile ? '120px' : '200px',
+                aspectRatio: isMobile ? '3/4' : 'auto',
+                overflow: 'hidden',
+                backdropFilter: 'blur(10px)'
               }}
               onMouseEnter={(e) => {
                 e.target.style.transform = 'translateY(-2px)'
-                e.target.style.boxShadow = '0 4px 12px rgba(251, 113, 133, 0.15)'
+                e.target.style.boxShadow = '0 4px 12px hsl(var(--primary) / 0.2)'
               }}
               onMouseLeave={(e) => {
                 e.target.style.transform = 'translateY(0)'
@@ -313,62 +321,36 @@ function CommunityPromptsPage() {
               
               {/* Content wrapper */}
               <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                  <h3 style={{ 
-                    margin: 0, 
-                    fontSize: isMobile ? '0.9rem' : '1.1rem', 
-                    fontWeight: '600',
-                    color: 'white',
-                    textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)'
-                  }}>
-                    {promptData.title}
-                  </h3>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start', marginBottom: '8px' }}>
                   <span style={{
-                    background: 'linear-gradient(135deg, #f472b6 0%, #fb7185 100%)',
-                    color: 'white',
+                    background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, #f59e0b 100%)',
+                    color: 'hsl(var(--primary-foreground))',
                     padding: '2px 8px',
                     borderRadius: '12px',
                     fontSize: '0.7rem',
                     fontWeight: '500',
+                    fontFamily: "'Space Grotesk', sans-serif",
                     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
                   }}>
                     {promptData.category}
                   </span>
                 </div>
                 
-                <p style={{ 
-                  color: 'rgba(255, 255, 255, 0.9)', 
-                  fontSize: isMobile ? '0.75rem' : '0.85rem', 
-                  lineHeight: '1.4',
-                  marginBottom: '12px',
-                  display: '-webkit-box',
-                  WebkitLineClamp: isMobile ? 2 : 3,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)'
-                }}>
-                  {promptData.prompt}
-                </p>
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ 
-                    color: 'rgba(255, 255, 255, 0.7)', 
-                    fontSize: '0.75rem',
-                    textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)'
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+                  <h3 style={{ 
+                    margin: 0, 
+                    fontSize: isMobile ? '0.7rem' : '1.4rem', 
+                    fontWeight: '600',
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    color: 'white',
+                    textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)',
+                    textAlign: 'center',
+                    lineHeight: '1.2'
                   }}>
-                    von {promptData.author}
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ color: '#f472b6', fontSize: '0.8rem', textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)' }}>♥</span>
-                    <span style={{ 
-                      color: 'rgba(255, 255, 255, 0.7)', 
-                      fontSize: '0.75rem',
-                      textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)'
-                    }}>
-                      {promptData.likes}
-                    </span>
-                  </div>
+                    {promptData.title}
+                  </h3>
                 </div>
+                
               </div>
             </div>
           ))}

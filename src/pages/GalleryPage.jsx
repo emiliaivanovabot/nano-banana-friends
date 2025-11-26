@@ -116,34 +116,42 @@ function GalleryPage() {
   return (
     <div style={{ 
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: 'hsl(var(--background))',
       padding: '20px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      color: 'hsl(var(--foreground))'
     }}>
       {/* Header */}
       <div style={{
         maxWidth: '1200px',
         margin: '0 auto 30px auto',
-        background: 'rgba(255, 255, 255, 0.1)',
+        background: 'hsl(var(--card))',
         backdropFilter: 'blur(20px)',
-        borderRadius: '16px',
-        padding: '20px',
-        border: '1px solid rgba(255, 255, 255, 0.2)'
+        borderRadius: '20px',
+        padding: '25px',
+        border: '1px solid hsl(var(--border))'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'flex-start'
+        }}>
           <div>
             <h1 style={{ 
               margin: '0 0 8px 0', 
-              fontSize: '24px', 
-              fontWeight: '600', 
-              color: 'white' 
+              fontSize: '36px', 
+              fontWeight: '700', 
+              color: 'hsl(47 100% 65%)',
+              background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
             }}>
               Meine Bilder
             </h1>
             <p style={{ 
               margin: 0, 
               fontSize: '14px', 
-              color: 'rgba(255, 255, 255, 0.8)' 
+              color: 'hsl(var(--muted-foreground))' 
             }}>
               Alle deine generierten Bilder auf einen Blick
             </p>
@@ -152,27 +160,32 @@ function GalleryPage() {
           <Link 
             to="/dashboard"
             style={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '8px',
-              padding: '10px 16px',
-              color: 'white',
+              background: 'hsl(var(--secondary) / 0.3)',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '12px',
+              padding: window.innerWidth <= 768 ? '12px 15px' : '12px 18px',
+              color: 'hsl(var(--foreground))',
               textDecoration: 'none',
-              fontWeight: '500',
+              fontWeight: '600',
               fontSize: '14px',
-              transition: 'all 0.2s'
+              transition: 'all 0.3s ease',
+              minWidth: window.innerWidth <= 768 ? '100px' : 'auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
           >
-            ← Zurück zum Dashboard
+            ← Zurück
           </Link>
         </div>
 
         {/* Filter Buttons */}
         <div style={{ 
-          marginTop: '20px',
+          marginTop: window.innerWidth <= 768 ? '15px' : '20px',
           display: 'flex',
-          gap: '8px',
-          flexWrap: 'wrap'
+          gap: window.innerWidth <= 768 ? '6px' : '8px',
+          flexWrap: 'wrap',
+          justifyContent: window.innerWidth <= 768 ? 'center' : 'flex-start'
         }}>
           {[
             { key: 'all', label: 'Alle', count: images.length },
@@ -184,19 +197,19 @@ function GalleryPage() {
               key={filterOption.key}
               onClick={() => setFilter(filterOption.key)}
               style={{
-                padding: '8px 16px',
-                fontSize: '13px',
+                padding: window.innerWidth <= 768 ? '6px 12px' : '8px 16px',
+                fontSize: window.innerWidth <= 768 ? '12px' : '13px',
                 border: 'none',
                 borderRadius: '20px',
                 cursor: 'pointer',
                 fontWeight: '500',
                 transition: 'all 0.2s',
                 background: filter === filterOption.key 
-                  ? 'rgba(255, 255, 255, 0.9)' 
-                  : 'rgba(255, 255, 255, 0.2)',
+                  ? 'hsl(var(--primary))' 
+                  : 'hsl(var(--muted) / 0.3)',
                 color: filter === filterOption.key 
-                  ? '#333' 
-                  : 'white'
+                  ? 'hsl(var(--primary-foreground))' 
+                  : 'hsl(var(--foreground))'
               }}
             >
               {filterOption.label} ({filterOption.count})
@@ -209,29 +222,31 @@ function GalleryPage() {
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {loading ? (
           <div style={{
-            background: 'rgba(255, 255, 255, 0.1)',
+            background: 'hsl(var(--card))',
             backdropFilter: 'blur(20px)',
-            borderRadius: '16px',
+            borderRadius: '20px',
             padding: '60px',
-            textAlign: 'center'
+            textAlign: 'center',
+            border: '1px solid hsl(var(--border))'
           }}>
-            <p style={{ color: 'white', margin: 0, fontSize: '18px' }}>
+            <p style={{ color: 'hsl(var(--foreground))', margin: 0, fontSize: '18px' }}>
               Lade Bilder...
             </p>
           </div>
         ) : filteredImages.length === 0 ? (
           <div style={{
-            background: 'rgba(255, 255, 255, 0.1)',
+            background: 'hsl(var(--card))',
             backdropFilter: 'blur(20px)',
-            borderRadius: '16px',
+            borderRadius: '20px',
             padding: '60px',
-            textAlign: 'center'
+            textAlign: 'center',
+            border: '1px solid hsl(var(--border))'
           }}>
-            <h2 style={{ color: 'white', margin: '0 0 16px 0', fontSize: '20px' }}>
+            <h2 style={{ color: 'hsl(var(--foreground))', margin: '0 0 16px 0', fontSize: '20px' }}>
               Keine Bilder gefunden
             </h2>
             <p style={{ 
-              color: 'rgba(255, 255, 255, 0.8)', 
+              color: 'hsl(var(--muted-foreground))', 
               margin: '0 0 24px 0',
               fontSize: '16px' 
             }}>
@@ -244,11 +259,11 @@ function GalleryPage() {
               style={{
                 display: 'inline-block',
                 padding: '12px 24px',
-                background: '#f97316',
-                color: 'white',
+                background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+                color: 'hsl(var(--primary-foreground))',
                 textDecoration: 'none',
-                borderRadius: '8px',
-                fontWeight: '500',
+                borderRadius: '12px',
+                fontWeight: '600',
                 fontSize: '14px'
               }}
             >
@@ -322,25 +337,31 @@ function GalleryPage() {
           }}
         >
           <div style={{
-            background: 'white',
-            borderRadius: '12px',
+            background: 'hsl(var(--card))',
+            borderRadius: '20px',
             padding: '0',
             maxWidth: '90vw',
             maxHeight: '90vh',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            animation: 'slideUp 0.2s ease'
+            animation: 'slideUp 0.2s ease',
+            border: '1px solid hsl(var(--border))'
           }}>
             {/* Modal Header */}
             <div style={{
               padding: '20px',
-              borderBottom: '1px solid #eee',
+              borderBottom: '1px solid hsl(var(--border))',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <h3 style={{ margin: 0, color: '#333' }}>
+              <h3 style={{ 
+                margin: 0, 
+                color: 'hsl(var(--foreground))',
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontWeight: '600'
+              }}>
                 {selectedImage.generation_type === 'single' ? 'Einzelne' :
                  selectedImage.generation_type === '4x' ? '4x' : '10x'} Generierung
                 {(() => {
@@ -349,7 +370,7 @@ function GalleryPage() {
                     <span style={{ 
                       fontWeight: 'normal', 
                       fontSize: '0.8em', 
-                      color: '#666',
+                      color: 'hsl(var(--muted-foreground))',
                       marginLeft: '12px'
                     }}>
                       {imageNumber.current} von {imageNumber.total}
@@ -364,7 +385,7 @@ function GalleryPage() {
                   border: 'none',
                   fontSize: '18px',
                   cursor: 'pointer',
-                  color: '#666',
+                  color: 'hsl(var(--muted-foreground))',
                   width: '32px',
                   height: '32px',
                   borderRadius: '50%',
@@ -406,15 +427,15 @@ function GalleryPage() {
             />
 
             {/* Modal Info */}
-            <div style={{ padding: '20px', borderTop: '1px solid #eee' }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#666' }}>
+            <div style={{ padding: '20px', borderTop: '1px solid hsl(var(--border))' }}>
+              <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>
                 {new Date(selectedImage.created_at).toLocaleString('de-DE')}
               </p>
               {selectedImage.prompt && (
                 <p style={{ 
                   margin: '0 0 16px 0', 
                   fontSize: '14px', 
-                  color: '#333', 
+                  color: 'hsl(var(--foreground))', 
                   lineHeight: '1.4',
                   overflow: 'hidden',
                   display: '-webkit-box',
@@ -438,8 +459,8 @@ function GalleryPage() {
                   }}
                   style={{
                     padding: window.innerWidth <= 768 ? '10px 8px' : '12px 24px',
-                    background: '#8b5cf6',
-                    color: 'white',
+                    background: 'hsl(var(--secondary))',
+                    color: 'hsl(var(--secondary-foreground))',
                     border: 'none',
                     borderRadius: '8px',
                     cursor: 'pointer',
@@ -460,8 +481,8 @@ function GalleryPage() {
                     }}
                     style={{
                       padding: window.innerWidth <= 768 ? '10px 8px' : '12px 24px',
-                      background: '#10b981',
-                      color: 'white',
+                      background: 'hsl(var(--primary))',
+                      color: 'hsl(var(--primary-foreground))',
                       border: 'none',
                       borderRadius: '8px',
                       cursor: 'pointer',
@@ -479,10 +500,10 @@ function GalleryPage() {
                   onClick={closeModal}
                   style={{
                     padding: window.innerWidth <= 768 ? '10px 8px' : '12px 24px',
-                    background: '#6b7280',
+                    background: 'hsl(var(--muted))',
                     width: window.innerWidth <= 768 ? '100%' : 'initial',
                     marginTop: window.innerWidth <= 768 ? '8px' : '0',
-                    color: 'white',
+                    color: 'hsl(var(--muted-foreground))',
                     border: 'none',
                     borderRadius: '8px',
                     cursor: 'pointer',

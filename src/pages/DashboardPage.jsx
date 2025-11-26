@@ -1,12 +1,79 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext.jsx'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { getDailyUsageHistory } from '../utils/usageTracking'
 
 function DashboardPage() {
   const { user, logout } = useAuth()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [showDisabledModal, setShowDisabledModal] = useState(false)
   const [disabledToolName, setDisabledToolName] = useState('')
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+  const [stats, setStats] = useState({
+    today: { images: 0, time: 0, tokens: 0 },
+    week: { images: 0, time: 0, tokens: 0 },
+    month: { cost: 0 }
+  })
+
+  // Mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  useEffect(() => {
+    const loadStats = async () => {
+      if (user?.username) {
+        try {
+          const usageData = await getDailyUsageHistory(user.username, 30)
+          if (usageData.success) {
+            const today = new Date().toISOString().split('T')[0]
+            const todayData = usageData.data.find(d => d.usage_date === today)
+            
+            // Calculate weekly stats
+            const weekStart = new Date()
+            weekStart.setDate(weekStart.getDate() - 7)
+            const weekData = usageData.data.filter(d => 
+              new Date(d.usage_date) >= weekStart
+            )
+            
+            const weekStats = weekData.reduce((acc, day) => ({
+              images: acc.images + (day.generations_count || 0),
+              time: acc.time + (day.generation_time_seconds || 0),
+              tokens: acc.tokens + (day.prompt_tokens || 0) + (day.output_tokens || 0)
+            }), { images: 0, time: 0, tokens: 0 })
+
+            // Calculate monthly cost
+            const monthCost = usageData.data.reduce((acc, day) => 
+              acc + (parseFloat(day.cost_usd) || 0), 0
+            )
+
+            setStats({
+              today: {
+                images: todayData?.generations_count || 0,
+                time: Math.round((todayData?.generation_time_seconds || 0) / 60),
+                tokens: Math.round(((todayData?.prompt_tokens || 0) + (todayData?.output_tokens || 0)) / 1000)
+              },
+              week: {
+                images: weekStats.images,
+                time: Math.round(weekStats.time / 60),
+                tokens: Math.round(weekStats.tokens / 1000)
+              },
+              month: {
+                cost: monthCost * 1.1 // Convert USD to EUR approximately
+              }
+            })
+          }
+        } catch (error) {
+          console.error('Error loading stats:', error)
+        }
+      }
+    }
+    loadStats()
+  }, [user])
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
@@ -38,278 +105,411 @@ function DashboardPage() {
     {
       id: 'nano-banana',
       path: '/nono-banana',
-      title: 'Image Generation',
-      description: 'AI Image Creation',
-      icon: '🍌',
-      color: '#ffffff',
-      bgColor: '#f97316',
-      borderColor: '#ea580c',
-      hoverBg: '#ea580c',
-      sectionTitle: 'Nano Banana Pro'
+      title: 'Nano Banana Pro',
+      subtitle: 'Image Generation',
+      gradient: 'linear-gradient(135deg, hsl(47 100% 65%), #f59e0b)',
+      available: true
     },
     {
       id: 'gallery',
-      path: '/gallery',
-      title: 'Meine Bilder',
-      description: 'Alle generierten Bilder',
-      icon: '🖼️',
-      color: '#ffffff',
-      bgColor: '#8b5cf6',
-      borderColor: '#7c3aed',
-      hoverBg: '#7c3aed',
-      sectionTitle: 'Bilder Galerie'
+      path: '/gallery', 
+      title: 'Bilder Galerie',
+      subtitle: 'Deine Bilder',
+      gradient: 'linear-gradient(135deg, #667eea, #764ba2)',
+      available: true
     },
     {
       id: 'wan-video',
-      path: '/wan-video',
-      title: 'Video Generation',
-      description: 'Image to Video',
-      icon: '🎬',
-      color: '#ffffff',
-      bgColor: '#1f2937',
-      borderColor: '#111827',
-      hoverBg: '#111827',
-      sectionTitle: 'WAN 2.2 Video',
-      disabled: true
+      title: 'WAN 2.2 Video',
+      subtitle: 'Video Generation',
+      gradient: 'linear-gradient(135deg, #f093fb, #f5576c)',
+      available: false
     },
     {
       id: 'qwen',
-      path: '/qwen',
-      title: 'Image Editor',
-      description: 'Image Processing',
-      icon: '🎨',
-      color: '#ffffff',
-      bgColor: '#3b82f6',
-      borderColor: '#2563eb',
-      hoverBg: '#2563eb',
-      sectionTitle: 'Qwen - kommt noch',
-      disabled: true
+      title: 'Qwen',
+      subtitle: 'Image Editor',
+      gradient: 'linear-gradient(135deg, #4facfe, #00f2fe)',
+      available: false
+    },
+    {
+      id: 'comfyui',
+      title: 'Comfyui',
+      subtitle: 'Real Pics',
+      gradient: 'linear-gradient(135deg, #a8edea, #fed6e3)',
+      available: false
     }
   ]
 
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '16px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      background: 'hsl(var(--background))',
+      padding: '20px',
+      color: 'hsl(var(--foreground))'
     }}>
       {/* Header */}
       <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '32px',
-        background: 'rgba(255, 255, 255, 0.15)',
-        backdropFilter: 'blur(20px)',
-        padding: '16px 24px',
-        borderRadius: '16px',
-        border: '1px solid rgba(255, 255, 255, 0.2)'
+        maxWidth: '1200px',
+        margin: '0 auto',
+        marginBottom: '30px'
       }}>
-        <div>
-          <h1 style={{
-            margin: '0 0 4px 0',
-            fontSize: '24px',
-            fontWeight: '600',
-            color: 'white'
-          }}>
-            🍌 Nano Banana Friends
-          </h1>
-          <h2 style={{
-            margin: '0 0 4px 0',
-            fontSize: '20px',
-            fontWeight: '500',
-            color: 'white'
-          }}>
-            Hallo {getFirstName(user?.username)}!
-          </h2>
-          <p style={{
-            margin: 0,
-            fontSize: '14px',
-            color: 'rgba(255, 255, 255, 0.8)'
-          }}>
-            Wähle dein AI Tool
-          </p>
-        </div>
-        
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <Link 
-            to="/settings"
-            style={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '6px',
-              padding: '8px 12px',
-              fontSize: '13px',
-              textDecoration: 'none',
-              transition: 'all 0.2s',
-              cursor: 'pointer',
-              color: 'white',
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '25px',
+          background: 'hsl(var(--card))',
+          backdropFilter: 'blur(20px)',
+          padding: isMobile ? '15px 20px' : '20px 25px',
+          borderRadius: '20px',
+          border: '1px solid hsl(var(--border))'
+        }}>
+          <div>
+            <h1 style={{
+              margin: '0 0 8px 0',
+              fontSize: isMobile ? '28px' : '36px',
+              fontWeight: '700',
+              color: 'hsl(47 100% 65%)',
+              background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontFamily: "'Space Grotesk', sans-serif"
+            }}>
+              neuronalworks
+            </h1>
+            <p style={{
+              margin: 0,
+              fontSize: isMobile ? '16px' : '18px',
+              color: 'hsl(var(--foreground))',
               fontWeight: '500'
-            }}
-          >
-            ⚙️
-          </Link>
+            }}>
+              🍌 Hallo {getFirstName(user?.username)}!
+            </p>
+            <p style={{
+              margin: '5px 0 0 0',
+              fontSize: '14px',
+              color: 'hsl(var(--muted-foreground))',
+              fontWeight: '300',
+              fontFamily: 'Georgia, serif'
+            }}>
+              Wähle dein AI Tool und ab gehts
+            </p>
+          </div>
           
-          <button 
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            style={{
-              background: '#fee2e2',
-              border: '1px solid #fecaca',
-              borderRadius: '6px',
-              padding: '8px 12px',
-              fontSize: '13px',
-              cursor: isLoggingOut ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s',
-              opacity: isLoggingOut ? 0.6 : 1,
-              color: '#dc2626',
-              fontWeight: '500'
-            }}
-          >
-            {isLoggingOut ? '⏳' : '⏻'}
-          </button>
+          <div style={{ 
+            display: 'flex', 
+            gap: '12px',
+            alignItems: 'center'
+          }}>
+            <Link 
+              to="/settings"
+              style={{
+                background: 'hsl(var(--secondary) / 0.3)',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '12px',
+                padding: '12px',
+                textDecoration: 'none',
+                color: 'hsl(var(--foreground))',
+                fontSize: '20px',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '48px',
+                height: '48px'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'hsl(var(--secondary) / 0.5)'
+                e.target.style.transform = 'scale(1.1)'
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'hsl(var(--secondary) / 0.3)'
+                e.target.style.transform = 'scale(1)'
+              }}
+            >
+              ⚙️
+            </Link>
+            
+            <button 
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              style={{
+                background: 'hsl(var(--destructive) / 0.3)',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '12px',
+                padding: '12px',
+                cursor: isLoggingOut ? 'not-allowed' : 'pointer',
+                opacity: isLoggingOut ? 0.6 : 1,
+                color: 'hsl(var(--foreground))',
+                fontSize: '20px',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '48px',
+                height: '48px'
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoggingOut) {
+                  e.target.style.background = 'hsl(var(--destructive) / 0.5)'
+                  e.target.style.transform = 'scale(1.1)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isLoggingOut) {
+                  e.target.style.background = 'hsl(var(--destructive) / 0.3)'
+                  e.target.style.transform = 'scale(1)'
+                }
+              }}
+            >
+              {isLoggingOut ? '⏳' : '⏻'}
+            </button>
+          </div>
+        </div>
+
+        {/* Stats - Mobile Layout */}
+        <div style={{ marginBottom: '30px' }}>
+          {/* Today and Week Stats - Mobile: Side by side, Desktop: All three */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3, 1fr)',
+            gap: '15px',
+            marginBottom: isMobile ? '15px' : '30px'
+          }}>
+            {/* Heute */}
+          <div style={{
+            background: 'hsl(var(--card))',
+            borderRadius: '20px',
+            padding: '25px',
+            boxShadow: '0 10px 30px hsl(var(--background) / 0.3)',
+            border: '1px solid hsl(var(--border))'
+          }}>
+            <h3 style={{
+              margin: '0 0 15px 0',
+              fontSize: '16px',
+              fontWeight: '600',
+              color: 'hsl(var(--primary))',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}>
+              Heute
+            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Bilder:</span>
+              <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--primary))' }}>{stats.today.images}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Zeit:</span>
+              <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--secondary))' }}>{stats.today.time} min</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Tokens:</span>
+              <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--accent))' }}>{stats.today.tokens}K</span>
+            </div>
+          </div>
+
+            {/* Diese Woche */}
+            <div style={{
+              background: 'hsl(var(--card))',
+              borderRadius: '20px',
+              padding: '25px',
+              boxShadow: '0 10px 30px hsl(var(--background) / 0.3)',
+              border: '1px solid hsl(var(--border))'
+            }}>
+              <h3 style={{
+                margin: '0 0 15px 0',
+                fontSize: '16px',
+                fontWeight: '600',
+                color: 'hsl(var(--primary))',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>
+                Diese Woche
+              </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Bilder:</span>
+                <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--primary))' }}>{stats.week.images}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Zeit:</span>
+                <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--secondary))' }}>{stats.week.time} min</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Tokens:</span>
+                <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--accent))' }}>{stats.week.tokens}K</span>
+              </div>
+            </div>
+
+            {/* Monat - Desktop: Third column, Mobile: Hidden here */}
+            {!isMobile && (
+              <div style={{
+                background: 'hsl(var(--card))',
+                borderRadius: '20px',
+                padding: '25px',
+                boxShadow: '0 10px 30px hsl(var(--background) / 0.3)',
+                border: '1px solid hsl(var(--border))',
+                textAlign: 'center'
+              }}>
+                <h3 style={{
+                  margin: '0 0 15px 0',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  color: 'hsl(var(--primary))',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  Monat
+                </h3>
+                <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Deine Ausgaben</p>
+                <p style={{
+                  margin: 0,
+                  fontSize: '32px',
+                  fontWeight: '700',
+                  color: 'hsl(47 100% 65%)',
+                  background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  €{stats.month.cost.toFixed(2)}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Month Stats - Mobile: Full width below */}
+          {isMobile && (
+            <div style={{
+              background: 'hsl(var(--card))',
+              borderRadius: '20px',
+              padding: '25px',
+              boxShadow: '0 10px 30px hsl(var(--background) / 0.3)',
+              border: '1px solid hsl(var(--border))',
+              textAlign: 'center',
+              width: '100%'
+            }}>
+              <h3 style={{
+                margin: '0 0 15px 0',
+                fontSize: '16px',
+                fontWeight: '600',
+                color: 'hsl(var(--primary))',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>
+                Monat
+              </h3>
+              <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Deine Ausgaben</p>
+              <p style={{
+                margin: 0,
+                fontSize: '32px',
+                fontWeight: '700',
+                color: 'hsl(47 100% 65%)',
+                background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
+                €{stats.month.cost.toFixed(2)}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Tools Grid */}
-      <div 
-        className="tools-grid"
-        style={{
-          display: 'grid',
-          gap: '12px',
-          maxWidth: '800px',
-          margin: '0 auto'
-        }}
-      >
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+        gap: '25px'
+      }}>
         {tools.map((tool) => (
-          <div key={tool.id} style={{ marginBottom: '20px' }}>
-            <h3 style={{
-              margin: '0 0 8px 0',
-              fontSize: '18px',
-              fontWeight: '600',
-              color: 'white',
-              textAlign: 'left'
-            }}>
-              {tool.sectionTitle}
-            </h3>
-            
-            {tool.disabled ? (
-              <div
-                onClick={() => handleDisabledToolClick(tool.sectionTitle)}
-                style={{
-                  textDecoration: 'none',
-                  background: tool.bgColor,
-                  borderRadius: '8px',
-                  padding: '16px',
-                  border: `2px solid ${tool.borderColor}`,
-                  transition: 'all 0.2s ease',
-                  cursor: 'not-allowed',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  height: '100px',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                  opacity: 0.5,
-                  filter: 'grayscale(50%)'
-                }}
-              >
-                <span style={{
-                  fontSize: '18px',
-                  flexShrink: 0,
-                  filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3))'
-                }}>
-                  {tool.icon}
-                </span>
-                
-                <div style={{ flex: 1 }}>
-                  <h3 style={{
-                    margin: 0,
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: tool.color,
-                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
-                  }}>
-                    {tool.title}
-                  </h3>
-                  <p style={{
-                    margin: 0,
-                    fontSize: '12px',
-                    color: tool.color,
-                    fontWeight: '400',
-                    lineHeight: '1.3',
-                    opacity: 0.9,
-                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
-                  }}>
-                    {tool.description}
-                  </p>
-                </div>
-              </div>
-            ) : (
+          <div key={tool.id} style={{ position: 'relative' }}>
+            {tool.available ? (
               <Link
                 to={tool.path}
                 style={{
                   textDecoration: 'none',
-                  background: tool.bgColor,
-                  borderRadius: '8px',
-                  padding: '16px',
-                  border: `2px solid ${tool.borderColor}`,
-                  transition: 'all 0.2s ease',
+                  display: 'block',
+                  background: tool.id === 'nano-banana' ? '#a86d09' : tool.id === 'gallery' ? '#5a387d' : 'hsl(var(--card))',
+                  borderRadius: '25px',
+                  padding: '30px',
+                  boxShadow: '0 15px 35px hsl(var(--background) / 0.2)',
+                  border: '1px solid hsl(var(--border))',
+                  transition: 'all 0.4s ease',
                   cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  height: '100px',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+                  overflow: 'hidden'
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.background = tool.hoverBg
-                  e.target.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.25)'
-                  e.target.style.transform = 'translateY(-2px)'
+                  e.target.style.transform = 'translateY(-5px) scale(1.02)'
+                  e.target.style.boxShadow = '0 25px 50px rgba(0, 0, 0, 0.15)'
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.background = tool.bgColor
-                  e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)'
-                  e.target.style.transform = 'translateY(0px)'
+                  e.target.style.transform = 'translateY(0) scale(1)'
+                  e.target.style.boxShadow = '0 15px 35px rgba(0, 0, 0, 0.1)'
                 }}
               >
-                <span style={{
-                  fontSize: '18px',
-                  flexShrink: 0,
-                  filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3))'
-                }}>
-                  {tool.icon}
-                </span>
                 
-                <div style={{ flex: 1 }}>
-                  <h3 style={{
-                    margin: 0,
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: tool.color,
-                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
-                  }}>
-                    {tool.title}
-                  </h3>
-                  <p style={{
-                    margin: 0,
-                    fontSize: '12px',
-                    color: tool.color,
-                    fontWeight: '400',
-                    lineHeight: '1.3',
-                    opacity: 0.9,
-                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
-                  }}>
-                    {tool.description}
-                  </p>
-                </div>
+                <h3 style={{
+                  margin: '0 0 8px 0',
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: 'hsl(var(--foreground))'
+                }}>
+                  {tool.title}
+                </h3>
+                <p style={{
+                  margin: 0,
+                  fontSize: '16px',
+                  color: 'hsl(var(--primary))',
+                  fontWeight: '600'
+                }}>
+                  {tool.subtitle}
+                </p>
               </Link>
+            ) : (
+              <div
+                onClick={() => handleDisabledToolClick(tool.title)}
+                style={{
+                  display: 'block',
+                  background: 'hsl(var(--muted) / 0.5)',
+                  borderRadius: '25px',
+                  padding: '30px',
+                  boxShadow: '0 15px 35px hsl(var(--background) / 0.1)',
+                  border: '1px solid hsl(var(--border))',
+                  cursor: 'not-allowed',
+                  overflow: 'hidden',
+                  opacity: 0.7,
+                  filter: 'grayscale(50%)'
+                }}
+              >
+                
+                <h3 style={{
+                  margin: '0 0 8px 0',
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: 'hsl(var(--foreground))'
+                }}>
+                  {tool.title}
+                </h3>
+                <p style={{
+                  margin: 0,
+                  fontSize: '16px',
+                  color: 'hsl(var(--primary))',
+                  fontWeight: '600'
+                }}>
+                  {tool.subtitle}
+                </p>
+              </div>
             )}
           </div>
         ))}
       </div>
 
-      {/* Disabled Tool Modal */}
+      {/* Modal */}
       {showDisabledModal && (
         <div style={{
           position: 'fixed',
@@ -322,53 +522,52 @@ function DashboardPage() {
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1000,
-          backdropFilter: 'blur(2px)',
-          animation: 'fadeIn 0.2s ease'
+          backdropFilter: 'blur(5px)'
         }}>
           <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            padding: '24px',
+            background: 'hsl(var(--card))',
+            borderRadius: '20px',
+            padding: '30px',
             maxWidth: '400px',
             width: '90%',
             textAlign: 'center',
-            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-            animation: 'slideUp 0.2s ease'
+            boxShadow: '0 25px 50px hsl(var(--background) / 0.5)',
+            border: '1px solid hsl(var(--border))'
           }}>
             <h3 style={{
-              margin: '0 0 16px 0',
-              fontSize: '20px',
-              fontWeight: '600',
-              color: '#333'
+              margin: '0 0 15px 0',
+              fontSize: '24px',
+              fontWeight: '700',
+              color: 'hsl(var(--foreground))'
             }}>
               {disabledToolName}
             </h3>
             <p style={{
-              margin: '0 0 24px 0',
+              margin: '0 0 25px 0',
               fontSize: '16px',
-              color: '#666',
+              color: 'hsl(var(--muted-foreground))',
               lineHeight: '1.5'
             }}>
-              Noch nicht in Funktion
+              Noch nicht verfügbar - wir arbeiten daran! 🚀
             </p>
             <button
               onClick={closeModal}
               style={{
-                background: '#667eea',
-                color: 'white',
+                background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+                color: 'hsl(var(--primary-foreground))',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: '12px',
                 padding: '12px 24px',
                 fontSize: '16px',
-                fontWeight: '500',
+                fontWeight: '600',
                 cursor: 'pointer',
-                transition: 'all 0.2s'
+                transition: 'all 0.3s ease'
               }}
               onMouseEnter={(e) => {
-                e.target.style.background = '#5a67d8'
+                e.target.style.transform = 'scale(1.05)'
               }}
               onMouseLeave={(e) => {
-                e.target.style.background = '#667eea'
+                e.target.style.transform = 'scale(1)'
               }}
             >
               OK

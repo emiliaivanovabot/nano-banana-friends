@@ -307,9 +307,26 @@ export default function OnboardingPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        background: 'hsl(var(--background))',
+        color: 'hsl(var(--foreground))'
       }}>
-        <div style={{ color: 'white', fontSize: '18px' }}>Loading your profile...</div>
+        <div style={{
+          fontSize: '18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontFamily: "'Space Grotesk', sans-serif"
+        }}>
+          <div style={{
+            width: '20px',
+            height: '20px',
+            border: '2px solid hsl(var(--muted))',
+            borderTop: '2px solid hsl(var(--foreground))',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }}></div>
+          Loading your profile...
+        </div>
       </div>
     )
   }
@@ -317,72 +334,122 @@ export default function OnboardingPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: 'hsl(var(--background))',
+      color: 'hsl(var(--foreground))',
       padding: '20px'
     }}>
       <div style={{
-        maxWidth: '600px',
+        maxWidth: '640px',
         margin: '0 auto',
         paddingTop: '40px'
       }}>
         <div style={{
-          background: 'rgba(255, 255, 255, 0.95)',
-          borderRadius: '16px',
+          background: 'hsl(var(--card))',
+          borderRadius: '24px',
           padding: '40px',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
+          boxShadow: '0 25px 50px -12px hsl(var(--background) / 0.4)',
+          border: '1px solid hsl(var(--border))',
+          backdropFilter: 'blur(20px)'
         }}>
-          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-            <div style={{ fontSize: '40px', marginBottom: '10px' }}>🍌</div>
-            <h1 style={{
-              margin: '0 0 10px 0',
-              fontSize: '28px',
-              fontWeight: '600',
-              color: '#333'
+          <div style={{ textAlign: 'center', marginBottom: '35px' }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '12px',
+              marginBottom: '16px'
             }}>
-              Willkommen {user?.username?.split('.')[0]?.charAt(0)?.toUpperCase() + user?.username?.split('.')[0]?.slice(1)}!
-            </h1>
+              <div style={{ 
+                fontSize: '48px', 
+                filter: 'drop-shadow(0 4px 8px rgba(251, 191, 36, 0.3))'
+              }}>🍌</div>
+              <h1 style={{
+                margin: '0',
+                fontSize: '30px',
+                fontWeight: '700',
+                color: 'hsl(var(--foreground))',
+                fontFamily: "'Space Grotesk', sans-serif",
+                background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '-0.5px'
+              }}>
+                Willkommen {user?.username?.split('.')[0]?.charAt(0)?.toUpperCase() + user?.username?.split('.')[0]?.slice(1)}!
+              </h1>
+            </div>
             <p style={{
               margin: '0 0 15px 0',
-              color: '#666',
-              fontSize: '16px',
-              lineHeight: '1.5'
+              color: 'hsl(var(--muted-foreground))',
+              fontSize: '18px',
+              fontWeight: '500',
+              lineHeight: '1.5',
+              fontFamily: "'Space Grotesk', sans-serif"
             }}>
               Vervollständige dein Profil um AI-Bildgenerierung freizuschalten
             </p>
             <div style={{
               fontSize: '14px',
-              color: '#888',
-              fontWeight: '500'
+              color: 'hsl(var(--muted-foreground) / 0.8)',
+              fontWeight: '500',
+              fontFamily: "'Space Grotesk', sans-serif",
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
             }}>
-              Erforderliche Felder sind mit * markiert
+              <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
+              Erforderliche Felder sind markiert
             </div>
           </div>
 
           {error && (
             <div style={{
-              marginBottom: '20px',
-              padding: '12px',
-              background: '#fee',
-              border: '1px solid #fcc',
-              borderRadius: '8px',
-              color: '#c33',
-              fontSize: '14px'
+              marginBottom: '24px',
+              padding: '16px',
+              background: 'hsl(var(--destructive) / 0.1)',
+              border: '1px solid hsl(var(--destructive) / 0.2)',
+              borderRadius: '12px',
+              color: 'hsl(var(--destructive))',
+              fontSize: '14px',
+              fontWeight: '500',
+              fontFamily: "'Space Grotesk', sans-serif",
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}>
+              <span style={{ fontSize: '16px' }}>⚠️</span>
               {error}
             </div>
           )}
           
-
           <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '20px' }}>
+        {/* Erste Card - API Key & Face Upload */}
+          <h2 style={{
+            margin: '0 0 25px 0',
+            fontSize: '24px',
+            fontWeight: '700',
+            color: 'hsl(47 100% 65%)',
+            background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            fontFamily: "'Space Grotesk', sans-serif"
+          }}>
+            🚀 Profil einrichten
+          </h2>
+          
+            <div style={{ marginBottom: '24px' }}>
               <label style={{
                 display: 'block',
-                marginBottom: '8px',
+                marginBottom: '12px',
                 fontSize: '14px',
-                fontWeight: '500',
-                color: '#333'
+                fontWeight: '600',
+                color: 'hsl(var(--foreground))',
+                letterSpacing: '0.5px',
+                fontFamily: "'Space Grotesk', sans-serif"
               }}>
-                Gemini API Key *
+                Gemini API Key <span style={{ color: 'hsl(var(--destructive))', fontWeight: 'bold' }}>*</span>
               </label>
               <input
                 type="text"
@@ -392,40 +459,75 @@ export default function OnboardingPage() {
                 disabled={isSubmitting}
                 style={{
                   width: '100%',
-                  padding: '12px',
-                  border: formErrors.gemini_api_key ? '2px solid #f56565' : '1px solid #ddd',
-                  borderRadius: '8px',
-                  fontSize: '14px',
+                  padding: '16px',
+                  border: formErrors.gemini_api_key ? '2px solid hsl(var(--destructive))' : '1px solid hsl(var(--border))',
+                  borderRadius: '12px',
+                  fontSize: '16px',
                   outline: 'none',
-                  transition: 'border-color 0.2s',
+                  transition: 'all 0.2s ease',
                   boxSizing: 'border-box',
-                  backgroundColor: isSubmitting ? '#f5f5f5' : 'white'
+                  background: isSubmitting ? 'hsl(var(--muted))' : 'hsl(var(--background))',
+                  color: 'hsl(var(--foreground))',
+                  fontFamily: "'Space Grotesk', sans-serif"
                 }}
                 placeholder="AIza... (get from Google AI Studio)"
+                onFocus={(e) => {
+                  if (!formErrors.gemini_api_key && !isSubmitting) {
+                    e.target.style.borderColor = 'hsl(var(--primary))'
+                    e.target.style.boxShadow = '0 0 0 3px hsl(var(--primary) / 0.1)'
+                  }
+                }}
+                onBlur={(e) => {
+                  if (!formErrors.gemini_api_key) {
+                    e.target.style.borderColor = 'hsl(var(--border))'
+                    e.target.style.boxShadow = 'none'
+                  }
+                }}
               />
               {formErrors.gemini_api_key && (
-                <div style={{ color: '#f56565', fontSize: '12px', marginTop: '4px' }}>
-                  {formErrors.gemini_api_key}
+                <div style={{ 
+                  color: 'hsl(var(--destructive))', 
+                  fontSize: '12px', 
+                  marginTop: '8px',
+                  fontWeight: '500',
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <span>⚠️</span> {formErrors.gemini_api_key}
                 </div>
               )}
-              <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#888' }}>
+              <p style={{ 
+                margin: '8px 0 0 0', 
+                fontSize: '12px', 
+                color: 'hsl(var(--muted-foreground))',
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontWeight: '500'
+              }}>
                 Get your free API key from{' '}
                 <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" 
-                   style={{ color: '#667eea', textDecoration: 'underline' }}>
+                   style={{ 
+                     color: 'hsl(var(--primary))', 
+                     textDecoration: 'underline',
+                     fontWeight: '600'
+                   }}>
                   Google AI Studio
                 </a>
               </p>
             </div>
 
-            <div style={{ marginBottom: '30px' }}>
+            <div style={{ marginBottom: '32px' }}>
               <label style={{
                 display: 'block',
-                marginBottom: '8px',
+                marginBottom: '12px',
                 fontSize: '14px',
-                fontWeight: '500',
-                color: '#333'
+                fontWeight: '600',
+                color: 'hsl(var(--foreground))',
+                letterSpacing: '0.5px',
+                fontFamily: "'Space Grotesk', sans-serif"
               }}>
-                Face Image *
+                Face Image <span style={{ color: 'hsl(var(--destructive))', fontWeight: 'bold' }}>*</span>
               </label>
               
               {!formData.main_face_image_url ? (
@@ -443,30 +545,99 @@ export default function OnboardingPage() {
                     style={{
                       display: 'block',
                       width: '100%',
-                      padding: '40px 12px',
-                      border: formErrors.main_face_image_url ? '2px dashed #f56565' : '2px dashed #ddd',
-                      borderRadius: '8px',
+                      padding: '48px 20px',
+                      border: formErrors.main_face_image_url ? 
+                        '2px dashed hsl(var(--destructive))' : 
+                        '2px dashed hsl(var(--border))',
+                      borderRadius: '16px',
                       textAlign: 'center',
                       cursor: isUploading ? 'not-allowed' : 'pointer',
-                      backgroundColor: isUploading ? '#f5f5f5' : '#fafafa',
-                      transition: 'all 0.2s',
-                      boxSizing: 'border-box'
+                      backgroundColor: isUploading ? 
+                        'hsl(var(--muted))' : 
+                        'hsl(var(--muted) / 0.3)',
+                      transition: 'all 0.3s ease',
+                      boxSizing: 'border-box',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isUploading && !isSubmitting) {
+                        e.target.style.backgroundColor = 'hsl(var(--muted) / 0.5)'
+                        e.target.style.borderColor = 'hsl(var(--primary))'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isUploading && !isSubmitting) {
+                        e.target.style.backgroundColor = 'hsl(var(--muted) / 0.3)'
+                        e.target.style.borderColor = 'hsl(var(--border))'
+                      }
                     }}
                   >
                     {isUploading ? (
                       <div>
-                        <div style={{ fontSize: '24px', marginBottom: '8px' }}>⏳</div>
-                        <div style={{ fontSize: '14px', color: '#666' }}>
-                          Uploading... {uploadProgress}%
+                        <div style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
+                        <div style={{ 
+                          fontSize: '16px', 
+                          color: 'hsl(var(--foreground))',
+                          fontWeight: '600',
+                          fontFamily: "'Space Grotesk', sans-serif",
+                          marginBottom: '8px'
+                        }}>
+                          Uploading...
+                        </div>
+                        <div style={{
+                          width: '100%',
+                          maxWidth: '200px',
+                          height: '6px',
+                          backgroundColor: 'hsl(var(--muted))',
+                          borderRadius: '3px',
+                          margin: '0 auto 8px auto',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{
+                            width: `${uploadProgress}%`,
+                            height: '100%',
+                            backgroundColor: 'hsl(var(--primary))',
+                            borderRadius: '3px',
+                            transition: 'width 0.3s ease'
+                          }}></div>
+                        </div>
+                        <div style={{ 
+                          fontSize: '14px', 
+                          color: 'hsl(var(--muted-foreground))',
+                          fontWeight: '500'
+                        }}>
+                          {uploadProgress}%
                         </div>
                       </div>
                     ) : (
                       <div>
-                        <div style={{ fontSize: '24px', marginBottom: '8px' }}>📷</div>
-                        <div style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>
+                        <div style={{ 
+                          fontSize: '40px', 
+                          marginBottom: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--foreground))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                            <circle cx="12" cy="13" r="3"/>
+                          </svg>
+                        </div>
+                        <div style={{ 
+                          fontSize: '16px', 
+                          color: 'hsl(var(--foreground))', 
+                          marginBottom: '8px',
+                          fontWeight: '600',
+                          fontFamily: "'Space Grotesk', sans-serif"
+                        }}>
                           Click to select your face image
                         </div>
-                        <div style={{ fontSize: '12px', color: '#888' }}>
+                        <div style={{ 
+                          fontSize: '14px', 
+                          color: 'hsl(var(--muted-foreground))',
+                          fontWeight: '500'
+                        }}>
                           JPG, PNG, GIF or WebP • Max 5MB
                         </div>
                       </div>
@@ -475,29 +646,44 @@ export default function OnboardingPage() {
                 </div>
               ) : (
                 <div style={{
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  padding: '12px',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '12px',
+                  padding: '16px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
-                  backgroundColor: '#f9f9f9'
+                  gap: '16px',
+                  backgroundColor: 'hsl(var(--card))',
+                  boxShadow: '0 2px 8px hsl(var(--background) / 0.1)'
                 }}>
                   <img 
                     src={formData.main_face_image_url} 
                     alt="Your face" 
                     style={{
-                      width: '40px',
-                      height: '40px',
+                      width: '48px',
+                      height: '48px',
                       objectFit: 'cover',
-                      borderRadius: '4px'
+                      borderRadius: '8px',
+                      border: '2px solid hsl(var(--border))'
                     }}
                   />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
-                      ✅ Image uploaded successfully
+                    <div style={{ 
+                      fontSize: '14px', 
+                      color: 'hsl(var(--foreground))', 
+                      fontWeight: '600',
+                      fontFamily: "'Space Grotesk', sans-serif",
+                      marginBottom: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      <span style={{ color: '#10B981' }}>✅</span> Image uploaded successfully
                     </div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
+                    <div style={{ 
+                      fontSize: '12px', 
+                      color: 'hsl(var(--muted-foreground))',
+                      fontWeight: '500'
+                    }}>
                       {selectedFile?.name || 'Face image ready'}
                     </div>
                   </div>
@@ -529,362 +715,479 @@ export default function OnboardingPage() {
               )}
             </div>
 
-            {/* Physische Eigenschaften */}
-            <div style={{
-              borderTop: '1px solid #eee',
-              paddingTop: '30px',
-              marginTop: '30px'
-            }}>
-              <h3 style={{
-                margin: '0 0 20px 0',
-                fontSize: '18px',
-                fontWeight: '600',
-                color: '#333'
-              }}>
-                👤 Deine Eigenschaften (für bessere AI-Ergebnisse)
-              </h3>
-              
-              <div style={{
-                display: 'grid',
-                gap: '20px',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))'
-              }}>
-                <div>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#333'
-                  }}>
-                    Haarfarbe *
-                  </label>
-                  <select
-                    name="hair_color"
-                    value={formData.hair_color}
-                    onChange={handleInputChange}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '1px solid #ddd',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    <option value="">Wählen...</option>
-                    <option value="black">Schwarz</option>
-                    <option value="brunette">Brunette</option>
-                    <option value="blonde">Blond</option>
-                    <option value="red">Rot</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#333'
-                  }}>
-                    Augenfarbe *
-                  </label>
-                  <select
-                    name="eye_color"
-                    value={formData.eye_color}
-                    onChange={handleInputChange}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '1px solid #ddd',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    <option value="">Wählen...</option>
-                    <option value="brown">Braun</option>
-                    <option value="blue">Blau</option>
-                    <option value="green">Grün</option>
-                    <option value="gray">Grau</option>
-                    <option value="hazel">Haselnuss</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#333'
-                  }}>
-                    Hautton *
-                  </label>
-                  <select
-                    name="skin_tone"
-                    value={formData.skin_tone}
-                    onChange={handleInputChange}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '1px solid #ddd',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    <option value="">Wählen...</option>
-                    <option value="european">Europäisch</option>
-                    <option value="latin">Lateinamerikanisch</option>
-                    <option value="asian">Asiatisch</option>
-                    <option value="african">Afrikanisch</option>
-                    <option value="arabic">Arabisch</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#333'
-                  }}>
-                    Altersbereich *
-                  </label>
-                  <select
-                    name="age_range"
-                    value={formData.age_range}
-                    onChange={handleInputChange}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '1px solid #ddd',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    <option value="">Wählen...</option>
-                    <option value="under-20">unter 20</option>
-                    <option value="young-adult">23-27</option>
-                    <option value="adult">28-35</option>
-                    <option value="over-40">über 40</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Generierungs-Einstellungen */}
-            <div style={{
-              borderTop: '1px solid #eee',
-              paddingTop: '30px',
-              marginTop: '30px'
-            }}>
-              <h3 style={{
-                margin: '0 0 20px 0',
-                fontSize: '18px',
-                fontWeight: '600',
-                color: '#333'
-              }}>
-                ⚙️ Deine Standard-Einstellungen
-              </h3>
-              
-              <div style={{
-                display: 'grid',
-                gap: '20px',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))'
-              }}>
-                <div>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#333'
-                  }}>
-                    Auflösung
-                  </label>
-                  <select
-                    name="default_resolution"
-                    value={formData.default_resolution}
-                    onChange={handleInputChange}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '1px solid #ddd',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    <option value="1K">1K</option>
-                    <option value="2K">2K (Standard)</option>
-                    <option value="4K">4K</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#333'
-                  }}>
-                    Seitenverhältnis
-                  </label>
-                  <select
-                    name="default_aspect_ratio"
-                    value={formData.default_aspect_ratio}
-                    onChange={handleInputChange}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '1px solid #ddd',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    <option value="1:1">1:1 (Quadrat)</option>
-                    <option value="9:16">9:16 (Handy)</option>
-                    <option value="16:9">16:9 (Querformat)</option>
-                    <option value="3:4">3:4 (Portrait)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* E-Mail ganz zum Schluss */}
-            <div style={{
-              borderTop: '1px solid #eee',
-              paddingTop: '20px',
-              marginTop: '30px',
-              marginBottom: '30px'
-            }}>
-              <div>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '8px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  color: '#333'
-                }}>
-                  📧 E-Mail (optional)
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  disabled={isSubmitting}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #ddd',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    outline: 'none',
-                    transition: 'border-color 0.2s',
-                    boxSizing: 'border-box',
-                    backgroundColor: isSubmitting ? '#f5f5f5' : 'white'
-                  }}
-                  placeholder="deine@email.de"
-                />
-                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#888' }}>
-                  Optional - wird nur für wichtige Updates verwendet, keine Werbung
-                </p>
-              </div>
-            </div>
-
-            {/* Error Message direkt vor den Buttons für Mobile */}
-            {error && (
-              <div style={{
-                marginBottom: '20px',
-                padding: '12px',
-                background: '#fee',
-                border: '2px solid #f56565',
-                borderRadius: '8px',
-                color: '#c33',
+            {/* Ende der ersten Card */}
+          
+        {/* Zweite Card für Eigenschaften */}
+        <div style={{
+          background: 'hsl(var(--card))',
+          borderRadius: '20px',
+          padding: '30px',
+          marginBottom: '30px',
+          boxShadow: '0 10px 30px hsl(var(--background) / 0.3)',
+          border: '1px solid hsl(var(--border))'
+        }}>
+          {/* Physische Eigenschaften - exakt wie SettingsPage */}
+          <h2 style={{
+            margin: '0 0 25px 0',
+            fontSize: '24px',
+            fontWeight: '700',
+            color: 'hsl(47 100% 65%)',
+            background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            fontFamily: "'Space Grotesk', sans-serif"
+          }}>
+            Physische Eigenschaften <br/><span style={{ fontSize: '16px', color: 'hsl(var(--muted-foreground))', fontWeight: 'normal' }}>(für AI-Prompts)</span>
+          </h2>
+          
+          <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '10px',
                 fontSize: '14px',
                 fontWeight: '600',
-                textAlign: 'center'
+                color: 'hsl(var(--foreground))',
+                letterSpacing: '0.5px'
               }}>
-                ⚠️ {error}
-              </div>
-            )}
-
-            {/* Success Popup direkt vor den Buttons für Mobile */}
-            {showSuccessPopup && (
-              <div style={{
-                marginBottom: '20px',
-                padding: '20px',
-                background: 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)',
-                border: '2px solid #16a34a',
-                borderRadius: '12px',
-                color: 'white',
-                fontSize: '16px',
-                fontWeight: '600',
-                textAlign: 'center',
-                boxShadow: '0 8px 25px rgba(34, 197, 94, 0.3)',
-                animation: 'popup-bounce 0.5s ease-out'
-              }}>
-                🎉 ERFOLG! Profil wurde erstellt!<br/>
-                <span style={{ fontSize: '14px', opacity: 0.9 }}>
-                  Du wirst in wenigen Sekunden zum Dashboard weitergeleitet...
-                </span>
-              </div>
-            )}
-
-            <div style={{ 
-              display: 'flex', 
-              gap: '15px', 
-              marginTop: '20px',
-              flexDirection: window.innerWidth < 640 ? 'column' : 'row'
-            }}>
-              <button
-                type="submit"
-                disabled={isSubmitting}
+                Haarfarbe <span style={{ color: 'hsl(var(--destructive))', fontWeight: 'bold' }}>*</span>
+              </label>
+              <select
+                name="hair_color"
+                value={formData.hair_color}
+                onChange={handleInputChange}
                 style={{
-                  flex: '1',
-                  padding: '12px',
-                  background: isSubmitting ? '#ccc' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {isSubmitting ? 'Speichere...' : 'Profil vervollständigen'}
-              </button>
-              
-              <button
-                type="button"
-                onClick={handleLogout}
-                disabled={isSubmitting}
-                style={{
-                  padding: '12px 24px',
-                  background: 'transparent',
-                  color: '#666',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
+                  width: '100%',
+                  padding: '14px 16px',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '12px',
                   fontSize: '14px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
+                  backgroundColor: formData.hair_color ? 'hsl(47 100% 65%)' : 'hsl(var(--background))',
+                  color: 'hsl(var(--foreground))',
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit',
+                  fontWeight: '500',
+                  transition: 'all 0.3s ease',
+                  outline: 'none'
                 }}
               >
-                Abmelden
-              </button>
+                {!formData.hair_color && <option value="">Wählen...</option>}
+                <option value="black">Schwarz</option>
+                <option value="brunette">Brunette</option>
+                <option value="blonde">Blond</option>
+                <option value="red">Rot</option>
+              </select>
+                </div>
+                
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '10px',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: 'hsl(var(--foreground))',
+                letterSpacing: '0.5px'
+              }}>
+                Augenfarbe <span style={{ color: 'hsl(var(--destructive))', fontWeight: 'bold' }}>*</span>
+              </label>
+              <select
+                name="eye_color"
+                value={formData.eye_color}
+                onChange={handleInputChange}
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  backgroundColor: formData.eye_color ? 'hsl(280 70% 60%)' : 'hsl(var(--background))',
+                  color: 'hsl(var(--foreground))',
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit',
+                  fontWeight: '500',
+                  transition: 'all 0.3s ease',
+                  outline: 'none'
+                }}
+              >
+                {!formData.eye_color && <option value="">Wählen...</option>}
+                <option value="brown">Braun</option>
+                <option value="blue">Blau</option>
+                <option value="green">Grün</option>
+                <option value="gray">Grau</option>
+                <option value="hazel">Haselnuss</option>
+              </select>
+                </div>
+                
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '10px',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: 'hsl(var(--foreground))',
+                letterSpacing: '0.5px'
+              }}>
+                Hautton <span style={{ color: 'hsl(var(--destructive))', fontWeight: 'bold' }}>*</span>
+              </label>
+              <select
+                name="skin_tone"
+                value={formData.skin_tone}
+                onChange={handleInputChange}
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  backgroundColor: formData.skin_tone ? 'hsl(47 100% 65%)' : 'hsl(var(--background))',
+                  color: 'hsl(var(--foreground))',
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit',
+                  fontWeight: '500',
+                  transition: 'all 0.3s ease',
+                  outline: 'none'
+                }}
+              >
+                {!formData.skin_tone && <option value="">Wählen...</option>}
+                <option value="european">Europäisch</option>
+                <option value="latin">Lateinamerikanisch</option>
+                <option value="asian">Asiatisch</option>
+                <option value="african">Afrikanisch</option>
+                <option value="arabic">Arabisch</option>
+              </select>
+                </div>
+                
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '10px',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: 'hsl(var(--foreground))',
+                letterSpacing: '0.5px'
+              }}>
+                Altersbereich <span style={{ color: 'hsl(var(--destructive))', fontWeight: 'bold' }}>*</span>
+              </label>
+              <select
+                name="age_range"
+                value={formData.age_range}
+                onChange={handleInputChange}
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  backgroundColor: formData.age_range ? 'hsl(280 70% 60%)' : 'hsl(var(--background))',
+                  color: 'hsl(var(--foreground))',
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit',
+                  fontWeight: '500',
+                  transition: 'all 0.3s ease',
+                  outline: 'none'
+                }}
+              >
+                {!formData.age_range && <option value="">Wählen...</option>}
+                <option value="under-20">unter 20</option>
+                <option value="young-adult">23-27</option>
+                <option value="adult">28-35</option>
+                <option value="over-40">über 40</option>
+              </select>
             </div>
+          </div>
+        </div>
+
+        {/* Generation Einstellungen - exakt wie SettingsPage */}
+        <div style={{
+          background: 'hsl(var(--card))',
+          borderRadius: '20px',
+          padding: '30px',
+          marginBottom: '30px',
+          boxShadow: '0 10px 30px hsl(var(--background) / 0.3)',
+          border: '1px solid hsl(var(--border))'
+        }}>
+          <h2 style={{
+            margin: '0 0 25px 0',
+            fontSize: '24px',
+            fontWeight: '700',
+            color: 'hsl(47 100% 65%)',
+            background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            fontFamily: "'Space Grotesk', sans-serif"
+          }}>
+            Generation Einstellungen
+          </h2>
+          
+          <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '10px',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: 'hsl(var(--foreground))',
+                letterSpacing: '0.5px'
+              }}>
+                Standard Auflösung
+              </label>
+              <select
+                name="default_resolution"
+                value={formData.default_resolution}
+                onChange={handleInputChange}
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  backgroundColor: formData.default_resolution ? 'hsl(47 100% 65%)' : 'hsl(var(--background))',
+                  color: 'hsl(var(--foreground))',
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit',
+                  fontWeight: '500',
+                  transition: 'all 0.3s ease',
+                  outline: 'none'
+                }}
+              >
+                <option value="1K">1K</option>
+                <option value="2K">2K</option>
+                <option value="4K">4K</option>
+              </select>
+            </div>
+            
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '10px',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: 'hsl(var(--foreground))',
+                letterSpacing: '0.5px'
+              }}>
+                Standard Seitenverhältnis
+              </label>
+              <select
+                name="default_aspect_ratio"
+                value={formData.default_aspect_ratio}
+                onChange={handleInputChange}
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  backgroundColor: formData.default_aspect_ratio ? 'hsl(280 70% 60%)' : 'hsl(var(--background))',
+                  color: 'hsl(var(--foreground))',
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit',
+                  fontWeight: '500',
+                  transition: 'all 0.3s ease',
+                  outline: 'none'
+                }}
+              >
+                <option value="1:1">1:1 (Quadrat)</option>
+                <option value="9:16">9:16 (Portrait)</option>
+                <option value="16:9">16:9 (Landscape)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* E-Mail Field */}
+        <div style={{
+          background: 'hsl(var(--card))',
+          borderRadius: '20px',
+          padding: '30px',
+          marginBottom: '30px',
+          boxShadow: '0 10px 30px hsl(var(--background) / 0.3)',
+          border: '1px solid hsl(var(--border))'
+        }}>
+          <h2 style={{
+            margin: '0 0 25px 0',
+            fontSize: '24px',
+            fontWeight: '700',
+            color: 'hsl(47 100% 65%)',
+            background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            fontFamily: "'Space Grotesk', sans-serif"
+          }}>
+            Kontakt <span style={{ fontSize: '16px', color: 'hsl(var(--muted-foreground))', fontWeight: 'normal' }}>(optional)</span>
+          </h2>
+          
+          <div>
+            <label style={{
+              display: 'block',
+              marginBottom: '12px',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: 'hsl(var(--foreground))',
+              letterSpacing: '0.5px',
+              fontFamily: "'Space Grotesk', sans-serif"
+            }}>
+              E-Mail
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              disabled={isSubmitting}
+              style={{
+                width: '100%',
+                padding: '16px',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '12px',
+                fontSize: '16px',
+                outline: 'none',
+                transition: 'all 0.2s ease',
+                boxSizing: 'border-box',
+                background: isSubmitting ? 'hsl(var(--muted))' : 'hsl(var(--background))',
+                color: 'hsl(var(--foreground))',
+                fontFamily: "'Space Grotesk', sans-serif"
+              }}
+              placeholder="deine@email.de"
+              onFocus={(e) => {
+                if (!isSubmitting) {
+                  e.target.style.borderColor = 'hsl(var(--primary))'
+                  e.target.style.boxShadow = '0 0 0 3px hsl(var(--primary) / 0.1)'
+                }
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'hsl(var(--border))'
+                e.target.style.boxShadow = 'none'
+              }}
+            />
+            <p style={{ 
+              margin: '8px 0 0 0', 
+              fontSize: '12px', 
+              color: 'hsl(var(--muted-foreground))',
+              fontWeight: '500',
+              fontFamily: "'Space Grotesk', sans-serif"
+            }}>
+              Optional - wird nur für wichtige Updates verwendet, keine Werbung
+            </p>
+          </div>
+        </div>
+
+        {/* Submit Buttons */}
+        <div style={{ 
+          display: 'flex', 
+          gap: '15px', 
+          marginTop: '20px',
+          flexDirection: 'column'
+        }}>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            style={{
+              width: '100%',
+              padding: '18px',
+              background: isSubmitting ? 
+                'hsl(var(--muted))' : 
+                '#8B4B9F',
+              color: 'white',
+              border: 'none',
+              borderRadius: '14px',
+              fontSize: '16px',
+              fontWeight: '700',
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              transition: 'all 0.3s ease',
+              boxShadow: isSubmitting ? 
+                'none' : 
+                '0 8px 16px rgba(139, 75, 159, 0.3)',
+              fontFamily: "'Space Grotesk', sans-serif",
+              letterSpacing: '0.5px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
+            onMouseEnter={(e) => {
+              if (!isSubmitting) {
+                e.target.style.transform = 'translateY(-2px)'
+                e.target.style.boxShadow = '0 12px 24px rgba(139, 75, 159, 0.4)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSubmitting) {
+                e.target.style.transform = 'translateY(0)'
+                e.target.style.boxShadow = '0 8px 16px rgba(139, 75, 159, 0.3)'
+              }
+            }}
+          >
+            {isSubmitting ? (
+              <>
+                <div style={{
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  borderTop: '2px solid white',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+                Profil wird erstellt...
+              </>
+            ) : (
+              <>
+                Profil vervollständigen
+              </>
+            )}
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={isSubmitting}
+            style={{
+              padding: '12px 24px',
+              background: 'transparent',
+              color: 'hsl(var(--muted-foreground))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              fontFamily: "'Space Grotesk', sans-serif",
+              alignSelf: 'center'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.color = 'hsl(var(--foreground))'
+              e.target.style.borderColor = 'hsl(var(--primary))'
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.color = 'hsl(var(--muted-foreground))'
+              e.target.style.borderColor = 'hsl(var(--border))'
+            }}
+          >
+            Abmelden
+          </button>
+        </div>
           </form>
         </div>
       </div>
+      
+      {/* CSS Animations */}
+      <style>
+        {`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          
+          /* Responsive adjustments */
+          @media (max-width: 768px) {
+            .onboarding-container {
+              padding: 16px;
+            }
+          }
+        `}
+      </style>
     </div>
   )
 }

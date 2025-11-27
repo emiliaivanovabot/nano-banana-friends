@@ -359,6 +359,27 @@ function NonoBananaPage() {
     }
   }, [location, images.length, userGender, userSettings?.main_face_image_url, showMainFaceImage])
 
+  // Handle prompt from Inspiration page navigation
+  useEffect(() => {
+    if (location.state?.fromInspiration && location.state?.promptText) {
+      console.log('🎨 Prompt from Inspiration page:', location.state.promptText.substring(0, 50) + '...');
+      
+      // Check if we should add face instruction
+      if (images.length > 0 || (userSettings?.main_face_image_url && showMainFaceImage)) {
+        const faceInstruction = userGender === 'female' 
+          ? "Use my uploaded photo to maintain my exact facial features, skin tone, eye color, and hair as a woman. "
+          : "Use my uploaded photo to maintain my exact facial features, skin tone, eye color, and hair as a man. ";
+        
+        setPrompt(`${faceInstruction}${location.state.promptText}`);
+      } else {
+        setPrompt(location.state.promptText);
+      }
+      
+      // Clear the navigation state
+      window.history.replaceState({}, '', '/nono-banana');
+    }
+  }, [location.state, userSettings, images, userGender, showMainFaceImage]);
+
   // Mobile resize detection
   useEffect(() => {
     const handleResize = () => {

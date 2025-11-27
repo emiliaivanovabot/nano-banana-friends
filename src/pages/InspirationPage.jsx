@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { supabase } from '../lib/supabase';
 import './InspirationPage.css';
 
 const InspirationPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -143,13 +144,21 @@ const InspirationPage = () => {
     setIsFullscreen(!isFullscreen);
   };
 
-  const copyPrompt = (prompt) => {
+  const copyPromptAndGenerate = (prompt) => {
+    // Clipboard copy für Fallback
     navigator.clipboard.writeText(prompt).then(() => {
       console.log('✅ Prompt copied to clipboard');
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
     }).catch(err => {
       console.error('❌ Failed to copy prompt:', err);
+    });
+    
+    // Navigation zur Generation-Page mit vorausgefülltem Prompt
+    console.log('🚀 Navigating to generation with prompt:', prompt.substring(0, 50) + '...');
+    navigate('/nono-banana', { 
+      state: { 
+        promptText: prompt,
+        fromInspiration: true 
+      } 
     });
   };
 
@@ -373,10 +382,10 @@ const InspirationPage = () => {
                     className="copy-prompt-button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      copyPrompt(selectedImage.prompt);
+                      copyPromptAndGenerate(selectedImage.prompt);
                     }}
                   >
-                    {copySuccess ? '✅ Copied!' : '💡 Prompt kopieren'}
+                    🚀 Prompt nutzen & generieren
                   </button>
                 )}
               </div>

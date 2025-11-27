@@ -402,23 +402,32 @@
   }
 
   .masonry-gallery {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    grid-auto-rows: 150px;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    grid-auto-rows: 120px;
     gap: 8px;
     margin: 20px auto;
     padding: 0 16px;
   }
 
-  /* Vereinfache Größen auf Mobile */
-  .masonry-item.size-2x2,
+  /* Mobile: BEHALTE die Proportionen für Vielfalt! */
+  .masonry-item.size-2x2 {
+    grid-column: span 2;
+    grid-row: span 2; /* Featured bleibt groß */
+  }
+  
   .masonry-item.size-2x1 {
     grid-column: span 2;
-    grid-row: span 1; /* Alle großen Elemente werden zu 2x1 */
+    grid-row: span 1; /* Querformat bleibt quer */
   }
 
   .masonry-item.size-1x2 {
     grid-column: span 1;
-    grid-row: span 2; /* Behält Portrait-Format */
+    grid-row: span 2; /* Portrait bleibt hoch - DAS IST WICHTIG! */
+  }
+  
+  .masonry-item.size-1x1 {
+    grid-column: span 1;
+    grid-row: span 1; /* Quadrat bleibt quadratisch */
   }
 
   /* Mobile Modal - wie RecentImagesHistory */

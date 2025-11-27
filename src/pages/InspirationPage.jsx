@@ -68,6 +68,14 @@ const InspirationPage = () => {
       
       console.log('✅ Gültige Bilder:', validImages.length, 'von', qualityImages.length);
       console.log('❌ Defekte Bilder gefiltert:', qualityImages.length - validImages.length);
+      
+      // DEBUG: Aspect Ratios analysieren
+      const aspectRatios = validImages.map(img => img.aspect_ratio).filter(Boolean);
+      const ratioCount = {};
+      aspectRatios.forEach(ratio => {
+        ratioCount[ratio] = (ratioCount[ratio] || 0) + 1;
+      });
+      console.log('📊 Aspect Ratios in Community:', ratioCount);
 
       // Group by user and take variety from each
       const imagesByUser = {};
@@ -147,50 +155,58 @@ const InspirationPage = () => {
     
     const ratio = width / height;
     
-    // Intelligente Puzzle-Größen basierend auf Aspect Ratio
-    if (ratio >= 1.8) {
-      // Sehr breit (2:1 oder breiter) -> 2x1 Querformat
+    // Viel aggressivere Unterscheidung für mehr Vielfalt
+    if (ratio >= 2.0) {
+      // Ultra-breit (2:1+) -> 2x1 Querformat
       return 'size-2x1';
-    } else if (ratio >= 1.2) {
-      // Leicht breit -> 1x1 Quadrat (passt überall hin)
+    } else if (ratio >= 1.4) {
+      // Breit (16:10, 16:9) -> 2x1 Querformat
+      return 'size-2x1';
+    } else if (ratio >= 1.1) {
+      // Leicht breit -> 1x1 Quadrat
       return 'size-1x1';
-    } else if (ratio >= 0.8) {
+    } else if (ratio >= 0.9) {
       // Ungefähr quadratisch -> 1x1
       return 'size-1x1';
-    } else if (ratio >= 0.5) {
-      // Portrait -> 1x2 Hochformat
+    } else if (ratio >= 0.7) {
+      // Leicht hoch -> 1x2 Portrait
       return 'size-1x2';
     } else {
-      // Sehr hoch -> 1x2 Hochformat
+      // Portrait (9:16, etc.) -> 1x2 Hochformat
       return 'size-1x2';
     }
   };
 
   const optimizeGridLayout = (imagesWithSizes) => {
-    // Sortiere Bilder für optimale Tetris-Platzierung
-    const sorted = [...imagesWithSizes].sort((a, b) => {
-      // Große Elemente zuerst (2x2, dann 2x1, dann 1x2, dann 1x1)
-      const sizeOrder = {
-        'size-2x2': 4,
-        'size-2x1': 3, 
-        'size-1x2': 2,
-        'size-1x1': 1
-      };
-      return sizeOrder[b.gridSize] - sizeOrder[a.gridSize];
-    });
-
-    // Gelegentlich ein 2x2 "Featured" Bild für Extra-Impact
-    if (sorted.length > 8) {
-      // Jedes 6-8te Bild wird zu einem großen 2x2 Feature
-      const featureIndices = [0, 7, 14, 21];
+    // Mische erstmal für Zufälligkeit
+    const shuffled = [...imagesWithSizes].sort(() => Math.random() - 0.5);
+    
+    // Gelegentlich ein 2x2 "Featured" Bild für Extra-Impact (nur Desktop)
+    if (shuffled.length > 12 && window.innerWidth > 768) {
+      // Jedes 8-10te Bild wird zu einem großen 2x2 Feature
+      const featureIndices = [0, 9, 18, 27];
       featureIndices.forEach(index => {
-        if (sorted[index]) {
-          sorted[index].gridSize = 'size-2x2';
+        if (shuffled[index] && Math.random() > 0.5) {
+          shuffled[index].gridSize = 'size-2x2';
         }
       });
     }
 
-    return sorted;
+    // Für bessere Verteilung: Sortiere so, dass nicht alle großen Bilder am Anfang sind
+    const balanced = [];
+    const large = shuffled.filter(img => img.gridSize === 'size-2x2' || img.gridSize === 'size-2x1');
+    const medium = shuffled.filter(img => img.gridSize === 'size-1x2');
+    const small = shuffled.filter(img => img.gridSize === 'size-1x1');
+    
+    // Interleave für natürlicheres Layout
+    const maxLength = Math.max(large.length, medium.length, small.length);
+    for (let i = 0; i < maxLength; i++) {
+      if (small[i]) balanced.push(small[i]);
+      if (medium[i]) balanced.push(medium[i]);
+      if (large[i]) balanced.push(large[i]);
+    }
+
+    return balanced;
   };
 
   const handleModalClick = (e) => {
@@ -260,6 +276,8 @@ const InspirationPage = () => {
                 <div 
                   key={img.id} 
                   className={`masonry-item ${img.gridSize}`}
+                  data-aspect-ratio={img.aspect_ratio}
+                  data-grid-size={img.gridSize}
                 >
                   <img
                     src={img.result_image_url}

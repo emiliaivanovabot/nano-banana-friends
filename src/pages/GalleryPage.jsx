@@ -119,42 +119,31 @@ function GalleryPage() {
     }
   }, [imagePool.length, initializeImagePool]);
 
-  // Floating back button visibility control (like InspirationPage)
+  // Floating back button visibility
   useEffect(() => {
     const floatingButton = document.getElementById('floating-back-gallery');
-    const originalButton = document.getElementById('original-back-button');
+    const originalButton = document.querySelector('a[href="/dashboard"]');
 
     const handleScroll = () => {
       if (floatingButton && originalButton) {
         const originalRect = originalButton.getBoundingClientRect();
-        const isOriginalVisible = originalRect.bottom > 0; // Original still visible in viewport
+        const isOriginalVisible = originalRect.bottom > 0;
         
         if (isOriginalVisible) {
-          // Original visible - hide floating button
           floatingButton.style.opacity = '0';
           floatingButton.style.pointerEvents = 'none';
         } else {
-          // Original scrolled out of view - show floating button at SAME position as original
           floatingButton.style.opacity = '1';
           floatingButton.style.pointerEvents = 'auto';
-          
-          // Calculate the EXACT right distance of the original button
-          const rightDistance = window.innerWidth - originalRect.right;
-          floatingButton.style.top = '24px';
-          floatingButton.style.right = `${rightDistance}px`;
-          floatingButton.style.left = 'auto';
-          floatingButton.style.width = 'auto';
-          floatingButton.style.height = 'auto';
         }
       }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial check
+    handleScroll();
     
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
 
   const filteredImages = useMemo(() => {
     if (!images || !Array.isArray(images)) return [];
@@ -162,19 +151,19 @@ function GalleryPage() {
     return images.filter(img => img && img.generation_type === filter);
   }, [images, filter]);
 
-  const openImageModal = useCallback((image) => {
+  const handleImageClick = (image) => {
     setSelectedImage(image);
     
-    // Mobile-optimized scroll prevention
+    // Mobile-optimized scroll prevention without position manipulation
     document.body.style.overflow = 'hidden';
     document.body.classList.add('modal-open');
     
-    // Store scroll position for restoration
+    // Store scroll position for restoration (but don't apply positioning)
     const scrollY = window.scrollY;
     document.documentElement.style.setProperty('--scroll-y', `${scrollY}px`);
-  }, []);
+  };
 
-  const closeModal = useCallback(() => {
+  const closeModal = () => {
     setSelectedImage(null);
     setIsFullscreen(false);
     
@@ -188,7 +177,7 @@ function GalleryPage() {
       document.documentElement.style.removeProperty('--scroll-y');
       window.scrollTo(0, parseInt(scrollY, 10));
     }
-  }, []);
+  };
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -271,24 +260,22 @@ function GalleryPage() {
 
   // Scroll detection for iPhone Safari optimization
   useEffect(() => {
-    let scrollTimeout;
+    let scrollTimeout = null;
     
     const handleScroll = () => {
-      if (!scrolling) {
-        setScrolling(true);
-      }
+      setScrolling(true);
       
       // Clear existing timeout
       if (scrollTimeout) {
         clearTimeout(scrollTimeout);
+        scrollTimeout = null;
       }
       
       // Debounce scroll end detection
       scrollTimeout = setTimeout(() => {
-        if (componentMountedRef.current) {
-          setScrolling(false);
-        }
-      }, 150);
+        setScrolling(false);
+        scrollTimeout = null;
+      }, 200);
     };
     
     // Use passive listener for better scroll performance
@@ -298,9 +285,10 @@ function GalleryPage() {
       window.removeEventListener('scroll', handleScroll);
       if (scrollTimeout) {
         clearTimeout(scrollTimeout);
+        scrollTimeout = null;
       }
     };
-  }, [scrolling]);
+  }, []);
   
   // Debounced mobile resize detection for performance
   useEffect(() => {
@@ -473,7 +461,6 @@ function GalleryPage() {
           
           <Link 
             to="/dashboard"
-            id="original-back-button"
             style={{
               background: 'hsl(var(--secondary) / 0.3)',
               border: '1px solid hsl(var(--border))',
@@ -492,7 +479,6 @@ function GalleryPage() {
           >
             ← Zurück
           </Link>
-          
         </div>
 
         {/* Filter Buttons */}
@@ -626,7 +612,7 @@ function GalleryPage() {
                     // Disable hover effects during scroll for performance
                     transition: scrolling ? 'none' : 'transform 0.2s ease'
                   }}
-                  onClick={() => openImageModal(image)}
+                  onClick={() => handleImageClick(image)}
                 >
                   {imageErrors.has(image.id) ? (
                     <div style={{
@@ -731,7 +717,7 @@ function GalleryPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 999999,
             backdropFilter: 'blur(4px)',
             animation: 'fadeIn 0.2s ease',
             // iPhone Safari modal optimizations
@@ -852,7 +838,7 @@ function GalleryPage() {
                     maxHeight: '100vh',
                     objectFit: 'contain',
                     background: 'rgba(0, 0, 0, 0.95)',
-                    zIndex: 9999,
+                    zIndex: 1000000,
                     borderRadius: 0,
                     cursor: 'zoom-out'
                   })
@@ -1001,22 +987,16 @@ function GalleryPage() {
         `}
       </style>
 
-      {/* Floating Back Button - USES REACT PORTAL like InspirationPage */}
+      {/* Floating Back Button */}
       {ReactDOM.createPortal(
         <Link 
           to="/dashboard" 
           id="floating-back-gallery"
           style={{
-            // Position will be set dynamically by JavaScript
             position: 'fixed',
             top: '24px',
             right: '27px',
-            zIndex: 10000,
-            // Override any CSS that might interfere
-            transform: 'none',
-            translate: 'none',
-            margin: '0',
-            // Start hidden, becomes visible when original scrolls out
+            zIndex: 1000,
             opacity: '0',
             pointerEvents: 'none',
             
@@ -1031,7 +1011,7 @@ function GalleryPage() {
             textDecoration: 'none',
             fontWeight: '600',
             fontSize: '14px',
-            transition: 'all 0.3s ease, opacity 0.3s ease',
+            transition: 'opacity 0.3s ease',
             minWidth: isMobile ? '100px' : 'auto',
             display: 'flex',
             alignItems: 'center',
@@ -1042,6 +1022,7 @@ function GalleryPage() {
         </Link>,
         document.body
       )}
+
     </div>
   );
 }

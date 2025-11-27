@@ -71,25 +71,20 @@ const InspirationPage = () => {
       
       console.log(`📱 Device: ${isMobile ? 'Mobile' : 'Desktop'}, initial batch: ${initialBatchSize}`);
       
-      // PHASE 1: Load initial batch (50-75 images) for immediate display
-      const initialBatch = shuffledQualityImages.slice(0, initialBatchSize);
-      const backgroundBatch = shuffledQualityImages.slice(initialBatchSize);
+      // PHASE 1: Load ONLY initial batch (50 images) for immediate display
+      const initialBatch = shuffledQualityImages.slice(0, 50);
+      const remainingImages = shuffledQualityImages.slice(50);
       
-      setLoadingProgress({ current: 0, total: shuffledQualityImages.length });
-      setValidatedImages([]); // Reset for progressive loading
+      setLoadingProgress({ current: 0, total: 50 }); // Only count first 50 for progress bar
+      setValidatedImages([]); // Reset
       
-      console.log('🚀 PHASE 1: Processing initial batch of', initialBatch.length, 'images');
+      console.log('🚀 PHASE 1: Processing ONLY first', initialBatch.length, 'images');
       await processImageBatch(initialBatch, 0, true, isMobile);
       
-      // PHASE 2: Load remaining images in background
-      if (backgroundBatch.length > 0) {
-        console.log('⚡ PHASE 2: Background loading', backgroundBatch.length, 'remaining images');
-        setBackgroundLoading(true);
-        // Use setTimeout to ensure UI update, then start background loading
-        setTimeout(() => {
-          processBackgroundImages(backgroundBatch, initialBatch.length, isMobile);
-        }, 100);
-      }
+      // Store remaining images for scroll-based loading later
+      setImages(remainingImages); // Use images state to store remaining
+      
+      console.log('💾 Stored', remainingImages.length, 'images for scroll-based loading');
     } catch (error) {
       console.error('Error loading community images:', error);
     } finally {
@@ -144,7 +139,7 @@ const InspirationPage = () => {
     
     if (isInitialBatch) {
       setIsInitialBatchLoaded(true);
-      setImages(validImages);
+      // Don't set images - keep using validatedImages state for progressive loading
       console.log('🎉 Initial batch complete:', validImages.length, 'images ready for display');
     }
     
@@ -251,29 +246,55 @@ const InspirationPage = () => {
     return username;
   };
 
-  // Lazy loading image component with intersection observer
+  // Stable placeholder dimensions calculator
+  const calculatePlaceholderDimensions = (dimensions, sizeClass) => {
+    if (!dimensions) {
+      // Fallback dimensions based on size class to prevent layout shifts
+      const fallbackDimensions = {
+        'square': { width: 300, height: 300 },
+        'landscape': { width: 400, height: 250 },
+        'portrait': { width: 250, height: 400 },
+        'portrait large': { width: 250, height: 500 },
+        'landscape large': { width: 500, height: 300 }
+      };
+      return fallbackDimensions[sizeClass] || { width: 300, height: 300 };
+    }
+    return { width: dimensions.width, height: dimensions.height };
+  };
+
+  // Stable lazy loading image component with fixed aspect ratios
   const LazyImage = ({ img, index, sizeClass, classification, ratio }) => {
     const imageRef = useRef(null);
     const [isVisible, setIsVisible] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
+    
+    // Calculate stable placeholder dimensions to prevent layout shifts
+    const placeholderDims = calculatePlaceholderDimensions(img.dimensions, sizeClass);
+    const aspectRatio = placeholderDims.height / placeholderDims.width;
 
     useEffect(() => {
       const imageElement = imageRef.current;
       if (!imageElement) return;
 
-      // Create intersection observer for lazy loading
+      // Enhanced intersection observer for mobile Safari optimization
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting && !isVisible) {
-              setIsVisible(true);
+              // Slight delay for better performance on mobile Safari
+              requestAnimationFrame(() => {
+                setIsVisible(true);
+              });
             }
           });
         },
         {
-          rootMargin: '50px 0px', // Start loading 50px before image enters viewport
-          threshold: 0.1
+          // Optimized for mobile Safari - larger rootMargin for smoother loading
+          rootMargin: '100px 0px', // Start loading earlier to prevent blank spaces
+          threshold: 0.01, // Lower threshold for better mobile performance
+          // Use root element for better Safari compatibility
+          root: null
         }
       );
 
@@ -281,84 +302,139 @@ const InspirationPage = () => {
       imageRefsMap.current.set(img.id, imageElement);
 
       return () => {
-        observer.disconnect();
+        if (observer) {
+          observer.unobserve(imageElement);
+          observer.disconnect();
+        }
         imageRefsMap.current.delete(img.id);
       };
     }, [img.id, isVisible]);
 
-    const handleImageLoad = () => {
-      setIsLoaded(true);
-    };
+    const handleImageLoad = useCallback(() => {
+      // Use requestAnimationFrame for smoother transition on mobile Safari
+      requestAnimationFrame(() => {
+        setIsLoaded(true);
+      });
+    }, []);
 
-    const handleImageError = () => {
+    const handleImageError = useCallback(() => {
       setHasError(true);
       console.warn('❌ Lazy load error:', img.result_image_url);
-    };
+    }, [img.result_image_url]);
 
     return (
       <div 
         ref={imageRef}
         key={img.id} 
-        className={`masonry-item ${sizeClass} ${isLoaded ? 'loaded' : ''}`}
+        className={`masonry-item ${sizeClass} ${isLoaded ? 'loaded' : 'loading'}`}
         data-classification={classification}
         data-ratio={ratio.toFixed(2)}
         data-index={index}
         style={{
-          background: isLoaded ? 'transparent' : '#f0f0f0',
-          minHeight: isLoaded ? 'auto' : '200px'
+          // CRITICAL: Fixed aspect ratio container to prevent layout shifts
+          aspectRatio: `${placeholderDims.width} / ${placeholderDims.height}`,
+          backgroundColor: isLoaded ? 'transparent' : '#f8f9fa',
+          // Prevent any height changes during loading
+          height: 'auto',
+          width: '100%',
+          // GPU acceleration for smooth animations
+          transform: 'translateZ(0)',
+          backfaceVisibility: 'hidden'
         }}
       >
-        {isVisible && !hasError && (
-          <img
-            src={img.result_image_url}
-            className="masonry-image"
-            onClick={() => handleImageClick(img)}
-            loading="lazy"
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-            alt={`Inspiration by ${getUserDisplayName(img.username)} - ${classification}`}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center',
-              opacity: isLoaded ? 1 : 0,
-              transition: 'opacity 0.3s ease'
-            }}
-          />
-        )}
-        
-        {!isLoaded && isVisible && !hasError && (
+        {/* Stable placeholder that maintains exact dimensions */}
+        <div 
+          className="image-container"
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            overflow: 'hidden',
+            borderRadius: 'inherit'
+          }}
+        >
+          {/* Always render placeholder first to maintain stable layout */}
           <div 
-            className="image-placeholder"
+            className={`image-placeholder ${isLoaded ? 'hidden' : 'visible'}`}
             style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
               width: '100%',
               height: '100%',
+              background: isLoaded ? 'transparent' : 'linear-gradient(90deg, #f0f2f5 25%, #e4e6ea 50%, #f0f2f5 75%)',
+              backgroundSize: '200% 100%',
+              animation: isLoaded ? 'none' : 'shimmer 1.5s infinite',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: '#f8f8f8',
-              color: '#ccc'
+              color: '#98a5b3',
+              fontSize: '0.75rem',
+              fontWeight: '500',
+              transition: 'opacity 0.3s ease',
+              opacity: isLoaded ? 0 : 1,
+              zIndex: 1
             }}
           >
-            Loading...
+            {!isVisible ? 'Loading...' : (hasError ? 'Error' : 'Loading...')}
           </div>
-        )}
+          
+          {/* Actual image - only render when visible and no error */}
+          {isVisible && !hasError && (
+            <img
+              src={img.result_image_url}
+              className="masonry-image"
+              onClick={() => handleImageClick(img)}
+              loading="lazy"
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+              alt={`Inspiration by ${getUserDisplayName(img.username)} - ${classification}`}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center',
+                opacity: isLoaded ? 1 : 0,
+                transition: 'opacity 0.4s ease-out',
+                zIndex: 2,
+                // Prevent image from affecting layout
+                display: 'block',
+                // Enhanced mobile Safari image rendering
+                imageRendering: 'optimizeQuality',
+                // Prevent iOS Safari image scaling issues
+                maxWidth: '100%',
+                maxHeight: '100%'
+              }}
+              // Mobile Safari specific attributes for better performance
+              decoding="async"
+              fetchpriority={index < 12 ? "high" : "low"}
+            />
+          )}
+        </div>
 
+        {/* Error state - maintain same container structure */}
         {hasError && (
           <div 
             className="image-error"
             style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
               width: '100%',
               height: '100%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: '#f0f0f0',
-              color: '#999'
+              background: '#f8f9fa',
+              color: '#6c757d',
+              fontSize: '0.75rem',
+              zIndex: 3
             }}
           >
-            Error loading image
+            Failed to load
           </div>
         )}
 
@@ -495,8 +571,7 @@ const InspirationPage = () => {
                   />
                 </div>
                 <p className="progress-text">
-                  {Math.min(loadingProgress.current, 50)} / 50 Bilder für sofortige Anzeige
-                  {validatedImages.length > 0 && ` • ${validatedImages.length} bereit`}
+                  {loadingProgress.current} / 50 Bilder werden geladen...
                 </p>
               </div>
             )}
@@ -509,7 +584,7 @@ const InspirationPage = () => {
           <>
             <div className="masonry-gallery">
               {(() => {
-                // Always show current validated images (progressive loading)
+                // Show only validated images from progressive loading
                 const displayImages = validatedImages.filter(img => img.dimensions);
                 
                 console.log('🎨 Progressive Display:', displayImages.length, 'images', 
@@ -518,32 +593,42 @@ const InspirationPage = () => {
                 return displayImages.map((img, index) => {
                 const { width, height, ratio, classification } = img.dimensions;
                 
-                // FIXED 6-ROW REPEATING TETRIS PATTERN
+                // Simple Tetris pattern
                 const patternIndex = index % 8;
-                let sizeClass = '';
+                let sizeClass = 'square';
                 
-                switch(patternIndex) {
-                  case 0: sizeClass = 'square'; break;
-                  case 1: sizeClass = 'square'; break; 
-                  case 2: sizeClass = 'portrait large'; break;
-                  case 3: sizeClass = 'portrait'; break;
-                  case 4: sizeClass = 'square'; break;
-                  case 5: sizeClass = 'square'; break;
-                  case 6: sizeClass = 'portrait large'; break;
-                  case 7: sizeClass = 'landscape'; break;
+                if (patternIndex === 2 || patternIndex === 6) {
+                  sizeClass = 'portrait-large';
+                } else if (patternIndex === 3 || patternIndex === 7) {
+                  sizeClass = 'portrait';
+                } else if (patternIndex === 1 || patternIndex === 5) {
+                  sizeClass = 'landscape';
                 }
                 
-                console.log(`🧩 Lazy Tetris ${index}: ${classification} → ${sizeClass}`);
-                
                 return (
-                  <LazyImage
-                    key={img.id}
-                    img={img}
-                    index={index}
-                    sizeClass={sizeClass}
-                    classification={classification}
-                    ratio={ratio}
-                  />
+                  <div 
+                    key={img.id} 
+                    className={`masonry-item ${sizeClass}`}
+                    onClick={() => handleImageClick(img)}
+                  >
+                    <img
+                      src={img.result_image_url}
+                      className="masonry-image"
+                      loading="lazy"
+                      alt={`Community inspiration by ${getUserDisplayName(img.username)}`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                    <div className="image-overlay">
+                      <div className="image-info">
+                        <span className="username">{getUserDisplayName(img.username)}</span>
+                        <span className="date">{new Date(img.created_at).toLocaleDateString('de-DE')}</span>
+                      </div>
+                    </div>
+                  </div>
                 );
                 });
               })()}

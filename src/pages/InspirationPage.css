@@ -1,16 +1,21 @@
-/* Community Inspiration Page - Mobile Optimized */
+/* Community Inspiration Page - Mobile Safari Optimized */
 .inspiration-page {
   min-height: 100vh;
   background: #fafafa;
   padding-bottom: 40px;
   transition: background-color 0.3s ease;
-  /* Enhanced mobile scrolling optimizations */
+  /* Enhanced mobile Safari scrolling optimizations */
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
   /* Force GPU acceleration for smoother scrolling */
   transform: translateZ(0);
   backface-visibility: hidden;
   perspective: 1000px;
+  /* Prevent layout shifts during dynamic content loading */
+  contain: layout style;
+  /* Optimize for mobile Safari rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .inspiration-header {
@@ -196,31 +201,72 @@
   background: white;
   display: block;
   width: 100%;
+  /* CRITICAL: Prevent layout shifts during loading */
+  contain: layout style paint;
   /* GPU acceleration for better mobile performance */
   transform: translateZ(0);
   backface-visibility: hidden;
   will-change: transform;
+  /* Ensure stable dimensions */
+  min-height: 120px;
+  /* Prevent content from affecting container size */
+  box-sizing: border-box;
 }
 
-/* Lazy loading states */
-.masonry-item:not(.loaded) {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+/* Enhanced loading states - prevent layout shifts */
+.masonry-item.loading {
+  background: #f8f9fa;
+  /* Prevent any layout changes during loading */
+  contain: layout;
 }
 
 .masonry-item.loaded {
-  animation: fadeIn 0.5s ease-out;
+  background: transparent;
+  animation: none; /* Remove animation to prevent layout shifts */
 }
 
+/* Smooth shimmer animation for placeholders */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Image container for stable layout */
+.image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  /* Prevent layout shifts */
+  contain: layout style;
+}
+
+/* Placeholder styling */
+.image-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #f0f2f5 25%, #e4e6ea 50%, #f0f2f5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #98a5b3;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+.image-placeholder.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.image-placeholder.visible {
+  opacity: 1;
 }
 
 /* Tetris Grid Spans basierend auf Bildformat */
@@ -286,7 +332,16 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.4s ease-out;
+  /* Prevent image from causing layout shifts */
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  /* Ensure smooth rendering on mobile */
+  image-rendering: optimizeQuality;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .masonry-item:hover .masonry-image {
@@ -547,7 +602,7 @@
   /* Mobile Touch Optimizations */
   .masonry-item {
     /* Larger touch targets for mobile */
-    min-height: 44px;
+    min-height: 80px; /* Increased for better touch targets */
     /* iOS momentum scrolling optimization */
     -webkit-transform: translateZ(0);
     transform: translateZ(0);
@@ -555,6 +610,10 @@
     -webkit-tap-highlight-color: transparent;
     /* Smooth touch interactions */
     -webkit-touch-callout: none;
+    /* CRITICAL: Enhanced mobile performance */
+    contain: layout style paint;
+    /* Prevent repaints during scroll */
+    will-change: transform;
   }
 
   .masonry-item:active {
@@ -565,17 +624,21 @@
 
   .masonry-gallery {
     grid-template-columns: repeat(4, 1fr); /* Mobile: 4 Spalten */
-    grid-auto-rows: 100px; /* Kleinere Zellen auf Mobile */
-    gap: 8px;
+    grid-auto-rows: 80px; /* Optimized cell size for mobile */
+    gap: 6px; /* Tighter spacing for mobile */
     margin: 20px auto;
     padding: 0 16px;
     /* iOS Safari viewport fix */
     width: calc(100vw - 32px);
     max-width: calc(100% - 32px);
-    /* Prevent horizontal scroll */
-    overflow-x: hidden;
-    /* Momentum scrolling for iOS */
+    /* CRITICAL: Prevent horizontal scroll and layout shifts */
+    overflow: hidden;
+    /* Enhanced iOS performance */
     -webkit-overflow-scrolling: touch;
+    /* Prevent layout thrashing */
+    contain: layout;
+    /* Stable grid positioning */
+    grid-auto-flow: dense;
   }
   
   /* Mobile Tetris Pieces - optimiert für 4-Spalten Grid */
@@ -688,11 +751,42 @@
   }
 }
 
+/* iOS Safari specific optimizations */
+@supports (-webkit-appearance: none) {
+  .masonry-item {
+    /* Enhanced GPU acceleration for iOS Safari */
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+    /* Prevent layout thrashing on iOS */
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    /* Optimize for iOS rendering */
+    -webkit-perspective: 1000px;
+    perspective: 1000px;
+  }
+  
+  .masonry-gallery {
+    /* iOS Safari grid optimization */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    /* Prevent scrolling issues on iOS */
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .masonry-image {
+    /* Prevent iOS Safari image rendering issues */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+}
+
 @media (max-width: 480px) {
   .masonry-gallery {
     grid-template-columns: repeat(3, 1fr); /* 3 Spalten für sehr kleine Screens */
-    grid-auto-rows: 100px;
-    gap: 6px;
+    grid-auto-rows: 90px; /* Slightly smaller for very small screens */
+    gap: 4px; /* Tighter gap for small screens */
   }
 
   /* Sehr kleine Screens: Kompakte aber vielfältige Layout */

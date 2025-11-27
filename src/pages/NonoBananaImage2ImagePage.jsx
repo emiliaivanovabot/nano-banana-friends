@@ -188,6 +188,8 @@ function NonoBananaPage() {
   const [aspectRatio, setAspectRatio] = useState('9:16')
   const [userSettings, setUserSettings] = useState(null)
   const [showMainFaceImage, setShowMainFaceImage] = useState(true)
+  const [hasCollabPartner, setHasCollabPartner] = useState(false)
+  const [collabPartnerImage, setCollabPartnerImage] = useState(null)
   const [generationTime, setGenerationTime] = useState(null)
   const [liveTimer, setLiveTimer] = useState(0)
   const [selectedTemplate, setSelectedTemplate] = useState(null)
@@ -432,20 +434,49 @@ function NonoBananaPage() {
   // Prompt-Vorlagen für AI Model Shootings
   const promptTemplates = [
     {
-      category: "Beauty & Close-ups",
+      category: "Szenario-Änderungen",
       prompts: [
-        "Using the provided image as reference, recreate this woman's face with extremely high fidelity. Create a high-end beauty portrait with flawless makeup, focus on eyes and lips, soft studio lighting, clean background, luxury beauty campaign style. Keep every facial feature exactly the same — eyes, nose, lips, eyebrows, bone structure. Enhance micro-details only: visible skin pores, natural skin texture, realistic highlights, soft shadows and depth. Maintain the original look, identity and proportions. Ultra-high resolution details.",
-        "Using the provided image, recreate this woman's face with perfect accuracy. Create a glamour headshot with dramatic makeup and smoky eyes, professional beauty lighting, focus on facial features, magazine beauty editorial style. Keep all original facial features unchanged, enhance clarity and detail only.",
-        "Using the provided image as base, recreate this woman's natural beauty with minimal makeup, glowing skin, soft natural lighting, clean simple background, fresh and organic beauty aesthetic. Maintain exact facial features, enhance skin texture and natural glow only."
-      ]
+        "Using the provided images, take the face from the first image and place it on the person in the second image. Change the background to a tropical beach with palms and turquoise water. Ensure the facial features from the first image remain completely unchanged while adapting to the lighting and pose of the second image.",
+        "Using the provided images, take the face from the first image and place it on the person in the second image. Change the facial expression to a radiant smile with sparkling eyes. Ensure all facial features from the first image remain identical while adapting to the second image's pose and setting.",
+        "Using the provided images, take the face from the first image and place it on the person in the second image. Change the pose to a confident, dynamic stance with crossed arms. Ensure the facial features from the first image remain completely unchanged."
+      ],
+      labels: ["Strand Hintergrund", "Lächeln", "Selbstbewusste Pose"]
     },
     {
-      category: "Realistic",
+      category: "Outfit Changes", 
       prompts: [
-        "Take the provided image and recreate it with increased realism while keeping the woman's identity, pose, facial features, expression, lighting, and composition fully intact. Enhance natural skin texture, pores, micro-details, subtle facial hairs, light reflections, shadows, and depth. Improve fabric realism, color accuracy, contrast, and photographic clarity. Do not change her face, makeup, proportions, hairstyle, or clothing design — only make everything more realistic and true-to-life.",
-        "Using the provided image as reference, enhance photorealistic details while preserving the exact identity and composition. Add natural skin imperfections, realistic hair texture, authentic fabric details, improved lighting depth, and enhanced shadows. Maintain all original facial features, expressions, and poses unchanged. Focus on making the image look like a high-quality professional photograph with natural authenticity.",
-        "Transform the provided image into ultra-realistic photography while maintaining complete fidelity to the original subject. Enhance surface textures, add realistic environmental lighting, improve material properties, and increase photographic authenticity. Preserve every aspect of the woman's appearance, pose, and setting exactly as shown. Only enhance realism, depth, and photographic quality without altering any visual elements."
-      ]
+        "Using the provided images, take the face from the first image and place it on the person in the second image. Transform the outfit into an elegant black evening dress with jewelry. Ensure the facial features from the first image remain completely unchanged while maintaining the pose from the second image.",
+        "Using the provided images, take the face from the first image and place it on the person in the second image. Change the clothing to a modern streetwear look with hoodie and sneakers. Ensure all facial features from the first image remain identical.",
+        "Using the provided images, take the face from the first image and place it on the person in the second image. Create a vintage 80s outfit with colorful patterns. Ensure the facial features from the first image remain completely unchanged."
+      ],
+      labels: ["Abendkleid", "Streetwear", "Vintage 80s"]
+    },
+    {
+      category: "Posen-Transfer",
+      prompts: [
+        "Using the provided images, take the face from the first image and place it exactly on the person in the second image. Keep the exact pose, outfit and background from the second image unchanged. Ensure the facial features from the first image remain completely identical with natural lighting and shadows.",
+        "Using the provided images, take the face from the first image and place it on the person in the second image. Maintain the dynamic pose from the second image completely. Ensure all facial features, hair color and skin tone from the first image are preserved exactly.",
+        "Using the provided images, take the face from the first image and place it on the person in the second image. Keep the professional pose from the second image unchanged. Ensure the facial features from the first image remain completely unchanged with realistic integration."
+      ],
+      labels: ["Exakte Pose", "Dynamische Pose", "Profi-Pose"]
+    },
+    {
+      category: "Perspektiven",
+      prompts: [
+        "Using the provided images, take the face from the first image and place it on the person in the second image. Change the camera angle to a dramatic upward perspective. Ensure the facial features from the first image remain completely unchanged while adapting to the new viewing angle.",
+        "Using the provided images, take the face from the first image and place it on the person in the second image. Transform the perspective to a bird's eye view from above. Ensure all facial features from the first image remain identical.",
+        "Using the provided images, take the face from the first image and place it on the person in the second image. Create a side profile view with artistic shadows. Ensure the facial features from the first image remain completely unchanged."
+      ],
+      labels: ["Von unten", "Von oben", "Profil"]
+    },
+    {
+      category: "Perfekte Face-Swaps",
+      prompts: [
+        "Using the provided images, take the face from the first image and place it exactly on the person in the second image. Keep the pose, outfit, and background from the second image completely unchanged. Ensure the facial features from the first image remain completely identical with natural lighting adaptation.",
+        "Using the provided images, take the face from the first image and seamlessly place it on the person in the second image. Maintain everything from the second image except replace the face. Ensure all facial features, hair color and skin tone from the first image are preserved exactly.",
+        "Using the provided images, take the face from the first image and place it on the person in the second image with perfect lighting integration. Keep the scene from the second image unchanged. Ensure the facial features from the first image remain completely unchanged with realistic shadows and highlights."
+      ],
+      labels: ["Exakter Swap", "Nahtlos", "Perfekte Beleuchtung"]
     }
   ]
 
@@ -481,7 +512,7 @@ function NonoBananaPage() {
         })
       })
     ).then(newImages => {
-      setImages(prev => [...prev, ...newImages].slice(0, 14))
+      setImages(prev => [...prev, ...newImages].slice(0, 14 - 1 - (collabPartnerImage ? 1 : 0)))
     })
   }
 
@@ -491,6 +522,27 @@ function NonoBananaPage() {
 
   const clearAllImages = () => {
     setImages([])
+  }
+
+  const handleCollabPartnerUpload = (event) => {
+    const file = event.target.files[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setCollabPartnerImage({
+          file: file,
+          base64: e.target.result,
+          name: file.name
+        })
+        setHasCollabPartner(true)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const removeCollabPartnerImage = () => {
+    setCollabPartnerImage(null)
+    setHasCollabPartner(false)
   }
 
   const downloadImage = () => {
@@ -619,6 +671,24 @@ function NonoBananaPage() {
           }
         }
         
+        // Collab Partner Image hinzufügen (VORLAGENBILD für Image2Image)
+        if (collabPartnerImage && collabPartnerImage.base64) {
+          try {
+            const base64Data = collabPartnerImage.base64.split(',')[1] // Remove "data:image/...;base64," prefix
+            const mimeType = collabPartnerImage.base64.split(';')[0].split(':')[1] // Extract MIME type
+            
+            parts.push({
+              inline_data: {
+                mime_type: mimeType,
+                data: base64Data
+              }
+            })
+            console.log('✅ Collab partner image (template) added to generation')
+          } catch (error) {
+            console.warn('Failed to load collab partner image for generation:', error)
+          }
+        }
+
         // Zusätzliche Bilder hinzufügen (base64 ohne data: prefix)
         images.forEach(img => {
           const base64Data = img.base64.split(',')[1] // Remove "data:image/...;base64," prefix
@@ -922,6 +992,24 @@ function NonoBananaPage() {
           }
         }
         
+        // Collab Partner Image hinzufügen (VORLAGENBILD für Image2Image)
+        if (collabPartnerImage && collabPartnerImage.base64) {
+          try {
+            const base64Data = collabPartnerImage.base64.split(',')[1]
+            const mimeType = collabPartnerImage.base64.split(';')[0].split(':')[1]
+            
+            parts.push({
+              inline_data: {
+                mime_type: mimeType,
+                data: base64Data
+              }
+            })
+            console.log('✅ Collab partner image (template) added to multi-generation')
+          } catch (error) {
+            console.warn('Failed to load collab partner image for multi-generation:', error)
+          }
+        }
+        
         // Zusätzliche Bilder hinzufügen (EXAKT wie in generateImage)
         images.forEach(img => {
           const base64Data = img.base64.split(',')[1]
@@ -1171,6 +1259,24 @@ function NonoBananaPage() {
           }
         }
         
+        // Collab Partner Image hinzufügen (VORLAGENBILD für Image2Image)
+        if (collabPartnerImage && collabPartnerImage.base64) {
+          try {
+            const base64Data = collabPartnerImage.base64.split(',')[1]
+            const mimeType = collabPartnerImage.base64.split(';')[0].split(':')[1]
+            
+            parts.push({
+              inline_data: {
+                mime_type: mimeType,
+                data: base64Data
+              }
+            })
+            console.log('✅ Collab partner image (template) added to multi-generation')
+          } catch (error) {
+            console.warn('Failed to load collab partner image for multi-generation:', error)
+          }
+        }
+        
         // Zusätzliche Bilder hinzufügen (EXAKT wie in generateImage)
         images.forEach(img => {
           const base64Data = img.base64.split(',')[1]
@@ -1400,7 +1506,7 @@ function NonoBananaPage() {
         }}>
           {/* Left - Dashboard Link */}
           <Link 
-            to="/dashboard" 
+            to="/generation-modes" 
             style={{ 
               color: 'hsl(var(--muted-foreground))',
               textDecoration: 'none',
@@ -1408,7 +1514,7 @@ function NonoBananaPage() {
               fontWeight: '500'
             }}
           >
-            ← Dashboard
+            ← Zurück zur Auswahl
           </Link>
           
           {/* Right - Community Link */}
@@ -1428,8 +1534,19 @@ function NonoBananaPage() {
       </div>
       
       <h1 className="nano-banana-title">
-        🍌 nano banana pro
+        🍌 Image2Image
       </h1>
+      
+      <div style={{
+        textAlign: 'center',
+        marginBottom: '20px',
+        fontSize: '1rem',
+        fontWeight: '500',
+        color: 'hsl(var(--muted-foreground))',
+        fontFamily: "'Space Grotesk', sans-serif"
+      }}>
+        Nano Banana Pro
+      </div>
 
       {/* Username Display */}
       {user && (
@@ -1453,19 +1570,12 @@ function NonoBananaPage() {
         <h3 className="mobile-templates-title" style={{ marginBottom: '8px', textAlign: 'left', fontSize: '1rem' }}>
           Einstellungen
         </h3>
-        <div style={{ 
+        <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 80px',
-          gap: '12px',
-          alignItems: 'start'
+          gridTemplateColumns: '1fr 1fr',
+          gap: '8px',
+          width: '100%'
         }}>
-          {/* Left Column: Stacked Buttons */}
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            height: '80px'
-          }}>
             <button
               onClick={() => {
                 if (resolution === '1K') setResolution('2K')
@@ -1482,8 +1592,7 @@ function NonoBananaPage() {
                 fontWeight: '500',
                 fontSize: '0.8rem',
                 transition: 'all 0.2s ease',
-                height: '36px',
-                flex: '1'
+                height: '36px'
               }}
               onMouseEnter={(e) => {
                 e.target.style.transform = 'scale(1.02)'
@@ -1521,8 +1630,7 @@ function NonoBananaPage() {
                 fontWeight: '500',
                 fontSize: '0.8rem',
                 transition: 'all 0.2s ease',
-                height: '36px',
-                flex: '1'
+                height: '36px'
               }}
               onMouseEnter={(e) => {
                 e.target.style.transform = 'scale(1.02)'
@@ -1544,126 +1652,235 @@ function NonoBananaPage() {
                 </span>
               </div>
             </button>
-          </div>
-
-          {/* Right Column: Main Face Image Display */}
-          <div style={{
-            position: 'relative',
-            width: '80px',
-            height: '80px',
-            borderRadius: '8px',
-            overflow: 'hidden',
-            border: '1px solid rgba(251, 191, 36, 0.3)',
-            background: 'hsl(var(--card))'
-          }}>
-            {userSettings?.main_face_image_url && showMainFaceImage ? (
-              <>
-                <img 
-                  src={userSettings.main_face_image_url}
-                  alt="Gesichtsbild"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }}
-                  onError={(e) => {
-                    console.log('Face image failed to load:', userSettings.main_face_image_url)
-                    e.target.style.display = 'none'
-                  }}
-                />
-                <button
-                  onClick={() => setShowMainFaceImage(false)}
-                  style={{
-                    position: 'absolute',
-                    top: '2px',
-                    right: '2px',
-                    width: '16px',
-                    height: '16px',
-                    borderRadius: '50%',
-                    background: 'rgba(0, 0, 0, 0.7)',
-                    color: 'white',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                    lineHeight: '1'
-                  }}
-                  title="Gesichtsbild entfernen"
-                >
-                  ×
-                </button>
-              </>
-            ) : (
-              <div style={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '24px',
-                color: '#9CA3AF',
-                cursor: showMainFaceImage === false ? 'pointer' : 'default'
-              }}
-              onClick={() => {
-                if (showMainFaceImage === false) {
-                  setShowMainFaceImage(true) // Wiederherstellen
-                }
-              }}
-              title={showMainFaceImage === false ? "Gesichtsbild wiederherstellen" : "Kein Gesichtsbild verfügbar"}
-              >
-                👤
-                {showMainFaceImage === false && (
-                  <div style={{ fontSize: '8px', marginTop: '2px', textAlign: 'center' }}>
-                    Klicken zum<br/>Wiederherstellen
-                  </div>
-                )}
-              </div>
-            )}
-            <div style={{
-              position: 'absolute',
-              bottom: '2px',
-              right: '2px',
-              fontSize: '8px',
-              background: 'rgba(0,0,0,0.6)',
-              color: 'white',
-              padding: '1px 3px',
-              borderRadius: '3px',
-              fontWeight: '500'
-            }}>
-              Face
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Image Upload Section */}
+      {/* Image Upload Section with Face Image */}
       <div style={{ 
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr 1fr',
+        gap: '15px',
         marginBottom: '20px',
-        padding: '16px',
-        background: 'hsl(var(--card))',
-        borderRadius: '12px',
-        border: '1px solid hsl(var(--border))'
+        alignItems: 'start'
       }}>
-        <label style={{ 
-          display: 'flex', 
-          alignItems: 'center',
-          gap: '8px',
-          marginBottom: '12px', 
-          fontWeight: '600',
-          fontSize: '0.95rem',
-          fontFamily: "'Space Grotesk', sans-serif",
-          background: 'linear-gradient(135deg, #ec4899 0%, #f59e0b 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text'
+        {/* Face Image */}
+        <div style={{
+          position: 'relative',
+          borderRadius: '8px',
+          overflow: 'hidden',
+          border: '1px solid rgba(251, 191, 36, 0.3)',
+          background: 'hsl(var(--card))',
+          aspectRatio: '1',
+          minHeight: '120px'
         }}>
-          <span>📷</span>
-          Bilder hochladen (optional, max 14):
-        </label>
+          {userSettings?.main_face_image_url && showMainFaceImage ? (
+            <>
+              <img 
+                src={userSettings.main_face_image_url}
+                alt="Gesichtsbild"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+                onError={(e) => {
+                  console.log('Face image failed to load:', userSettings.main_face_image_url)
+                  e.target.style.display = 'none'
+                }}
+              />
+              <button
+                onClick={() => setShowMainFaceImage(false)}
+                style={{
+                  position: 'absolute',
+                  top: '2px',
+                  right: '2px',
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  background: 'rgba(0, 0, 0, 0.7)',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '10px',
+                  fontWeight: 'bold',
+                  lineHeight: '1'
+                }}
+                title="Gesichtsbild entfernen"
+              >
+                ×
+              </button>
+            </>
+          ) : (
+            <div style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '24px',
+              color: '#9CA3AF',
+              cursor: showMainFaceImage === false ? 'pointer' : 'default'
+            }}
+            onClick={() => {
+              if (showMainFaceImage === false) {
+                setShowMainFaceImage(true)
+              }
+            }}
+            title={showMainFaceImage === false ? "Gesichtsbild wiederherstellen" : "Kein Gesichtsbild verfügbar"}
+            >
+              👤
+              {showMainFaceImage === false && (
+                <div style={{ fontSize: '8px', marginTop: '2px', textAlign: 'center' }}>
+                  Klicken zum<br/>Wiederherstellen
+                </div>
+              )}
+            </div>
+          )}
+          <div style={{
+            position: 'absolute',
+            bottom: '2px',
+            right: '2px',
+            fontSize: '8px',
+            background: 'rgba(0,0,0,0.6)',
+            color: 'white',
+            padding: '1px 3px',
+            borderRadius: '3px',
+            fontWeight: '500'
+          }}>
+            Face
+          </div>
+        </div>
+
+        {/* Collab Partner Face */}
+        <div 
+          style={{
+            position: 'relative',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            border: collabPartnerImage ? '2px solid rgba(168, 85, 247, 0.8)' : '1px solid rgba(168, 85, 247, 0.3)',
+            background: collabPartnerImage ? 'rgba(168, 85, 247, 0.1)' : 'hsl(var(--card))',
+            cursor: 'pointer',
+            aspectRatio: '1',
+            minHeight: '120px'
+          }}
+          onClick={() => document.getElementById('collab-partner-upload').click()}
+        >
+          {collabPartnerImage ? (
+            <>
+              <img 
+                src={collabPartnerImage.base64}
+                alt="Collab Partner"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+              />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  removeCollabPartnerImage()
+                }}
+                style={{
+                  position: 'absolute',
+                  top: '2px',
+                  right: '2px',
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  background: 'rgba(0, 0, 0, 0.7)',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '10px',
+                  fontWeight: 'bold',
+                  lineHeight: '1'
+                }}
+                title="Collab Partner entfernen"
+              >
+                ×
+              </button>
+            </>
+          ) : (
+            <div style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '24px',
+              color: '#9CA3AF'
+            }}>
+              🤝
+              <div style={{ 
+                fontSize: '8px', 
+                marginTop: '2px', 
+                textAlign: 'center',
+                color: 'rgba(168, 85, 247, 0.8)'
+              }}>
+                Klicken zum<br/>Hochladen
+              </div>
+            </div>
+          )}
+          <div style={{
+            position: 'absolute',
+            bottom: '2px',
+            right: '2px',
+            fontSize: '8px',
+            background: 'rgba(168, 85, 247, 0.8)',
+            color: 'white',
+            padding: '1px 3px',
+            borderRadius: '3px',
+            fontWeight: '500'
+          }}>
+            Collab
+          </div>
+        </div>
+
+        {/* Upload Section */}
+        <div 
+          style={{ 
+            padding: '16px',
+            background: 'hsl(var(--card))',
+            borderRadius: '8px',
+            border: '1px solid hsl(var(--border))',
+            aspectRatio: '1',
+            minHeight: '120px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            cursor: 'pointer',
+            textAlign: 'center'
+          }}
+          onClick={() => document.getElementById('neutral-upload').click()}
+        >
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            fontWeight: '600',
+            fontSize: '0.95rem',
+            fontFamily: "'Space Grotesk', sans-serif",
+            background: 'linear-gradient(135deg, #ec4899 0%, #f59e0b 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            pointerEvents: 'none'
+          }}>
+            weitere Bilder
+            <span style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: 'normal' }}>(optional)</span>
+          </div>
+        </div>
         
         {/* Hidden file inputs for different genders */}
         <input 
@@ -1672,6 +1889,15 @@ function NonoBananaPage() {
           multiple
           accept="image/*" 
           onChange={(e) => handleImageUpload(e, 'female')}
+          style={{ display: 'none' }}
+        />
+
+        {/* Hidden input for collab partner */}
+        <input 
+          id="collab-partner-upload"
+          type="file"
+          accept="image/*"
+          onChange={handleCollabPartnerUpload}
           style={{ display: 'none' }}
         />
         
@@ -1735,23 +1961,8 @@ function NonoBananaPage() {
               </button>
             </>
           ) : (
-            /* Show neutral upload button when images already exist */
-            <button 
-              onClick={() => document.getElementById('neutral-upload').click()}
-              style={{
-                padding: '10px 15px',
-                background: '#9CA3AF',
-                color: 'black',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              Weitere Bilder hinzufügen
-            </button>
+            /* Upload field is now clickable, no extra button needed */
+            null
           )}
           
           {/* Clear all button inside the flex container when images exist */}
@@ -1772,18 +1983,17 @@ function NonoBananaPage() {
             </button>
           )}
         </div>
+      </div>
 
-        <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
-          {images.length}/14 Bilder • Text-to-Image wenn keine Bilder, Image-Edit wenn Bilder vorhanden
+      {/* Info Text unter der Dreier-Combo */}
+      <div style={{ 
+        marginBottom: '20px',
+        textAlign: 'center' 
+      }}>
+        <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px' }}>
+          {images.length + 1 + (collabPartnerImage ? 1 : 0)}/14 Bilder • Text-to-Image wenn keine Bilder, Image-Edit wenn Bilder vorhanden
         </div>
         
-        <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px', fontStyle: 'italic' }}>
-          {!showMainFaceImage && images.length === 0 ? (
-            <>💡 Wähle den passenden Button: "Frauengesicht" (90% der Nutzer) oder "Manngesicht" für männliche Fotos</>
-          ) : (
-            <>📎 {showMainFaceImage ? 'Gesichtsbild geladen' : 'Gender festgelegt'} - du kannst bis zu {14 - images.length} weitere Bilder hinzufügen</>
-          )}
-        </div>
       </div>
 
       {/* Image Preview */}
@@ -1891,27 +2101,7 @@ function NonoBananaPage() {
                          template.includes('white chair') && template.includes('coffee cup') ? 'White Chair' :
                          template.includes('velvet armchair') ? 'Velvet Chair' :
                          template.includes('vintage leather') ? 'Leather Chair' :
-                         /* Fashion Editorial - 3 prompts */
-                         template.includes('avant-garde') ? 'Avant-garde' :
-                         template.includes('oversized blazer') || template.includes('fitted jeans') ? 'Street Style' :
-                         template.includes('monochrome outfit') || template.includes('clean lines') ? 'Minimalist' :
-                         /* Outdoor Locations - 3 prompts */
-                         template.includes('Paris') || template.includes('tower') ? 'Paris Tower' :
-                         template.includes('rooftop') || template.includes('flowing dress') ? 'Rooftop' :
-                         template.includes('beach') || template.includes('shoreline') ? 'Beach' :
-                         /* Beauty & Close-ups - 3 prompts */
-                         template.includes('flawless makeup') || template.includes('luxury beauty campaign') ? 'Luxury Beauty' :
-                         template.includes('dramatic makeup') || template.includes('smoky eyes') ? 'Glamour Shot' :
-                         template.includes('minimal makeup') || template.includes('glowing skin') ? 'Natural Look' :
-                         /* Pose Variations - 3 prompts */
-                         template.includes('hands on hips') || template.includes('confident stance') ? 'Power Pose' :
-                         template.includes('crossed legs') || template.includes('hands placed gracefully') ? 'Elegant Sit' :
-                         template.includes('mid-step movement') || template.includes('flowing outfit') ? 'Walking' :
-                         /* Realistic - 3 prompts */
-                         template.includes('increased realism') || template.includes('natural skin texture') ? 'Enhanced Reality' :
-                         template.includes('photorealistic details') || template.includes('natural authenticity') ? 'Photo Details' :
-                         template.includes('ultra-realistic photography') || template.includes('photographic quality') ? 'Ultra Realistic' :
-                         `Option ${promptIndex + 1}`}
+                         category.labels && category.labels[promptIndex] ? category.labels[promptIndex] : `Option ${promptIndex + 1}`}
                       </div>
                       {isSelected && <div className="selection-indicator">✓</div>}
                     </div>

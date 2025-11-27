@@ -187,6 +187,7 @@ function NonoBananaPage() {
   const [resolution, setResolution] = useState('2K')
   const [aspectRatio, setAspectRatio] = useState('9:16')
   const [userSettings, setUserSettings] = useState(null)
+  const [collabPartnerImage, setCollabPartnerImage] = useState(null)
   const [showMainFaceImage, setShowMainFaceImage] = useState(true)
   const [generationTime, setGenerationTime] = useState(null)
   const [liveTimer, setLiveTimer] = useState(0)
@@ -481,7 +482,7 @@ function NonoBananaPage() {
         })
       })
     ).then(newImages => {
-      setImages(prev => [...prev, ...newImages].slice(0, 14))
+      setImages(prev => [...prev, ...newImages].slice(0, 14 - 1 - (collabPartnerImage ? 1 : 0)))
     })
   }
 
@@ -491,6 +492,27 @@ function NonoBananaPage() {
 
   const clearAllImages = () => {
     setImages([])
+  }
+
+  const handleCollabPartnerUpload = (event) => {
+    const file = event.target.files[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setCollabPartnerImage({
+          file: file,
+          base64: e.target.result,
+          name: file.name
+        })
+        setHasCollabPartner(true)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const removeCollabPartnerImage = () => {
+    setCollabPartnerImage(null)
+    setHasCollabPartner(false)
   }
 
   const downloadImage = () => {
@@ -1400,7 +1422,7 @@ function NonoBananaPage() {
         }}>
           {/* Left - Dashboard Link */}
           <Link 
-            to="/dashboard" 
+            to="/generation-modes" 
             style={{ 
               color: 'hsl(var(--muted-foreground))',
               textDecoration: 'none',
@@ -1408,7 +1430,7 @@ function NonoBananaPage() {
               fontWeight: '500'
             }}
           >
-            ← Dashboard
+            ← Zurück zur Auswahl
           </Link>
           
           {/* Right - Community Link */}
@@ -1640,30 +1662,232 @@ function NonoBananaPage() {
         </div>
       </div>
 
-      {/* Image Upload Section */}
+      {/* Image Upload Section with Face Image */}
       <div style={{ 
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr 1fr',
+        gap: '15px',
         marginBottom: '20px',
-        padding: '16px',
-        background: 'hsl(var(--card))',
-        borderRadius: '12px',
-        border: '1px solid hsl(var(--border))'
+        alignItems: 'start'
       }}>
-        <label style={{ 
-          display: 'flex', 
-          alignItems: 'center',
-          gap: '8px',
-          marginBottom: '12px', 
-          fontWeight: '600',
-          fontSize: '0.95rem',
-          fontFamily: "'Space Grotesk', sans-serif",
-          background: 'linear-gradient(135deg, #ec4899 0%, #f59e0b 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text'
+        {/* Face Image */}
+        <div style={{
+          position: 'relative',
+          borderRadius: '8px',
+          overflow: 'hidden',
+          border: '1px solid rgba(251, 191, 36, 0.3)',
+          background: 'hsl(var(--card))',
+          aspectRatio: '1',
+          minHeight: '120px'
         }}>
-          <span>📷</span>
-          Bilder hochladen (optional, max 14):
-        </label>
+          {userSettings?.main_face_image_url && showMainFaceImage ? (
+            <>
+              <img 
+                src={userSettings.main_face_image_url}
+                alt="Gesichtsbild"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+                onError={(e) => {
+                  console.log('Face image failed to load:', userSettings.main_face_image_url)
+                  e.target.style.display = 'none'
+                }}
+              />
+              <button
+                onClick={() => setShowMainFaceImage(false)}
+                style={{
+                  position: 'absolute',
+                  top: '2px',
+                  right: '2px',
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  background: 'rgba(0, 0, 0, 0.7)',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '10px',
+                  fontWeight: 'bold',
+                  lineHeight: '1'
+                }}
+                title="Gesichtsbild entfernen"
+              >
+                ×
+              </button>
+            </>
+          ) : (
+            <div style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '24px',
+              color: '#9CA3AF',
+              cursor: showMainFaceImage === false ? 'pointer' : 'default'
+            }}
+            onClick={() => {
+              if (showMainFaceImage === false) {
+                setShowMainFaceImage(true)
+              }
+            }}
+            title={showMainFaceImage === false ? "Gesichtsbild wiederherstellen" : "Kein Gesichtsbild verfügbar"}
+            >
+              👤
+              {showMainFaceImage === false && (
+                <div style={{ fontSize: '8px', marginTop: '2px', textAlign: 'center' }}>
+                  Klicken zum<br/>Wiederherstellen
+                </div>
+              )}
+            </div>
+          )}
+          <div style={{
+            position: 'absolute',
+            bottom: '2px',
+            right: '2px',
+            fontSize: '8px',
+            background: 'rgba(0,0,0,0.6)',
+            color: 'white',
+            padding: '1px 3px',
+            borderRadius: '3px',
+            fontWeight: '500'
+          }}>
+            Face
+          </div>
+        </div>
+
+        {/* Collab Partner Face */}
+        <div 
+          style={{
+            position: 'relative',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            border: collabPartnerImage ? '2px solid rgba(168, 85, 247, 0.8)' : '1px solid rgba(168, 85, 247, 0.3)',
+            background: collabPartnerImage ? 'rgba(168, 85, 247, 0.1)' : 'hsl(var(--card))',
+            cursor: 'pointer',
+            aspectRatio: '1',
+            minHeight: '120px'
+          }}
+          onClick={() => document.getElementById('collab-partner-upload').click()}
+        >
+          {collabPartnerImage ? (
+            <>
+              <img 
+                src={collabPartnerImage.base64}
+                alt="Collab Partner"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+              />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  removeCollabPartnerImage()
+                }}
+                style={{
+                  position: 'absolute',
+                  top: '2px',
+                  right: '2px',
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  background: 'rgba(0, 0, 0, 0.7)',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '10px',
+                  fontWeight: 'bold',
+                  lineHeight: '1'
+                }}
+                title="Collab Partner entfernen"
+              >
+                ×
+              </button>
+            </>
+          ) : (
+            <div style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '24px',
+              color: '#9CA3AF'
+            }}>
+              🤝
+              <div style={{ 
+                fontSize: '8px', 
+                marginTop: '2px', 
+                textAlign: 'center',
+                color: 'rgba(168, 85, 247, 0.8)'
+              }}>
+                Klicken zum<br/>Hochladen
+              </div>
+            </div>
+          )}
+          <div style={{
+            position: 'absolute',
+            bottom: '2px',
+            right: '2px',
+            fontSize: '8px',
+            background: 'rgba(168, 85, 247, 0.8)',
+            color: 'white',
+            padding: '1px 3px',
+            borderRadius: '3px',
+            fontWeight: '500'
+          }}>
+            Collab
+          </div>
+        </div>
+
+        {/* Upload Section */}
+        <div 
+          style={{ 
+            padding: '16px',
+            background: 'hsl(var(--card))',
+            borderRadius: '8px',
+            border: '1px solid hsl(var(--border))',
+            aspectRatio: '1',
+            minHeight: '120px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            cursor: 'pointer',
+            textAlign: 'center'
+          }}
+          onClick={() => document.getElementById('neutral-upload').click()}
+        >
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            fontWeight: '600',
+            fontSize: '0.95rem',
+            fontFamily: "'Space Grotesk', sans-serif",
+            background: 'linear-gradient(135deg, #ec4899 0%, #f59e0b 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            pointerEvents: 'none'
+          }}>
+            weitere Bilder
+            <span style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: 'normal' }}>(optional)</span>
+          </div>
+        </div>
         
         {/* Hidden file inputs for different genders */}
         <input 
@@ -1672,6 +1896,15 @@ function NonoBananaPage() {
           multiple
           accept="image/*" 
           onChange={(e) => handleImageUpload(e, 'female')}
+          style={{ display: 'none' }}
+        />
+
+        {/* Hidden input for collab partner */}
+        <input 
+          id="collab-partner-upload"
+          type="file"
+          accept="image/*"
+          onChange={handleCollabPartnerUpload}
           style={{ display: 'none' }}
         />
         
@@ -1773,17 +2006,17 @@ function NonoBananaPage() {
           )}
         </div>
 
-        <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
-          {images.length}/14 Bilder • Text-to-Image wenn keine Bilder, Image-Edit wenn Bilder vorhanden
+      </div>
+
+      {/* Info Text unter der Dreier-Combo */}
+      <div style={{ 
+        marginBottom: '20px',
+        textAlign: 'center' 
+      }}>
+        <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px' }}>
+          {images.length + 1 + (collabPartnerImage ? 1 : 0)}/14 Bilder • Text-to-Image wenn keine Bilder, Image-Edit wenn Bilder vorhanden
         </div>
         
-        <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px', fontStyle: 'italic' }}>
-          {!showMainFaceImage && images.length === 0 ? (
-            <>💡 Wähle den passenden Button: "Frauengesicht" (90% der Nutzer) oder "Manngesicht" für männliche Fotos</>
-          ) : (
-            <>📎 {showMainFaceImage ? 'Gesichtsbild geladen' : 'Gender festgelegt'} - du kannst bis zu {14 - images.length} weitere Bilder hinzufügen</>
-          )}
-        </div>
       </div>
 
       {/* Image Preview */}

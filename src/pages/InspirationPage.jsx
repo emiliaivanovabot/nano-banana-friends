@@ -256,14 +256,22 @@ const InspirationPage = () => {
               return imagesWithDimensions.map((img, index) => {
                 const { width, height, ratio, classification } = img.dimensions;
                 
-                // Intelligente Grid-Zuordnung für Tetris-Layout
-                let sizeClass = classification;
+                // FIXED 6-ROW REPEATING TETRIS PATTERN
+                // 6-Spalten Grid: [2][2][2] pro Reihe = 6 Spalten
+                const patternIndex = index % 8; // 8 Pieces = kompletter 6-Reihen Block
+                let sizeClass = '';
                 
-                // Gelegentlich große Versionen für visuellen Impact
-                if (index % 7 === 0 && classification === 'portrait') {
-                  sizeClass += ' large'; // 1:3 Portrait (3 Reihen hoch)
-                } else if (index % 9 === 0 && classification === 'landscape') {
-                  sizeClass += ' large'; // Großes Landscape (4 Spalten breit)
+                // Dein gewünschtes Pattern:
+                switch(patternIndex) {
+                  case 0: sizeClass = 'square'; break;           // Pos 1: [2 Spalten]
+                  case 1: sizeClass = 'square'; break;           // Pos 2: [2 Spalten] 
+                  case 2: sizeClass = 'portrait large'; break;   // Pos 3: [2 Spalten × 3 Reihen] - dein 1:3!
+                  case 3: sizeClass = 'portrait'; break;         // Pos 4: [2 Spalten × 2 Reihen] - unter den ersten beiden squares
+                  case 4: sizeClass = 'square'; break;           // Pos 5: [2 Spalten] - Reihe 3
+                  case 5: sizeClass = 'square'; break;           // Pos 6: [2 Spalten] - Reihe 3
+                  // Spiegelverkehrter Block
+                  case 6: sizeClass = 'portrait large'; break;   // Pos 7: [2 Spalten × 3 Reihen] - links
+                  case 7: sizeClass = 'landscape'; break;        // Pos 8: [3 Spalten × 1 Reihe] - rechts
                 }
                 
                 console.log(`🧩 Tetris Piece ${index}: ${classification} → ${sizeClass}`);

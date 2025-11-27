@@ -121,9 +121,16 @@ function InspirationPage() {
 
   return (
     <div className="inspiration-page">
-      <div className="page-header">
-        <h1 className="page-title">Community Inspiration Gallery</h1>
-        <p className="page-subtitle">Discover amazing creations from our creative community</p>
+      <div className="inspiration-header">
+        <div className="header-content">
+          <Link to="/nono-banana" className="back-link">
+            ← Zurück zu Nono Banana
+          </Link>
+          <div className="title-section">
+            <h1>Community Inspiration</h1>
+            <p className="subtitle">Entdecke kreative Kunstwerke von der Community</p>
+          </div>
+        </div>
       </div>
 
       <div className="masonry-gallery">
@@ -189,43 +196,75 @@ function InspirationPage() {
       </div>
 
       {loading && (
-        <div className="loading-indicator">
-          <div className="spinner"></div>
-          <p>Loading beautiful creations...</p>
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Lade Community-Kunstwerke...</p>
         </div>
       )}
 
       {!hasMore && images.length > 0 && (
-        <div className="end-message">
-          <p>You've seen all the amazing creations! 🎨</p>
+        <div className="no-images-container">
+          <p>Du hast alle fantastischen Community-Kreationen gesehen! 🎨</p>
         </div>
       )}
 
-      {/* Modal for image preview */}
+      {/* Modal für großes Bild */}
       {selectedImage && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="image-modal" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <img
-              src={selectedImage.result_image_url}
-              alt={`Creation by ${getUserDisplayName(selectedImage.username)}`}
+            <div className="modal-header">
+              <h4>Community Inspiration</h4>
+              <button 
+                className="close-button"
+                onClick={closeModal}
+                aria-label="Schließen"
+              >
+                ✖
+              </button>
+            </div>
+            
+            <img 
+              src={selectedImage.result_image_url} 
+              alt="Community Inspiration"
               className="modal-image"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              style={{ cursor: 'pointer' }}
             />
+            
             <div className="modal-info">
-              <p><strong>By:</strong> {getUserDisplayName(selectedImage.username)}</p>
-              {selectedImage.prompt_text && (
+              <p className="modal-date">
+                {getUserDisplayName(selectedImage.username)} • {new Date(selectedImage.created_at).toLocaleString('de-DE')}
+              </p>
+              {selectedImage.prompt && (
                 <>
-                  <p><strong>Prompt:</strong></p>
-                  <p className="prompt-text">{selectedImage.prompt_text}</p>
-                  <button 
-                    className="modal-copy-btn"
-                    onClick={() => copyPromptAndGenerate(selectedImage.prompt_text)}
-                  >
-                    Use This Prompt →
-                  </button>
+                  <p className="modal-prompt">
+                    <strong>Prompt:</strong> {selectedImage.prompt}
+                  </p>
+                  <div className="modal-actions">
+                    <div className="action-buttons-row">
+                      <button 
+                        className="copy-prompt-button"
+                        onClick={() => copyPromptAndGenerate(selectedImage.prompt)}
+                      >
+                        Prompt kopieren & verwenden
+                      </button>
+                      <button 
+                        className="download-button"
+                        onClick={() => window.open(selectedImage.result_image_url, '_blank')}
+                      >
+                        Bild öffnen
+                      </button>
+                    </div>
+                    <button 
+                      className="close-modal-button"
+                      onClick={closeModal}
+                    >
+                      Schließen
+                    </button>
+                  </div>
                 </>
               )}
             </div>
-            <button className="modal-close" onClick={closeModal}>×</button>
           </div>
         </div>
       )}

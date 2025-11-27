@@ -248,26 +248,33 @@ const InspirationPage = () => {
         ) : (
           <div className="masonry-gallery">
             {(() => {
-              // Verwende echte Bilddimensionen für dynamische Höhen
+              // Verwende echte Bilddimensionen für intelligentes Tetris-Layout
               const imagesWithDimensions = images.filter(img => img.dimensions);
               
-              console.log('🎨 Displaying', imagesWithDimensions.length, 'images with real dimensions');
+              console.log('🎨 Tetris Layout:', imagesWithDimensions.length, 'images');
               
-              return imagesWithDimensions.map((img) => {
+              return imagesWithDimensions.map((img, index) => {
                 const { width, height, ratio, classification } = img.dimensions;
-                // Berechne dynamische Höhe basierend auf echter Bildgröße
-                const baseWidth = 280; // Base width für Berechnung
-                const calculatedHeight = baseWidth / ratio;
+                
+                // Intelligente Grid-Zuordnung für Tetris-Layout
+                let sizeClass = classification;
+                
+                // Gelegentlich große Versionen für visuellen Impact
+                if (index % 7 === 0 && classification === 'portrait') {
+                  sizeClass += ' large'; // 1:3 Portrait (3 Reihen hoch)
+                } else if (index % 9 === 0 && classification === 'landscape') {
+                  sizeClass += ' large'; // Großes Landscape (4 Spalten breit)
+                }
+                
+                console.log(`🧩 Tetris Piece ${index}: ${classification} → ${sizeClass}`);
                 
                 return (
                   <div 
                     key={img.id} 
-                    className={`masonry-item dynamic-size ${classification}`}
+                    className={`masonry-item ${sizeClass}`}
                     data-classification={classification}
                     data-ratio={ratio.toFixed(2)}
-                    style={{
-                      height: `${Math.max(180, Math.min(500, calculatedHeight))}px` // Min 180px, Max 500px
-                    }}
+                    data-index={index}
                   >
                     <img
                       src={img.result_image_url}

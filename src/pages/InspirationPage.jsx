@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { supabase } from '../lib/supabase';
@@ -12,6 +12,13 @@ const InspirationPage = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState({ current: 0, total: 0 });
+  const [validatedImages, setValidatedImages] = useState([]);
+  
+  // Refs for cleanup and performance
+  const componentMountedRef = useRef(true);
+  const intersectionObserverRef = useRef(null);
+  const imageRefsMap = useRef(new Map());
 
   const loadCommunityImages = async () => {
     try {
@@ -28,45 +35,77 @@ const InspirationPage = () => {
         .not('result_image_url', 'is', null) 
         .not('username', 'is', null) 
         .order('created_at', { ascending: false })
-        .limit(500); // Viel mehr Bilder für die volle Galerie-Power!
+        .limit(200); // Reduziert für bessere Performance beim Validieren
 
       if (error) {
         console.error('Error loading community images:', error);
         return;
       }
 
-      // Filter for quality images - entspannter für mehr Auswahl
+      // Filter for quality images - sehr entspannter Filter für maximale Auswahl
       const qualityImages = data?.filter(img => 
         img.result_image_url && 
         img.prompt && 
-        img.prompt.length > 5 && // Noch entspannter - 5+ Zeichen
-        img.username && 
-        !img.prompt.toLowerCase().includes('test') && 
-        !img.prompt.toLowerCase().includes('debug')
+        img.prompt.length > 3 && // Sehr entspannt - nur 3+ Zeichen
+        img.username
+        // Removed test/debug filter for more images
       ) || [];
 
-      // Echte Bilddimensionen analysieren UND Bildvalidierung
-      console.log('🔍 Analysiere Bilddimensionen von', qualityImages.length, 'Kandidaten...');
-      const imageAnalysisPromises = qualityImages.map(async (img) => {
-        try {
-          const dimensions = await analyzeImageDimensions(img.result_image_url);
-          if (dimensions === null) {
-            // Bild nicht ladbar
+      // Mobile-optimized batch image validation - prevents iPhone crashes
+      console.log('🔍 Database returned:', data?.length || 0, 'total images')
+      console.log('📋 After quality filter:', qualityImages.length, 'candidates')
+      
+      // Detect mobile device and adjust batch size accordingly
+      const isMobile = window.innerWidth <= 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const batchSize = isMobile ? 3 : 8; // Very small batches for mobile
+      const maxConcurrency = isMobile ? 2 : 4; // Limit concurrent operations
+      
+      console.log(`📱 Device: ${isMobile ? 'Mobile' : 'Desktop'}, batch size: ${batchSize}`);
+      
+      setLoadingProgress({ current: 0, total: qualityImages.length });
+      setValidatedImages([]); // Reset for progressive loading
+      
+      const validImages = [];
+      let processed = 0;
+      
+      // Process images in small batches to prevent memory overflow
+      for (let i = 0; i < qualityImages.length; i += batchSize) {
+        const batch = qualityImages.slice(i, i + batchSize);
+        
+        // Process batch with limited concurrency
+        const batchPromises = batch.map(async (img) => {
+          try {
+            const dimensions = await analyzeImageDimensions(img.result_image_url, isMobile);
+            if (dimensions === null) {
+              return { ...img, isValid: false };
+            }
+            return { 
+              ...img, 
+              dimensions,
+              isValid: true
+            };
+          } catch (error) {
+            console.warn('❌ Fehler bei Bildanalyse:', img.result_image_url);
             return { ...img, isValid: false };
           }
-          return { 
-            ...img, 
-            dimensions,
-            isValid: true
-          };
-        } catch (error) {
-          console.warn('❌ Fehler bei Bildanalyse:', img.result_image_url);
-          return { ...img, isValid: false };
-        }
-      });
+        });
 
-      const analyzedImages = await Promise.all(imageAnalysisPromises);
-      const validImages = analyzedImages.filter(img => img.isValid && img.dimensions);
+        // Wait for current batch before proceeding
+        const batchResults = await Promise.all(batchPromises);
+        const validBatchImages = batchResults.filter(img => img.isValid && img.dimensions);
+        
+        // Progressive loading - add valid images immediately
+        validImages.push(...validBatchImages);
+        setValidatedImages(prev => [...prev, ...validBatchImages]);
+        
+        processed += batch.length;
+        setLoadingProgress({ current: processed, total: qualityImages.length });
+        
+        // Small delay on mobile to prevent overwhelming the browser
+        if (isMobile && i + batchSize < qualityImages.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
       
       console.log('✅ Gültige Bilder:', validImages.length, 'von', qualityImages.length);
       console.log('❌ Defekte Bilder gefiltert:', qualityImages.length - validImages.length);
@@ -110,22 +149,39 @@ const InspirationPage = () => {
         fairSelection.push(...shuffledUserImages.slice(0, 20)); // 20 statt 8!
       });
 
-      // Final shuffle for Puzzle-Grid display
+      // Final shuffle for display using the existing fairSelection
       const shuffledImages = fairSelection.sort(() => Math.random() - 0.5);
 
       console.log('🎨 Community Gallery:', Object.keys(imagesByUser).map(user => 
         `${user}: ${imagesByUser[user].length} total`
       ).join(', '));
-      console.log('📊 Showing', shuffledImages.length, 'images from', 
+      console.log('📊 Final selection:', shuffledImages.length, 'images from', 
         new Set(shuffledImages.map(img => img.username)).size, 'users');
 
+      // Set final images after all validation is complete
       setImages(shuffledImages);
+      setValidatedImages(shuffledImages); // Ensure consistency
     } catch (error) {
       console.error('Error loading community images:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    componentMountedRef.current = true;
+    
+    return () => {
+      componentMountedRef.current = false;
+      // Clean up intersection observer
+      if (intersectionObserverRef.current) {
+        intersectionObserverRef.current.disconnect();
+      }
+      // Clear image references
+      imageRefsMap.current.clear();
+    };
+  }, []);
 
   useEffect(() => {
     loadCommunityImages();
@@ -171,42 +227,186 @@ const InspirationPage = () => {
     return username;
   };
 
-  const analyzeImageDimensions = (imageUrl) => {
+  // Lazy loading image component with intersection observer
+  const LazyImage = ({ img, index, sizeClass, classification, ratio }) => {
+    const imageRef = useRef(null);
+    const [isVisible, setIsVisible] = useState(false);
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [hasError, setHasError] = useState(false);
+
+    useEffect(() => {
+      const imageElement = imageRef.current;
+      if (!imageElement) return;
+
+      // Create intersection observer for lazy loading
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && !isVisible) {
+              setIsVisible(true);
+            }
+          });
+        },
+        {
+          rootMargin: '50px 0px', // Start loading 50px before image enters viewport
+          threshold: 0.1
+        }
+      );
+
+      observer.observe(imageElement);
+      imageRefsMap.current.set(img.id, imageElement);
+
+      return () => {
+        observer.disconnect();
+        imageRefsMap.current.delete(img.id);
+      };
+    }, [img.id, isVisible]);
+
+    const handleImageLoad = () => {
+      setIsLoaded(true);
+    };
+
+    const handleImageError = () => {
+      setHasError(true);
+      console.warn('❌ Lazy load error:', img.result_image_url);
+    };
+
+    return (
+      <div 
+        ref={imageRef}
+        key={img.id} 
+        className={`masonry-item ${sizeClass} ${isLoaded ? 'loaded' : ''}`}
+        data-classification={classification}
+        data-ratio={ratio.toFixed(2)}
+        data-index={index}
+        style={{
+          background: isLoaded ? 'transparent' : '#f0f0f0',
+          minHeight: isLoaded ? 'auto' : '200px'
+        }}
+      >
+        {isVisible && !hasError && (
+          <img
+            src={img.result_image_url}
+            className="masonry-image"
+            onClick={() => handleImageClick(img)}
+            loading="lazy"
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            alt={`Inspiration by ${getUserDisplayName(img.username)} - ${classification}`}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              opacity: isLoaded ? 1 : 0,
+              transition: 'opacity 0.3s ease'
+            }}
+          />
+        )}
+        
+        {!isLoaded && isVisible && !hasError && (
+          <div 
+            className="image-placeholder"
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: '#f8f8f8',
+              color: '#ccc'
+            }}
+          >
+            Loading...
+          </div>
+        )}
+
+        {hasError && (
+          <div 
+            className="image-error"
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: '#f0f0f0',
+              color: '#999'
+            }}
+          >
+            Error loading image
+          </div>
+        )}
+
+        <div className="image-overlay">
+          <div className="image-info">
+            <span className="username">{getUserDisplayName(img.username)}</span>
+            <span className="date">{new Date(img.created_at).toLocaleDateString('de-DE')}</span>
+            {img.dimensions && (
+              <span className="dimensions">{img.dimensions.width}×{img.dimensions.height}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const analyzeImageDimensions = (imageUrl, isMobile = false) => {
     return new Promise((resolve) => {
       const img = new Image();
       
-      // Timeout nach 3 Sekunden wie vorher
+      // Mobile-optimized timeout - much shorter for responsiveness
       const timeout = setTimeout(() => {
+        img.src = ''; // Cancel loading to free memory
+        img.onload = null;
+        img.onerror = null;
         resolve(null); // Bild nicht ladbar
-      }, 3000);
+      }, isMobile ? 800 : 1500); // Shorter timeout on mobile
       
       img.onload = () => {
         clearTimeout(timeout);
+        
+        // Quick dimension analysis
         const ratio = img.naturalWidth / img.naturalHeight;
         let classification;
         
         if (ratio >= 1.5) {
-          classification = 'landscape'; // Breit
+          classification = 'landscape';
         } else if (ratio <= 0.67) {
-          classification = 'portrait'; // Hoch
+          classification = 'portrait';
         } else {
-          classification = 'square'; // Quadratisch
+          classification = 'square';
         }
         
-        resolve({
+        const result = {
           width: img.naturalWidth,
           height: img.naturalHeight,
           ratio: ratio,
           classification: classification,
           isValid: true
-        });
+        };
+        
+        // Clean up image reference immediately
+        img.src = '';
+        img.onload = null;
+        img.onerror = null;
+        
+        resolve(result);
       };
       
       img.onerror = () => {
         clearTimeout(timeout);
+        img.src = '';
+        img.onload = null;
+        img.onerror = null;
         console.warn('❌ Defektes Bild gefiltert:', imageUrl);
-        resolve(null); // Bild nicht ladbar
+        resolve(null);
       };
+      
+      // Mobile optimization: disable crossOrigin to prevent CORS delays
+      if (!isMobile) {
+        img.crossOrigin = 'anonymous';
+      }
       
       img.src = imageUrl;
     });
@@ -260,71 +460,66 @@ const InspirationPage = () => {
           <div className="loading-container">
             <div className="loading-spinner"></div>
             <p>Lade Community-Kunstwerke...</p>
+            {loadingProgress.total > 0 && (
+              <div className="progress-container">
+                <div className="progress-bar">
+                  <div 
+                    className="progress-fill"
+                    style={{
+                      width: `${(loadingProgress.current / loadingProgress.total) * 100}%`
+                    }}
+                  />
+                </div>
+                <p className="progress-text">
+                  {loadingProgress.current} / {loadingProgress.total} Bilder validiert
+                  {validatedImages.length > 0 && ` • ${validatedImages.length} bereit zur Anzeige`}
+                </p>
+              </div>
+            )}
           </div>
-        ) : images.length === 0 ? (
+        ) : (validatedImages.length === 0 && images.length === 0) ? (
           <div className="no-images-container">
             <p>Keine Community-Bilder verfügbar.</p>
           </div>
         ) : (
           <div className="masonry-gallery">
             {(() => {
-              // Verwende echte Bilddimensionen für intelligentes Tetris-Layout
-              const imagesWithDimensions = images.filter(img => img.dimensions);
+              // Use progressive loading - show validated images immediately
+              const displayImages = loading ? validatedImages : images;
+              const imagesWithDimensions = displayImages.filter(img => img.dimensions);
               
-              console.log('🎨 Tetris Layout:', imagesWithDimensions.length, 'images');
+              console.log('🎨 Progressive Display:', imagesWithDimensions.length, 'images', 
+                loading ? '(partial)' : '(complete)');
               
               return imagesWithDimensions.map((img, index) => {
                 const { width, height, ratio, classification } = img.dimensions;
                 
                 // FIXED 6-ROW REPEATING TETRIS PATTERN
-                // 6-Spalten Grid: [2][2][2] pro Reihe = 6 Spalten
-                const patternIndex = index % 8; // 8 Pieces = kompletter 6-Reihen Block
+                const patternIndex = index % 8;
                 let sizeClass = '';
                 
-                // Dein gewünschtes Pattern:
                 switch(patternIndex) {
-                  case 0: sizeClass = 'square'; break;           // Pos 1: [2 Spalten]
-                  case 1: sizeClass = 'square'; break;           // Pos 2: [2 Spalten] 
-                  case 2: sizeClass = 'portrait large'; break;   // Pos 3: [2 Spalten × 3 Reihen] - dein 1:3!
-                  case 3: sizeClass = 'portrait'; break;         // Pos 4: [2 Spalten × 2 Reihen] - unter den ersten beiden squares
-                  case 4: sizeClass = 'square'; break;           // Pos 5: [2 Spalten] - Reihe 3
-                  case 5: sizeClass = 'square'; break;           // Pos 6: [2 Spalten] - Reihe 3
-                  // Spiegelverkehrter Block
-                  case 6: sizeClass = 'portrait large'; break;   // Pos 7: [2 Spalten × 3 Reihen] - links
-                  case 7: sizeClass = 'landscape'; break;        // Pos 8: [3 Spalten × 1 Reihe] - rechts
+                  case 0: sizeClass = 'square'; break;
+                  case 1: sizeClass = 'square'; break; 
+                  case 2: sizeClass = 'portrait large'; break;
+                  case 3: sizeClass = 'portrait'; break;
+                  case 4: sizeClass = 'square'; break;
+                  case 5: sizeClass = 'square'; break;
+                  case 6: sizeClass = 'portrait large'; break;
+                  case 7: sizeClass = 'landscape'; break;
                 }
                 
-                console.log(`🧩 Tetris Piece ${index}: ${classification} → ${sizeClass}`);
+                console.log(`🧩 Lazy Tetris ${index}: ${classification} → ${sizeClass}`);
                 
                 return (
-                  <div 
-                    key={img.id} 
-                    className={`masonry-item ${sizeClass}`}
-                    data-classification={classification}
-                    data-ratio={ratio.toFixed(2)}
-                    data-index={index}
-                  >
-                    <img
-                      src={img.result_image_url}
-                      className="masonry-image"
-                      onClick={() => handleImageClick(img)}
-                      loading="lazy"
-                      alt={`Inspiration by ${getUserDisplayName(img.username)} - ${classification}`}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        objectPosition: 'center'
-                      }}
-                    />
-                    <div className="image-overlay">
-                      <div className="image-info">
-                        <span className="username">{getUserDisplayName(img.username)}</span>
-                        <span className="date">{new Date(img.created_at).toLocaleDateString('de-DE')}</span>
-                        <span className="dimensions">{width}×{height}</span>
-                      </div>
-                    </div>
-                  </div>
+                  <LazyImage
+                    key={img.id}
+                    img={img}
+                    index={index}
+                    sizeClass={sizeClass}
+                    classification={classification}
+                    ratio={ratio}
+                  />
                 );
               });
             })()}

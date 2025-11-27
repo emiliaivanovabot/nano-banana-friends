@@ -202,6 +202,7 @@ function NonoBananaPage() {
   const [multiTimer10, setMultiTimer10] = useState(0)
   const [personalAppearanceText, setPersonalAppearanceText] = useState('')
   const [isEditingPersonalText, setIsEditingPersonalText] = useState(false)
+  const [usePersonalization, setUsePersonalization] = useState(true)
   
   const fileRef = useRef(null)
 
@@ -249,8 +250,8 @@ function NonoBananaPage() {
       baseText = parts[0]
     }
     
-    // Add personal appearance text if available
-    if (personalAppearanceText.trim()) {
+    // Add personal appearance text if available AND toggle is enabled
+    if (usePersonalization && personalAppearanceText.trim()) {
       return `${baseText}, ${personalAppearanceText.trim()}`
     }
     
@@ -2037,147 +2038,7 @@ function NonoBananaPage() {
                 padding: '15px',
                 background: 'rgba(251, 191, 36, 0.05)'
               }}>
-                {/* Auto-generated base text */}
-                <div style={{
-                  fontSize: '14px',
-                  color: '#6B7280',
-                  lineHeight: '1.5',
-                  fontStyle: 'italic',
-                  marginBottom: '10px',
-                  padding: '8px',
-                  background: 'rgba(107, 114, 128, 0.1)',
-                  borderRadius: '6px',
-                  border: '1px solid rgba(107, 114, 128, 0.2)'
-                }}>
-                  {(() => {
-                    // Generate base text without personal additions
-                    if (!userSettings) return ""
-                    
-                    const parts = []
-                    if (userSettings.age_range) {
-                      switch(userSettings.age_range) {
-                        case 'under-20': parts.push("A teenage woman"); break;
-                        case 'young-adult': parts.push("A young adult woman"); break;
-                        case 'adult': parts.push("A confident woman"); break;
-                        case 'over-40': parts.push("A mature woman"); break;
-                        default: parts.push("A woman"); break;
-                      }
-                    }
-                    
-                    const details = []
-                    if (userSettings.hair_color) details.push(`${userSettings.hair_color.toLowerCase()} hair`)
-                    if (userSettings.eye_color) details.push(`${userSettings.eye_color.toLowerCase()} eyes`)
-                    if (userSettings.skin_tone) details.push(`${userSettings.skin_tone.toLowerCase()} skin tone`)
-                    
-                    if (parts.length === 0) parts.push("A woman")
-                    
-                    if (details.length > 0) {
-                      return `${parts[0]} with ${details.join(", ")}`
-                    }
-                    return parts[0]
-                  })()}
-                </div>
-                
-                {/* Personal text input */}
-                <div style={{
-                  marginBottom: '10px'
-                }}>
-                  <div style={{
-                    fontSize: '12px',
-                    color: '#6B7280',
-                    fontWeight: '500',
-                    marginBottom: '6px'
-                  }}>
-                    + Deine persönliche Ergänzung:
-                  </div>
-                  {isEditingPersonalText ? (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <textarea
-                        value={personalAppearanceText}
-                        onChange={(e) => setPersonalAppearanceText(e.target.value)}
-                        placeholder="z.B. wearing elegant jewelry, confident posture, professional makeup..."
-                        style={{
-                          flex: 1,
-                          minHeight: '60px',
-                          padding: '8px',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '6px',
-                          background: 'hsl(var(--background))',
-                          color: 'hsl(var(--foreground))',
-                          fontSize: '13px',
-                          resize: 'vertical',
-                          fontFamily: 'inherit'
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && e.ctrlKey) {
-                            setIsEditingPersonalText(false)
-                            savePersonalAppearanceText(personalAppearanceText)
-                          }
-                          if (e.key === 'Escape') {
-                            setIsEditingPersonalText(false)
-                          }
-                        }}
-                      />
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <button
-                          onClick={() => {
-                            setIsEditingPersonalText(false)
-                            savePersonalAppearanceText(personalAppearanceText)
-                          }}
-                          style={{
-                            padding: '4px 8px',
-                            background: '#10B981',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            fontSize: '11px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          ✓
-                        </button>
-                        <button
-                          onClick={() => {
-                            setIsEditingPersonalText(false)
-                            setPersonalAppearanceText(userSettings?.personal_appearance_text || '')
-                          }}
-                          style={{
-                            padding: '4px 8px',
-                            background: '#EF4444',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            fontSize: '11px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => setIsEditingPersonalText(true)}
-                      style={{
-                        padding: '8px',
-                        minHeight: '40px',
-                        border: '1px solid rgba(251, 191, 36, 0.3)',
-                        borderRadius: '6px',
-                        background: personalAppearanceText.trim() ? 'hsl(var(--card))' : 'rgba(251, 191, 36, 0.1)',
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                        color: personalAppearanceText.trim() ? 'hsl(var(--foreground))' : '#9CA3AF',
-                        fontStyle: personalAppearanceText.trim() ? 'normal' : 'italic',
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}
-                    >
-                      {personalAppearanceText.trim() || "Klicken um persönliche Details hinzuzufügen..."}
-                    </div>
-                  )}
-                </div>
-                
-                {/* Combined preview */}
+                {/* Endresultat-Feld */}
                 {personalAppearanceText.trim() && (
                   <div style={{
                     marginTop: '10px',
@@ -2189,8 +2050,136 @@ function NonoBananaPage() {
                     color: '#059669',
                     fontWeight: '500'
                   }}>
-                    <div style={{ marginBottom: '4px', fontWeight: '600' }}>Endresultat:</div>
-                    {generatePersonalizationText()}
+                    <div style={{ marginBottom: '4px', fontWeight: '600' }}>Alles in diesem grünen Feld wird zusätzlich zum Prompt gesendet:</div>
+                    {/* Reihe 1: Grauer Text (IMMER angezeigt) */}
+                    <div style={{ width: '100%', marginBottom: '4px' }}>
+                      <span style={{
+                        fontStyle: 'italic',
+                        color: '#6B7280',
+                        fontWeight: '400',
+                        fontSize: '14px'
+                      }}>
+                        {(() => {
+                          // Automatischer Text aus Einstellungen
+                          if (!userSettings) return ""
+                          
+                          const parts = []
+                          if (userSettings.age_range) {
+                            switch(userSettings.age_range) {
+                              case 'under-20': parts.push("A teenage woman"); break;
+                              case 'young-adult': parts.push("A young adult woman"); break;
+                              case 'adult': parts.push("A confident woman"); break;
+                              case 'over-40': parts.push("A mature woman"); break;
+                              default: parts.push("A woman"); break;
+                            }
+                          }
+                          
+                          const details = []
+                          if (userSettings.hair_color) details.push(`${userSettings.hair_color.toLowerCase()} hair`)
+                          if (userSettings.eye_color) details.push(`${userSettings.eye_color.toLowerCase()} eyes`)
+                          if (userSettings.skin_tone) details.push(`${userSettings.skin_tone.toLowerCase()} skin tone`)
+                          
+                          if (parts.length === 0) parts.push("A woman")
+                          
+                          if (details.length > 0) {
+                            return `${parts[0]} with ${details.join(", ")}`
+                          }
+                          return parts[0]
+                        })()}
+                      </span>
+                    </div>
+                    
+                    {/* Reihe 2: Grüner Text + Toggle */}
+                    <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                      <div style={{ flex: '1' }}>
+                        {usePersonalization && personalAppearanceText.trim() && (
+                          <span style={{
+                            color: '#D1D5DB',
+                            fontWeight: '500',
+                            fontSize: '13px'
+                          }}>
+                            {personalAppearanceText.trim()}
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        onClick={() => setUsePersonalization(!usePersonalization)}
+                        style={{
+                          cursor: 'pointer',
+                          width: '28px',
+                          height: '14px',
+                          backgroundColor: usePersonalization ? '#22c55e' : '#ccc',
+                          borderRadius: '7px',
+                          position: 'relative',
+                          transition: 'all 0.3s ease',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <div style={{
+                          width: '10px',
+                          height: '10px',
+                          backgroundColor: 'white',
+                          borderRadius: '50%',
+                          position: 'absolute',
+                          left: usePersonalization ? '16px' : '2px',
+                          transition: 'all 0.3s ease',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                        }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+            
+                {/* Editierfeld nach dem Endresultat */}
+                {showPersonalization && (
+                  <div style={{
+                    marginTop: '10px',
+                    padding: isEditingPersonalText ? '0 15px 15px 15px' : '0 15px'
+                  }}>
+                    <div 
+                      style={{
+                        fontSize: '12px',
+                        color: '#f59e0b',
+                        fontWeight: '500',
+                        marginBottom: '6px',
+                        cursor: 'pointer',
+                        padding: '4px 0'
+                      }}
+                      onClick={() => setIsEditingPersonalText(!isEditingPersonalText)}
+                    >
+                      + Persönliche Details ändern <span style={{ fontSize: '10px', color: '#6B7280' }}>← klicken</span>
+                    </div>
+                    {isEditingPersonalText && (
+                      <textarea
+                        value={personalAppearanceText}
+                        onChange={(e) => {
+                          setPersonalAppearanceText(e.target.value)
+                          savePersonalAppearanceText(e.target.value)
+                        }}
+                        placeholder="z.B. wearing elegant jewelry, confident posture, professional makeup..."
+                        style={{
+                          width: '100%',
+                          minHeight: '60px',
+                          padding: '8px',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '6px',
+                          background: 'hsl(var(--background))',
+                          color: 'hsl(var(--foreground))',
+                          fontSize: '13px',
+                          resize: 'vertical',
+                          fontFamily: 'inherit'
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') {
+                            setIsEditingPersonalText(false)
+                          }
+                        }}
+                        onBlur={() => {
+                          setIsEditingPersonalText(false)
+                        }}
+                      />
+                    )}
                   </div>
                 )}
               </div>

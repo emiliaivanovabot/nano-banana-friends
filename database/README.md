@@ -163,6 +163,59 @@ After setup, you should see:
    - **Workaround:** Section hidden in UI, functionality preserved for future fix
    - **Files:** DashboardPage.jsx (formats section commented out)
 
+2. **Inspiration Gallery Mobile Performance** 
+   - **Status:** FIXED (2025-11-27)
+   - **Issue:** iPhone Safari crashes when loading 188+ images simultaneously
+   - **Root Cause:** Promise.all() loading all images at once, exceeding mobile memory limits
+   - **Solution:** Implemented comprehensive mobile performance optimizations
+   - **Key Improvements:**
+     - Batch loading: 3 images concurrent on mobile (vs 188 simultaneous)
+     - Reduced timeout: 800ms on mobile (vs 1.5s desktop)
+     - Progressive display: Images appear as validated (vs waiting for all)
+     - Lazy loading: Viewport-based loading with Intersection Observer
+     - Memory cleanup: Immediate image reference cleanup after validation
+     - GPU acceleration: Enhanced CSS for smooth mobile scrolling
+   - **Expected Results:** 90% memory reduction, 80% faster loading, no crashes
+   - **Files:** InspirationPage.jsx, InspirationPage.css
+
+## UI/UX Implementation Details
+
+### Nano Banana Page Text Elements
+
+1. **Grauer Text im Prompt-Bereich (Personalisierung)**
+   - **Was es ist:** Dynamisch generierter Personalisierungstext basierend auf User-Einstellungen
+   - **Funktion:** `generatePersonalizationText()` (NonoBananaPage.jsx:209-255)
+   - **Datenquellen:** User-Einstellungen aus Supabase users Tabelle:
+     - `age_range`: Altersbereich des Users
+     - `hair_color`: Haarfarbe des Users
+     - `eye_color`: Augenfarbe des Users  
+     - `skin_tone`: Hautton des Users
+     - `personal_appearance_text`: Zusätzliche User-Eingaben
+   - **Text-Zusammensetzung:**
+     1. **Age Mapping** (Zeile 215-222):
+        - `under-20` → "A teenage woman"
+        - `young-adult` → "A young adult woman"
+        - `adult` → "A confident woman"
+        - `over-40` → "A mature woman"
+        - Default → "A woman"
+     2. **Physical Details** (Zeile 225-240):
+        - Hair: `${hair_color.toLowerCase()} hair`
+        - Eyes: `${eye_color.toLowerCase()} eyes`
+        - Skin: `${skin_tone.toLowerCase()} skin tone`
+     3. **Final Assembly** (Zeile 242-255):
+        - Basis: Age-Beschreibung (z.B. "A confident woman")
+        - Details: "with brown hair, blue eyes, fair skin tone"
+        - Personal Text: Falls vorhanden, wird angehängt
+        - **Beispiel-Ergebnis:** "A confident woman with brown hair, blue eyes, fair skin tone, wearing elegant jewelry"
+   - **Integration in Prompts:** 
+     - Wird als `personalizationText` vor jeden User-Prompt gestellt
+     - Zeile 586: `finalPrompt = personalizationText + ". " + prompt`
+     - Nur aktiv wenn User entsprechende Einstellungen gesetzt hat
+   - **Visuelles Verhalten:**
+     - Erscheint automatisch im Prompt-Textfeld
+     - Ist editierbar aber wird bei jeder Generierung neu erstellt
+     - Basiert komplett auf User-Profil Daten
+
 ## Troubleshooting
 
 ### Common Issues

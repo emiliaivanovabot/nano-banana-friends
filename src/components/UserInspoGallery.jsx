@@ -52,19 +52,19 @@ const UserInspoGallery = ({ currentUser }) => {
         imagesByUser[img.username].push(img);
       });
 
-      // Take max 6 random images per user for more variety in teaser
+      // Take max 14 random images per user for more variety in teaser
       const fairSelection = [];
       Object.keys(imagesByUser).forEach(username => {
         const userImages = imagesByUser[username];
-        // Shuffle user's images and take up to 6
+        // Shuffle user's images and take up to 14
         const shuffledUserImages = userImages.sort(() => Math.random() - 0.5);
-        fairSelection.push(...shuffledUserImages.slice(0, 6));
+        fairSelection.push(...shuffledUserImages.slice(0, 14));
       });
 
-      // Final shuffle of the fair selection and limit to 12 for display
+      // Final shuffle of the fair selection and limit to 14 for display
       const shuffledImages = fairSelection
         .sort(() => Math.random() - 0.5)
-        .slice(0, 12);
+        .slice(0, 14);
 
       console.log('🎨 User distribution:', Object.keys(imagesByUser).map(user => 
         `${user}: ${imagesByUser[user].length} images`

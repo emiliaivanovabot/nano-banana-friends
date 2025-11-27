@@ -14,6 +14,9 @@ const InspirationPage = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState({ current: 0, total: 0 });
   const [validatedImages, setValidatedImages] = useState([]);
+  const [isInitialBatchLoaded, setIsInitialBatchLoaded] = useState(false);
+  const [backgroundLoading, setBackgroundLoading] = useState(false);
+  const [randomizedImages, setRandomizedImages] = useState([]);
   
   // Refs for cleanup and performance
   const componentMountedRef = useRef(true);
@@ -23,6 +26,8 @@ const InspirationPage = () => {
   const loadCommunityImages = async () => {
     try {
       setLoading(true);
+      setIsInitialBatchLoaded(false);
+      setBackgroundLoading(false);
       
       console.log('🎨 Loading community inspiration gallery...');
       
@@ -35,7 +40,7 @@ const InspirationPage = () => {
         .not('result_image_url', 'is', null) 
         .not('username', 'is', null) 
         .order('created_at', { ascending: false })
-        .limit(200); // Reduziert für bessere Performance beim Validieren
+        .limit(250); // Increased for better variety after randomization
 
       if (error) {
         console.error('Error loading community images:', error);
@@ -51,121 +56,140 @@ const InspirationPage = () => {
         // Removed test/debug filter for more images
       ) || [];
 
-      // Mobile-optimized batch image validation - prevents iPhone crashes
+      // PERFORMANCE BOOST: Randomize BEFORE validation to ensure variety
+      const shuffledQualityImages = qualityImages.sort(() => Math.random() - 0.5);
+      setRandomizedImages(shuffledQualityImages);
+
       console.log('🔍 Database returned:', data?.length || 0, 'total images')
-      console.log('📋 After quality filter:', qualityImages.length, 'candidates')
+      console.log('📋 After quality filter & randomization:', shuffledQualityImages.length, 'candidates')
+      console.log('🎲 Images randomized for progressive loading')
       
       // Detect mobile device and adjust batch size accordingly
       const isMobile = window.innerWidth <= 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      const batchSize = isMobile ? 3 : 8; // Very small batches for mobile
-      const maxConcurrency = isMobile ? 2 : 4; // Limit concurrent operations
+      const initialBatchSize = isMobile ? 50 : 75; // Load initial batch for immediate display
+      const backgroundBatchSize = isMobile ? 5 : 10; // Smaller background batches for mobile
       
-      console.log(`📱 Device: ${isMobile ? 'Mobile' : 'Desktop'}, batch size: ${batchSize}`);
+      console.log(`📱 Device: ${isMobile ? 'Mobile' : 'Desktop'}, initial batch: ${initialBatchSize}`);
       
-      setLoadingProgress({ current: 0, total: qualityImages.length });
+      // PHASE 1: Load initial batch (50-75 images) for immediate display
+      const initialBatch = shuffledQualityImages.slice(0, initialBatchSize);
+      const backgroundBatch = shuffledQualityImages.slice(initialBatchSize);
+      
+      setLoadingProgress({ current: 0, total: shuffledQualityImages.length });
       setValidatedImages([]); // Reset for progressive loading
       
-      const validImages = [];
-      let processed = 0;
+      console.log('🚀 PHASE 1: Processing initial batch of', initialBatch.length, 'images');
+      await processImageBatch(initialBatch, 0, true, isMobile);
       
-      // Process images in small batches to prevent memory overflow
-      for (let i = 0; i < qualityImages.length; i += batchSize) {
-        const batch = qualityImages.slice(i, i + batchSize);
-        
-        // Process batch with limited concurrency
-        const batchPromises = batch.map(async (img) => {
-          try {
-            const dimensions = await analyzeImageDimensions(img.result_image_url, isMobile);
-            if (dimensions === null) {
-              return { ...img, isValid: false };
-            }
-            return { 
-              ...img, 
-              dimensions,
-              isValid: true
-            };
-          } catch (error) {
-            console.warn('❌ Fehler bei Bildanalyse:', img.result_image_url);
-            return { ...img, isValid: false };
-          }
-        });
-
-        // Wait for current batch before proceeding
-        const batchResults = await Promise.all(batchPromises);
-        const validBatchImages = batchResults.filter(img => img.isValid && img.dimensions);
-        
-        // Progressive loading - add valid images immediately
-        validImages.push(...validBatchImages);
-        setValidatedImages(prev => [...prev, ...validBatchImages]);
-        
-        processed += batch.length;
-        setLoadingProgress({ current: processed, total: qualityImages.length });
-        
-        // Small delay on mobile to prevent overwhelming the browser
-        if (isMobile && i + batchSize < qualityImages.length) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
+      // PHASE 2: Load remaining images in background
+      if (backgroundBatch.length > 0) {
+        console.log('⚡ PHASE 2: Background loading', backgroundBatch.length, 'remaining images');
+        setBackgroundLoading(true);
+        // Use setTimeout to ensure UI update, then start background loading
+        setTimeout(() => {
+          processBackgroundImages(backgroundBatch, initialBatch.length, isMobile);
+        }, 100);
       }
-      
-      console.log('✅ Gültige Bilder:', validImages.length, 'von', qualityImages.length);
-      console.log('❌ Defekte Bilder gefiltert:', qualityImages.length - validImages.length);
-      
-      // DEBUG: Aspect Ratios analysieren
-      const aspectRatios = validImages.map(img => img.aspect_ratio).filter(Boolean);
-      const ratioCount = {};
-      const gridSizeCount = {};
-      
-      aspectRatios.forEach(ratio => {
-        ratioCount[ratio] = (ratioCount[ratio] || 0) + 1;
-      });
-      
-      // Debug echte Bilddimensionen
-      const classificationCount = {};
-      validImages.forEach((img) => {
-        if (img.dimensions) {
-          const { width, height, ratio, classification } = img.dimensions;
-          classificationCount[classification] = (classificationCount[classification] || 0) + 1;
-          console.log(`📐 ${width}x${height} (ratio: ${ratio.toFixed(2)}) → ${classification}`);
-        }
-      });
-      
-      console.log('📊 Aspect Ratios in Community:', ratioCount);
-      console.log('🖼️ Image Classifications:', classificationCount);
-
-      // Group by user and take variety from each
-      const imagesByUser = {};
-      validImages.forEach(img => {
-        if (!imagesByUser[img.username]) {
-          imagesByUser[img.username] = [];
-        }
-        imagesByUser[img.username].push(img);
-      });
-
-      // Take up to 20 images per user für maximale Vielfalt!
-      const fairSelection = [];
-      Object.keys(imagesByUser).forEach(username => {
-        const userImages = imagesByUser[username];
-        const shuffledUserImages = userImages.sort(() => Math.random() - 0.5);
-        fairSelection.push(...shuffledUserImages.slice(0, 20)); // 20 statt 8!
-      });
-
-      // Final shuffle for display using the existing fairSelection
-      const shuffledImages = fairSelection.sort(() => Math.random() - 0.5);
-
-      console.log('🎨 Community Gallery:', Object.keys(imagesByUser).map(user => 
-        `${user}: ${imagesByUser[user].length} total`
-      ).join(', '));
-      console.log('📊 Final selection:', shuffledImages.length, 'images from', 
-        new Set(shuffledImages.map(img => img.username)).size, 'users');
-
-      // Set final images after all validation is complete
-      setImages(shuffledImages);
-      setValidatedImages(shuffledImages); // Ensure consistency
     } catch (error) {
       console.error('Error loading community images:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Process initial batch for immediate display
+  const processImageBatch = async (batch, startIndex, isInitialBatch, isMobile) => {
+    const validImages = [];
+    const batchSize = isMobile ? 3 : 6; // Small concurrent validation batches
+    
+    for (let i = 0; i < batch.length; i += batchSize) {
+      const subBatch = batch.slice(i, i + batchSize);
+        
+      const subBatchPromises = subBatch.map(async (img) => {
+        try {
+          const dimensions = await analyzeImageDimensions(img.result_image_url, isMobile);
+          if (dimensions === null) {
+            return { ...img, isValid: false };
+          }
+          return { 
+            ...img, 
+            dimensions,
+            isValid: true
+          };
+        } catch (error) {
+          console.warn('❌ Fehler bei Bildanalyse:', img.result_image_url);
+          return { ...img, isValid: false };
+        }
+      });
+
+      const subBatchResults = await Promise.all(subBatchPromises);
+      const validSubBatchImages = subBatchResults.filter(img => img.isValid && img.dimensions);
+      
+      if (validSubBatchImages.length > 0) {
+        validImages.push(...validSubBatchImages);
+        setValidatedImages(prev => [...prev, ...validSubBatchImages]);
+        
+        // Update progress
+        const processed = startIndex + i + subBatch.length;
+        setLoadingProgress({ current: processed, total: randomizedImages.length });
+        
+        console.log(`✅ Batch ${Math.floor(i/batchSize) + 1}: +${validSubBatchImages.length} valid images, total: ${validImages.length}`);
+      }
+      
+      // Micro-delay to prevent UI blocking
+      if (i + batchSize < batch.length) {
+        await new Promise(resolve => setTimeout(resolve, isMobile ? 50 : 25));
+      }
+    }
+    
+    if (isInitialBatch) {
+      setIsInitialBatchLoaded(true);
+      setImages(validImages);
+      console.log('🎉 Initial batch complete:', validImages.length, 'images ready for display');
+    }
+    
+    return validImages;
+  };
+
+  // Background loading of remaining images
+  const processBackgroundImages = async (backgroundBatch, startIndex, isMobile) => {
+    const batchSize = isMobile ? 2 : 4; // Even smaller batches for background loading
+    
+    for (let i = 0; i < backgroundBatch.length; i += batchSize) {
+      const batch = backgroundBatch.slice(i, i + batchSize);
+      
+      const batchPromises = batch.map(async (img) => {
+        try {
+          const dimensions = await analyzeImageDimensions(img.result_image_url, isMobile);
+          if (dimensions === null) return { ...img, isValid: false };
+          return { ...img, dimensions, isValid: true };
+        } catch (error) {
+          return { ...img, isValid: false };
+        }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      const validBatchImages = batchResults.filter(img => img.isValid && img.dimensions);
+      
+      if (validBatchImages.length > 0) {
+        setValidatedImages(prev => {
+          const updated = [...prev, ...validBatchImages];
+          setImages(updated); // Update main images array
+          return updated;
+        });
+        
+        const processed = startIndex + i + batch.length;
+        setLoadingProgress({ current: processed, total: randomizedImages.length });
+        
+        console.log(`🔄 Background: +${validBatchImages.length} images loaded`);
+      }
+      
+      // Longer delay for background loading to not interfere with UI
+      await new Promise(resolve => setTimeout(resolve, isMobile ? 200 : 100));
+    }
+    
+    setBackgroundLoading(false);
+    console.log('🏁 Background loading complete');
   };
 
   // Cleanup on unmount
@@ -355,13 +379,13 @@ const InspirationPage = () => {
     return new Promise((resolve) => {
       const img = new Image();
       
-      // Mobile-optimized timeout - much shorter for responsiveness
+      // Aggressive mobile timeout for progressive loading
       const timeout = setTimeout(() => {
         img.src = ''; // Cancel loading to free memory
         img.onload = null;
         img.onerror = null;
         resolve(null); // Bild nicht ladbar
-      }, isMobile ? 800 : 1500); // Shorter timeout on mobile
+      }, isMobile ? 400 : 800); // Much shorter timeout for faster progression
       
       img.onload = () => {
         clearTimeout(timeout);
@@ -456,23 +480,23 @@ const InspirationPage = () => {
           </div>
         </div>
 
-        {loading ? (
+        {loading && !isInitialBatchLoaded ? (
           <div className="loading-container">
             <div className="loading-spinner"></div>
-            <p>Lade Community-Kunstwerke...</p>
+            <p>Lade erste Community-Kunstwerke...</p>
             {loadingProgress.total > 0 && (
               <div className="progress-container">
                 <div className="progress-bar">
                   <div 
                     className="progress-fill"
                     style={{
-                      width: `${(loadingProgress.current / loadingProgress.total) * 100}%`
+                      width: `${Math.min((loadingProgress.current / Math.min(loadingProgress.total, 50)) * 100, 100)}%`
                     }}
                   />
                 </div>
                 <p className="progress-text">
-                  {loadingProgress.current} / {loadingProgress.total} Bilder validiert
-                  {validatedImages.length > 0 && ` • ${validatedImages.length} bereit zur Anzeige`}
+                  {Math.min(loadingProgress.current, 50)} / 50 Bilder für sofortige Anzeige
+                  {validatedImages.length > 0 && ` • ${validatedImages.length} bereit`}
                 </p>
               </div>
             )}
@@ -482,16 +506,16 @@ const InspirationPage = () => {
             <p>Keine Community-Bilder verfügbar.</p>
           </div>
         ) : (
-          <div className="masonry-gallery">
-            {(() => {
-              // Use progressive loading - show validated images immediately
-              const displayImages = loading ? validatedImages : images;
-              const imagesWithDimensions = displayImages.filter(img => img.dimensions);
-              
-              console.log('🎨 Progressive Display:', imagesWithDimensions.length, 'images', 
-                loading ? '(partial)' : '(complete)');
-              
-              return imagesWithDimensions.map((img, index) => {
+          <>
+            <div className="masonry-gallery">
+              {(() => {
+                // Always show current validated images (progressive loading)
+                const displayImages = validatedImages.filter(img => img.dimensions);
+                
+                console.log('🎨 Progressive Display:', displayImages.length, 'images', 
+                  backgroundLoading ? '(+ background loading)' : '(complete)');
+                
+                return displayImages.map((img, index) => {
                 const { width, height, ratio, classification } = img.dimensions;
                 
                 // FIXED 6-ROW REPEATING TETRIS PATTERN
@@ -521,9 +545,20 @@ const InspirationPage = () => {
                     ratio={ratio}
                   />
                 );
-              });
-            })()}
-          </div>
+                });
+              })()}
+            </div>
+            
+            {/* Background Loading Indicator */}
+            {backgroundLoading && isInitialBatchLoaded && (
+              <div className="background-loading-indicator">
+                <div className="background-loading-content">
+                  <div className="mini-spinner"></div>
+                  <p>Lädt weitere Bilder im Hintergrund... ({loadingProgress.current}/{loadingProgress.total})</p>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

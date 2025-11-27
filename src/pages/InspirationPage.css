@@ -102,6 +102,58 @@
   font-weight: 500;
 }
 
+/* Background Loading Indicator */
+.background-loading-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(236, 72, 153, 0.2);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 50;
+  font-size: 0.85rem;
+  color: #666;
+  animation: slideInFromBottom 0.3s ease;
+}
+
+.background-loading-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #ec4899;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.background-loading-indicator p {
+  margin: 0;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+@keyframes slideInFromBottom {
+  from {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 .loading-spinner {
   width: 40px;
   height: 40px;
@@ -620,6 +672,20 @@
     padding: 10px 8px;
     font-size: 12px;
   }
+
+  /* Mobile Background Loading Indicator */
+  .background-loading-indicator {
+    bottom: 10px;
+    right: 10px;
+    left: 10px;
+    padding: 10px 12px;
+    font-size: 0.8rem;
+    border-radius: 8px;
+  }
+
+  .background-loading-indicator p {
+    font-size: 0.8rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -838,5 +904,17 @@
 
   .close-modal-button:hover {
     background: #555;
+  }
+
+  /* Dark Mode Background Loading Indicator */
+  .background-loading-indicator {
+    background: rgba(26, 26, 26, 0.95);
+    border: 1px solid rgba(255, 107, 157, 0.3);
+    color: #e5e5e5;
+  }
+
+  .mini-spinner {
+    border: 2px solid #333;
+    border-top: 2px solid #ff6b9d;
   }
 }

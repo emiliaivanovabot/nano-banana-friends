@@ -5,10 +5,14 @@ import { supabase } from '../lib/supabase';
 import SwipeHandler from '../utils/SwipeHandler.js';
 
 function GalleryPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [imagePool, setImagePool] = useState([]);
+  const [poolIndex, setPoolIndex] = useState(0);
+  const [poolExhausted, setPoolExhausted] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all', 'single', '4x', '10x'
   const [copySuccess, setCopySuccess] = useState(false);
@@ -27,53 +31,92 @@ function GalleryPage() {
   const intersectionObserverRef = useRef(null);
   const galleryContainerRef = useRef(null);
 
-  // Optimized image loading with mobile memory management
-  const loadImages = useCallback(async () => {
-    if (!user?.username || !componentMountedRef.current) {
-      console.log('Gallery: No user or username, skipping image load');
-      setLoading(false);
-      return;
-    }
+  // Initialize image pool (load all images once)
+  const initializeImagePool = useCallback(async () => {
+    if (authLoading || !user?.username) return;
 
     try {
       setLoading(true);
+      console.log('🎲 Initializing gallery image pool for:', user?.username);
       
-      console.log('Loading gallery images for user:', user?.username);
-      
-      // Aggressive mobile optimization - load much fewer images initially
-      const limit = window.innerWidth <= 768 ? 20 : 40;
+      // Load ALL user images at once
       const { data, error } = await supabase
         .from('generations')
         .select('id, result_image_url, prompt, generation_type, created_at, original_filename')
         .eq('username', user.username)
         .eq('status', 'completed')
-        .order('created_at', { ascending: false })
-        .limit(limit);
+        .order('created_at', { ascending: false });
 
-      if (!componentMountedRef.current) return;
+      if (error) throw error;
 
-      if (error) {
-        console.error('Error loading images:', error);
-        setImages([]);
-        return;
-      }
-
-      setImages(data || []);
+      setImagePool(data || []);
+      setPoolIndex(0);
+      setPoolExhausted(false);
+      
+      // Load first page from pool
+      const itemsPerPage = window.innerWidth <= 768 ? 20 : 30;
+      const firstPageImages = (data || []).slice(0, itemsPerPage);
+      setImages(firstPageImages);
+      setPoolIndex(itemsPerPage);
+      setHasMore((data || []).length > itemsPerPage);
+      
+      console.log(`✅ Gallery pool initialized: ${data?.length || 0} images`);
+      
     } catch (error) {
-      if (componentMountedRef.current) {
-        console.error('Error loading images:', error);
-        setImages([]);
-      }
+      console.error('❌ Error initializing gallery pool:', error);
+      setImages([]);
     } finally {
-      if (componentMountedRef.current) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
-  }, [user?.username]);
+  }, [user?.username, authLoading]);
+
+  // Load more from pool (smooth, no database calls)
+  const loadMoreFromPool = useCallback(() => {
+    if (poolExhausted || loading) return;
+    
+    setLoading(true);
+    console.log('🔄 Loading more from gallery pool, index:', poolIndex);
+    
+    const itemsPerPage = window.innerWidth <= 768 ? 20 : 30;
+    const nextImages = imagePool.slice(poolIndex, poolIndex + itemsPerPage);
+    
+    if (nextImages.length > 0) {
+      setImages(prev => [...prev, ...nextImages]);
+      setPoolIndex(prev => prev + itemsPerPage);
+      
+      // Check if pool exhausted
+      const remainingImages = imagePool.length - (poolIndex + itemsPerPage);
+      if (remainingImages <= 0) {
+        setHasMore(false);
+        setPoolExhausted(true);
+      }
+    } else {
+      setHasMore(false);
+      setPoolExhausted(true);
+    }
+    
+    setLoading(false);
+  }, [imagePool, poolIndex, poolExhausted, loading]);
+
+  // Intersection Observer for infinite scroll
+  const observerRef = useRef();
+  const lastImageElementRef = useCallback(node => {
+    if (loading) return;
+    if (observerRef.current) observerRef.current.disconnect();
+    observerRef.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        console.log('🔄 Loading more images...');
+        loadMoreFromPool();
+      }
+    });
+    if (node) observerRef.current.observe(node);
+  }, [loading, hasMore, loadMoreFromPool]);
 
   useEffect(() => {
-    loadImages();
-  }, [loadImages]);
+    if (imagePool.length === 0) {
+      initializeImagePool();
+    }
+  }, [imagePool.length, initializeImagePool]);
 
   const filteredImages = useMemo(() => {
     if (!images || !Array.isArray(images)) return [];
@@ -508,9 +551,11 @@ function GalleryPage() {
                   console.warn('Gallery: Found invalid image data', image);
                   return null;
                 }
+                const isLast = filteredImages.length === index + 1;
                 return (
                 <div
                   key={image.id}
+                  ref={isLast ? lastImageElementRef : null}
                   style={{
                     position: 'relative',
                     aspectRatio: '3/4',
@@ -570,13 +615,47 @@ function GalleryPage() {
                       loading="lazy"
                       decoding="async"
                       // More aggressive prioritization for mobile
-                      fetchPriority={index < (isMobile ? 6 : 8) ? 'high' : 'low'}
+                      fetchpriority={index < (isMobile ? 6 : 8) ? 'high' : 'low'}
                     />
                   )}
                 </div>
                 );
               })}
             </div>
+            
+            {/* Loading indicator for infinite scroll */}
+            {loading && hasMore && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: '40px',
+                fontSize: '14px',
+                color: '#666'
+              }}>
+                <div style={{
+                  width: '20px',
+                  height: '20px',
+                  border: '2px solid #f3f3f3',
+                  borderTop: '2px solid #666',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  marginRight: '10px'
+                }}></div>
+                Lade weitere Bilder...
+              </div>
+            )}
+            
+            {!hasMore && images.length > 0 && (
+              <div style={{
+                textAlign: 'center',
+                padding: '40px',
+                fontSize: '14px',
+                color: '#888'
+              }}>
+                🎉 Alle deine Kunstwerke geladen!
+              </div>
+            )}
           </>
         )}
       </div>

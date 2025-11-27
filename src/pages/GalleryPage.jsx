@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { supabase } from '../lib/supabase';
@@ -125,13 +126,31 @@ function GalleryPage() {
   }, [images, filter]);
 
   const openImageModal = useCallback((image) => {
-    if (isNavigating) return; // Prevent modal opening during navigation
     setSelectedImage(image);
-  }, [isNavigating]);
+    
+    // Mobile-optimized scroll prevention
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('modal-open');
+    
+    // Store scroll position for restoration
+    const scrollY = window.scrollY;
+    document.documentElement.style.setProperty('--scroll-y', `${scrollY}px`);
+  }, []);
 
   const closeModal = useCallback(() => {
     setSelectedImage(null);
     setIsFullscreen(false);
+    
+    // Restore body scroll when modal is closed
+    document.body.style.overflow = '';
+    document.body.classList.remove('modal-open');
+    
+    // Restore scroll position
+    const scrollY = document.documentElement.style.getPropertyValue('--scroll-y');
+    if (scrollY) {
+      document.documentElement.style.removeProperty('--scroll-y');
+      window.scrollTo(0, parseInt(scrollY, 10));
+    }
   }, []);
 
   const toggleFullscreen = () => {
@@ -568,7 +587,7 @@ function GalleryPage() {
                     // Disable hover effects during scroll for performance
                     transition: scrolling ? 'none' : 'transform 0.2s ease'
                   }}
-                  onClick={() => !isNavigating && !scrolling && openImageModal(image)}
+                  onClick={() => openImageModal(image)}
                 >
                   {imageErrors.has(image.id) ? (
                     <div style={{

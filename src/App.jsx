@@ -5,6 +5,10 @@ import HomePage from './pages/HomePage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import WanVideoPage from './pages/WanVideoPage.jsx'
 import NonoBananaPage from './pages/NonoBananaPage.jsx'
+import GenerationModesPage from './pages/GenerationModesPage.jsx'
+import NonoBananaModelPage from './pages/NonoBananaModelPage.jsx'
+import NonoBananaCollabPage from './pages/NonoBananaCollabPage.jsx'
+import NonoBananaImage2ImagePage from './pages/NonoBananaImage2ImagePage.jsx'
 import QwenPage from './pages/QwenPage.jsx'
 import CommunityPromptsPage from './pages/CommunityPromptsPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
@@ -46,9 +50,29 @@ function App() {
           } />
           
           {/* Protected routes - require authentication AND complete profile */}
+          <Route path="/generation-modes" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <GenerationModesPage />
+            </ProtectedRoute>
+          } />
           <Route path="/nono-banana" element={
             <ProtectedRoute requireCompleteProfile={true}>
               <NonoBananaPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/nono-banana-model" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <NonoBananaModelPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/nono-banana-collab" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <NonoBananaCollabPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/nono-banana-image2image" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <NonoBananaImage2ImagePage />
             </ProtectedRoute>
           } />
           <Route path="/wan-video" element={

@@ -352,7 +352,7 @@ function DashboardPage() {
   const tools = [
     {
       id: 'nano-banana',
-      path: '/nono-banana',
+      path: '/generation-modes',
       title: 'Nano Banana Pro',
       subtitle: 'Image Generation',
       gradient: 'linear-gradient(135deg, hsl(47 100% 65%), #f59e0b)',

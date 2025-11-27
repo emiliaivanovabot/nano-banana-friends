@@ -12,9 +12,94 @@ function InspirationPage() {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
+  const [imagePool, setImagePool] = useState([]);
+  const [poolExhausted, setPoolExhausted] = useState(false);
+  const [poolIndex, setPoolIndex] = useState(0);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   
+  // Fisher-Yates shuffle for true randomization (performance: O(n), unbiased)
+  const fisherYatesShuffle = (array) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  const initializeImagePool = useCallback(async () => {
+    try {
+      setLoading(true);
+      const startTime = performance.now();
+      console.log('🎲 Initializing randomized image pool...');
+      
+      const { data, error } = await supabase
+        .from('generations')
+        .select('id, result_image_url, username, prompt, created_at')
+        .not('result_image_url', 'is', null)
+        .not('result_image_url', 'eq', '')
+        .order('created_at', { ascending: false })
+        .limit(500);
+
+      if (error) throw error;
+
+      const shuffleStartTime = performance.now();
+      const shuffledPool = fisherYatesShuffle(data || []);
+      const shuffleTime = performance.now() - shuffleStartTime;
+      
+      setImagePool(shuffledPool);
+      setPoolIndex(0);
+      setPoolExhausted(false);
+      
+      const totalTime = performance.now() - startTime;
+      console.log(`🚀 Performance Metrics:`);
+      console.log(`  - Pool size: ${shuffledPool.length} images`);
+      console.log(`  - Shuffle time: ${shuffleTime.toFixed(2)}ms`);
+      console.log(`  - Total initialization: ${totalTime.toFixed(2)}ms`);
+      console.log(`  - Memory usage: ~${((shuffledPool.length * 0.5) / 1024).toFixed(1)}KB`);
+      
+      // Load first page from pool
+      const firstPageImages = shuffledPool.slice(0, 30);
+      setImages(firstPageImages);
+      setPoolIndex(30);
+      setHasMore(shuffledPool.length > 30);
+      
+    } catch (error) {
+      console.error('❌ Error initializing image pool:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadMoreFromPool = useCallback(() => {
+    if (poolExhausted || loading) return;
+    
+    setLoading(true);
+    console.log('🔄 Loading more from pool, index:', poolIndex);
+    
+    const itemsPerPage = 30;
+    const nextImages = imagePool.slice(poolIndex, poolIndex + itemsPerPage);
+    
+    if (nextImages.length > 0) {
+      setImages(prev => [...prev, ...nextImages]);
+      setPoolIndex(prev => prev + itemsPerPage);
+      
+      // Check if we're near pool exhaustion (less than 60 images left)
+      const remainingImages = imagePool.length - (poolIndex + itemsPerPage);
+      if (remainingImages <= 60) {
+        console.log('⚠️ Pool nearly exhausted, preparing refresh...');
+        setHasMore(false);
+        setPoolExhausted(true);
+      }
+    } else {
+      setHasMore(false);
+      setPoolExhausted(true);
+    }
+    
+    setLoading(false);
+  }, [imagePool, poolIndex, poolExhausted, loading]);
+
   const observerRef = useRef();
   const lastImageElementRef = useCallback(node => {
     if (loading) return;
@@ -22,52 +107,22 @@ function InspirationPage() {
     observerRef.current = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasMore) {
         console.log('🔄 Loading more images...');
-        setPage(prev => prev + 1);
+        loadMoreFromPool();
       }
     });
     if (node) observerRef.current.observe(node);
-  }, [loading, hasMore]);
+  }, [loading, hasMore, loadMoreFromPool]);
 
-  const fetchImages = useCallback(async (pageNumber) => {
-    try {
-      setLoading(true);
-      console.log('🎨 Fetching page:', pageNumber);
-      
-      const itemsPerPage = 30;
-      const from = (pageNumber - 1) * itemsPerPage;
-      const to = from + itemsPerPage - 1;
-      
-      const { data, error } = await supabase
-        .from('generations')
-        .select('*')
-        .not('result_image_url', 'is', null)
-        .not('result_image_url', 'eq', '')
-        .order('created_at', { ascending: false })
-        .range(from, to);
-
-      if (error) throw error;
-
-      const newImages = data || [];
-      console.log('📊 Fetched:', newImages.length, 'images for page', pageNumber);
-      
-      if (pageNumber === 1) {
-        setImages(newImages);
-      } else {
-        setImages(prev => [...prev, ...newImages]);
-      }
-      
-      setHasMore(newImages.length === itemsPerPage);
-      
-    } catch (error) {
-      console.error('❌ Error fetching images:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const refreshPool = useCallback(async () => {
+    console.log('🔄 Refreshing image pool...');
+    await initializeImagePool();
+  }, [initializeImagePool]);
 
   useEffect(() => {
-    fetchImages(page);
-  }, [page, fetchImages]);
+    if (imagePool.length === 0) {
+      initializeImagePool();
+    }
+  }, [imagePool.length, initializeImagePool]);
 
   // Helper functions
   const getUserDisplayName = (username) => username || 'Anonymous';
@@ -204,7 +259,20 @@ function InspirationPage() {
 
       {!hasMore && images.length > 0 && (
         <div className="no-images-container">
-          <p>Du hast alle fantastischen Community-Kreationen gesehen! 🎨</p>
+          {poolExhausted ? (
+            <>
+              <p>Du hast alle fantastischen Community-Kreationen aus diesem Set gesehen! 🎨</p>
+              <button 
+                className="refresh-pool-btn"
+                onClick={refreshPool}
+                disabled={loading}
+              >
+                {loading ? 'Lade neue Bilder...' : 'Neue zufällige Auswahl laden 🎲'}
+              </button>
+            </>
+          ) : (
+            <p>Du hast alle fantastischen Community-Kreationen gesehen! 🎨</p>
+          )}
         </div>
       )}
 

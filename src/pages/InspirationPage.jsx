@@ -44,11 +44,15 @@ const InspirationPage = () => {
         !img.prompt.toLowerCase().includes('debug')
       ) || [];
 
-      // Echte Bilddimensionen analysieren für intelligente Darstellung
+      // Echte Bilddimensionen analysieren UND Bildvalidierung
       console.log('🔍 Analysiere Bilddimensionen von', qualityImages.length, 'Kandidaten...');
       const imageAnalysisPromises = qualityImages.map(async (img) => {
         try {
           const dimensions = await analyzeImageDimensions(img.result_image_url);
+          if (dimensions === null) {
+            // Bild nicht ladbar
+            return { ...img, isValid: false };
+          }
           return { 
             ...img, 
             dimensions,
@@ -61,7 +65,7 @@ const InspirationPage = () => {
       });
 
       const analyzedImages = await Promise.all(imageAnalysisPromises);
-      const validImages = analyzedImages.filter(img => img.isValid);
+      const validImages = analyzedImages.filter(img => img.isValid && img.dimensions);
       
       console.log('✅ Gültige Bilder:', validImages.length, 'von', qualityImages.length);
       console.log('❌ Defekte Bilder gefiltert:', qualityImages.length - validImages.length);
@@ -161,7 +165,14 @@ const InspirationPage = () => {
   const analyzeImageDimensions = (imageUrl) => {
     return new Promise((resolve) => {
       const img = new Image();
+      
+      // Timeout nach 3 Sekunden wie vorher
+      const timeout = setTimeout(() => {
+        resolve(null); // Bild nicht ladbar
+      }, 3000);
+      
       img.onload = () => {
+        clearTimeout(timeout);
         const ratio = img.naturalWidth / img.naturalHeight;
         let classification;
         
@@ -177,17 +188,17 @@ const InspirationPage = () => {
           width: img.naturalWidth,
           height: img.naturalHeight,
           ratio: ratio,
-          classification: classification
+          classification: classification,
+          isValid: true
         });
       };
+      
       img.onerror = () => {
-        resolve({ 
-          width: 512, 
-          height: 512, 
-          ratio: 1, 
-          classification: 'square' 
-        }); // Fallback
+        clearTimeout(timeout);
+        console.warn('❌ Defektes Bild gefiltert:', imageUrl);
+        resolve(null); // Bild nicht ladbar
       };
+      
       img.src = imageUrl;
     });
   };

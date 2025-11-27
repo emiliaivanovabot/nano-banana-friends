@@ -4,6 +4,9 @@
   background: #fafafa;
   padding-bottom: 40px;
   transition: background-color 0.3s ease;
+  /* Mobile scrolling optimizations */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
 .inspiration-header {
@@ -430,59 +433,85 @@
     font-size: 0.9rem;
   }
 
+  /* Mobile Touch Optimizations */
+  .masonry-item {
+    /* Larger touch targets for mobile */
+    min-height: 44px;
+    /* iOS momentum scrolling optimization */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    /* Prevent tap highlight */
+    -webkit-tap-highlight-color: transparent;
+    /* Smooth touch interactions */
+    -webkit-touch-callout: none;
+  }
+
+  .masonry-item:active {
+    /* Subtle touch feedback */
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+
   .masonry-gallery {
     grid-template-columns: repeat(4, 1fr); /* Mobile: 4 Spalten */
-    grid-auto-rows: 120px; /* Kleinere Zellen auf Mobile */
-    gap: 12px;
+    grid-auto-rows: 100px; /* Kleinere Zellen auf Mobile */
+    gap: 8px;
     margin: 20px auto;
     padding: 0 16px;
+    /* iOS Safari viewport fix */
+    width: calc(100vw - 32px);
+    max-width: calc(100% - 32px);
+    /* Prevent horizontal scroll */
+    overflow-x: hidden;
+    /* Momentum scrolling for iOS */
+    -webkit-overflow-scrolling: touch;
   }
   
-  /* Mobile Tetris Pieces - kleinere Spans */
+  /* Mobile Tetris Pieces - optimiert für 4-Spalten Grid */
   .masonry-item.square {
-    grid-column: span 2; /* Bleibt 2 Spalten */
+    grid-column: span 2; /* 2 Spalten - passt 2 pro Reihe */
     grid-row: span 1;
   }
   
   .masonry-item.landscape {
-    grid-column: span 2; /* Reduziert auf 2 Spalten */
+    grid-column: span 2; /* 2 Spalten - passt 2 pro Reihe */
     grid-row: span 1;
   }
   
   .masonry-item.portrait {
-    grid-column: span 2; /* 2 Spalten */
-    grid-row: span 2; /* 2 Reihen hoch */
+    grid-column: span 1; /* 1 Spalte - passt 4 pro Reihe */
+    grid-row: span 2; /* 2 Reihen hoch für Portrait-Format */
   }
   
   .masonry-item.portrait.large {
-    grid-column: span 2;
-    grid-row: span 2; /* Mobile: nur 2 Reihen statt 3 */
+    grid-column: span 2; /* 2 Spalten */
+    grid-row: span 2; /* 2 Reihen - nicht zu hoch */
   }
   
   .masonry-item.landscape.large {
-    grid-column: span 4; /* Volle Breite auf Mobile */
+    grid-column: span 3; /* 3 Spalten statt 4 - lässt Platz für andere */
     grid-row: span 1;
   }
 
-  /* Mobile: BEHALTE die Proportionen für Vielfalt! */
+  /* Mobile: Optimierte Size Classes für Multi-Column Layout */
   .masonry-item.size-2x2 {
-    grid-column: span 2;
-    grid-row: span 2; /* Featured bleibt groß */
+    grid-column: span 2; /* 2 Spalten - passt 2 pro Reihe */
+    grid-row: span 2; /* Featured Items bleiben prominent */
   }
   
   .masonry-item.size-2x1 {
-    grid-column: span 2;
-    grid-row: span 1; /* Querformat bleibt quer */
+    grid-column: span 2; /* 2 Spalten - passt 2 pro Reihe */
+    grid-row: span 1; /* Querformat */
   }
 
   .masonry-item.size-1x2 {
-    grid-column: span 1;
-    grid-row: span 2; /* Portrait bleibt hoch - DAS IST WICHTIG! */
+    grid-column: span 1; /* 1 Spalte - passt 4 pro Reihe */
+    grid-row: span 2; /* Portrait hoch */
   }
   
   .masonry-item.size-1x1 {
-    grid-column: span 1;
-    grid-row: span 1; /* Quadrat bleibt quadratisch */
+    grid-column: span 1; /* 1 Spalte - passt 4 pro Reihe */
+    grid-row: span 1; /* Kompakte Squares */
   }
 
   /* Mobile Modal - wie RecentImagesHistory */
@@ -536,22 +565,47 @@
 
 @media (max-width: 480px) {
   .masonry-gallery {
-    grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: 120px;
+    grid-template-columns: repeat(3, 1fr); /* 3 Spalten für sehr kleine Screens */
+    grid-auto-rows: 100px;
     gap: 6px;
   }
 
-  /* Sehr kleine Screens: Fast alles 1x1 */
-  .masonry-item.size-2x2,
-  .masonry-item.size-2x1,
-  .masonry-item.size-1x2 {
-    grid-column: span 1;
+  /* Sehr kleine Screens: Kompakte aber vielfältige Layout */
+  .masonry-item.square,
+  .masonry-item.landscape {
+    grid-column: span 1; /* 1 Spalte - passt 3 pro Reihe */
+    grid-row: span 1;
+  }
+  
+  .masonry-item.portrait {
+    grid-column: span 1; /* 1 Spalte */
+    grid-row: span 2; /* 2 Reihen hoch */
+  }
+  
+  .masonry-item.portrait.large,
+  .masonry-item.landscape.large {
+    grid-column: span 2; /* 2 Spalten für Features */
     grid-row: span 1;
   }
 
-  /* Nur gelegentliche 2x1 Features */
-  .masonry-item.size-2x2:nth-child(5n) {
+  /* Size Classes für sehr kleine Screens */
+  .masonry-item.size-2x2 {
+    grid-column: span 2; /* Feature Items bleiben prominent */
+    grid-row: span 1;
+  }
+  
+  .masonry-item.size-2x1 {
     grid-column: span 2;
+    grid-row: span 1;
+  }
+  
+  .masonry-item.size-1x2 {
+    grid-column: span 1;
+    grid-row: span 2;
+  }
+  
+  .masonry-item.size-1x1 {
+    grid-column: span 1;
     grid-row: span 1;
   }
 

@@ -119,6 +119,43 @@ function GalleryPage() {
     }
   }, [imagePool.length, initializeImagePool]);
 
+  // Floating back button visibility control (like InspirationPage)
+  useEffect(() => {
+    const floatingButton = document.getElementById('floating-back-gallery');
+    const originalButton = document.getElementById('original-back-button');
+
+    const handleScroll = () => {
+      if (floatingButton && originalButton) {
+        const originalRect = originalButton.getBoundingClientRect();
+        const isOriginalVisible = originalRect.bottom > 0; // Original still visible in viewport
+        
+        if (isOriginalVisible) {
+          // Original visible - hide floating button
+          floatingButton.style.opacity = '0';
+          floatingButton.style.pointerEvents = 'none';
+        } else {
+          // Original scrolled out of view - show floating button at SAME position as original
+          floatingButton.style.opacity = '1';
+          floatingButton.style.pointerEvents = 'auto';
+          
+          // Calculate the EXACT right distance of the original button
+          const rightDistance = window.innerWidth - originalRect.right;
+          floatingButton.style.top = '24px';
+          floatingButton.style.right = `${rightDistance}px`;
+          floatingButton.style.left = 'auto';
+          floatingButton.style.width = 'auto';
+          floatingButton.style.height = 'auto';
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial check
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+
   const filteredImages = useMemo(() => {
     if (!images || !Array.isArray(images)) return [];
     if (filter === 'all') return images;
@@ -436,6 +473,7 @@ function GalleryPage() {
           
           <Link 
             to="/dashboard"
+            id="original-back-button"
             style={{
               background: 'hsl(var(--secondary) / 0.3)',
               border: '1px solid hsl(var(--border))',
@@ -454,6 +492,7 @@ function GalleryPage() {
           >
             ← Zurück
           </Link>
+          
         </div>
 
         {/* Filter Buttons */}
@@ -961,6 +1000,48 @@ function GalleryPage() {
           }
         `}
       </style>
+
+      {/* Floating Back Button - USES REACT PORTAL like InspirationPage */}
+      {ReactDOM.createPortal(
+        <Link 
+          to="/dashboard" 
+          id="floating-back-gallery"
+          style={{
+            // Position will be set dynamically by JavaScript
+            position: 'fixed',
+            top: '24px',
+            right: '27px',
+            zIndex: 10000,
+            // Override any CSS that might interfere
+            transform: 'none',
+            translate: 'none',
+            margin: '0',
+            // Start hidden, becomes visible when original scrolls out
+            opacity: '0',
+            pointerEvents: 'none',
+            
+            // Glassmorphism styling
+            background: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '12px',
+            padding: isMobile ? '12px 15px' : '12px 18px',
+            color: 'hsl(var(--foreground))',
+            textDecoration: 'none',
+            fontWeight: '600',
+            fontSize: '14px',
+            transition: 'all 0.3s ease, opacity 0.3s ease',
+            minWidth: isMobile ? '100px' : 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          ← Zurück
+        </Link>,
+        document.body
+      )}
     </div>
   );
 }

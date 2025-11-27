@@ -13,6 +13,118 @@
   perspective: 1000px;
 }
 
+/* FIXED: Floating Back Button - Portal-based viewport positioning */
+.floating-back-button {
+  /* Portal positioning - these are now redundant with inline styles but kept for fallback */
+  position: fixed !important;
+  top: -1px !important;
+  left: 1px !important;
+  z-index: 10000 !important;
+  
+  /* Match original button styling */
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  font-size: 0.9rem;
+  
+  /* 50% transparent - HALB! */
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px); /* Safari support */
+  color: rgba(255, 255, 255, 0.95);
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  
+  /* Smooth transitions */
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  
+  /* Hidden by default - Portal ensures viewport positioning */
+  opacity: 0;
+  pointer-events: none !important; /* Overridden by visible class */
+  visibility: hidden;
+  
+  /* Initial state - slightly offset for smooth animation */
+  transform: translateY(-10px) scale(0.95);
+  
+  /* Mobile touch optimization */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  
+  /* Minimum touch target size (44px) */
+  min-height: 44px;
+  min-width: 44px;
+  
+  /* CRITICAL: Reset any transforms that could interfere with fixed positioning */
+  translate: none !important;
+  rotate: none !important;
+  scale: none !important;
+}
+
+.floating-back-button:hover {
+  background: rgba(0, 0, 0, 0.9);
+  color: rgba(255, 255, 255, 1);
+  transform: translateY(6px) scale(1);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  text-decoration: none;
+}
+
+/* Show floating button with smooth entrance animation */
+.floating-back-button.visible {
+  opacity: 1;
+  pointer-events: auto !important; /* Override the none from base class */
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  
+  /* Subtle entrance animation */
+  animation: slideInSticky 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Mobile-optimized floating button positioning */
+@media (max-width: 768px) {
+  .floating-back-button {
+    /* Smaller padding for mobile */
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    border-radius: 10px;
+    
+    /* Enhanced mobile shadows */
+    box-shadow: 
+      0 6px 24px rgba(0, 0, 0, 0.25),
+      0 1px 6px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  
+  .floating-back-button:hover {
+    transform: translateY(-1px) scale(1.02);
+  }
+}
+
+@keyframes slideInSticky {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+    filter: blur(2px);
+  }
+  60% {
+    opacity: 0.8;
+    transform: translateY(-2px) scale(1.02);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
 .inspiration-header {
   background: white;
   border-bottom: 1px solid #e0e0e0;
@@ -169,9 +281,22 @@
 }
 
 .no-images-container {
-  padding: 60px 20px;
+  padding: 20px 15px;
   text-align: center;
   color: #666;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.1) 0%, rgba(245, 158, 11, 0.1) 100%);
+  border-radius: 12px;
+  margin: 20px;
+}
+
+.no-images-container p {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ec4899 0%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
 }
 
 .refresh-pool-btn {
@@ -1118,5 +1243,27 @@ body.modal-open {
   .mini-spinner {
     border: 2px solid #333;
     border-top: 2px solid #ff6b9d;
+  }
+
+  /* Dark Mode Floating Button */
+  .floating-back-button {
+    background: rgba(26, 26, 26, 0.5);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    color: rgba(229, 229, 229, 0.95);
+    border: 1px solid rgba(229, 229, 229, 0.1);
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.6),
+      0 2px 8px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(229, 229, 229, 0.08);
+  }
+
+  .floating-back-button:hover {
+    background: rgba(42, 42, 42, 0.95);
+    color: rgba(229, 229, 229, 1);
+    box-shadow: 
+      0 12px 40px rgba(0, 0, 0, 0.8),
+      0 4px 12px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(229, 229, 229, 0.12);
   }
 }

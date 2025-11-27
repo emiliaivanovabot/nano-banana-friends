@@ -35,13 +35,22 @@ function InspirationPage() {
       const startTime = performance.now();
       console.log('🎲 Initializing randomized image pool...');
       
+      // First, check total count
+      const { count } = await supabase
+        .from('generations')
+        .select('*', { count: 'exact', head: true })
+        .not('result_image_url', 'is', null)
+        .not('result_image_url', 'eq', '');
+      
+      console.log(`📊 Total images in database: ${count}`);
+      
       const { data, error } = await supabase
         .from('generations')
         .select('id, result_image_url, username, prompt, created_at')
         .not('result_image_url', 'is', null)
         .not('result_image_url', 'eq', '')
-        .order('created_at', { ascending: false })
-        .limit(500);
+        .order('created_at', { ascending: false });
+        // Kein Limit = alle Bilder laden
 
       if (error) throw error;
 
@@ -124,6 +133,32 @@ function InspirationPage() {
       initializeImagePool();
     }
   }, [imagePool.length, initializeImagePool]);
+
+  // FIXED: Floating back button visibility control (positioning handled by React Portal)
+  useEffect(() => {
+    const floatingButton = document.getElementById('floating-back');
+    const originalButton = document.querySelector('.back-link');
+
+    const handleScroll = () => {
+      if (floatingButton && originalButton) {
+        const originalRect = originalButton.getBoundingClientRect();
+        const isOriginalVisible = originalRect.bottom > 10; // Floating verschwindet wenn Original 10px sichtbar
+        
+        if (isOriginalVisible) {
+          // Original visible - hide floating button
+          floatingButton.classList.remove('visible');
+        } else {
+          // Original scrolled out of view - show floating button (positioned at viewport top-left via portal)
+          floatingButton.classList.add('visible');
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial check
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Helper functions
   const getUserDisplayName = (username) => username || 'Anonymous';
@@ -245,6 +280,31 @@ function InspirationPage() {
           </div>
         </div>
       </div>
+      
+      {/* Floating Back Button - NOW USES REACT PORTAL for guaranteed viewport positioning */}
+      {ReactDOM.createPortal(
+        <Link 
+          to="/nono-banana" 
+          className="floating-back-button" 
+          id="floating-back"
+          style={{
+            // FORCE position relative to viewport, not page
+            position: 'fixed',
+            top: '20px',
+            left: '20px',
+            zIndex: 10000,
+            // Override any CSS that might interfere
+            transform: 'none',
+            translate: 'none',
+            margin: '0',
+            // Enable pointer events only when visible
+            pointerEvents: 'auto'
+          }}
+        >
+          ← Zurück zu Nono Banana
+        </Link>,
+        document.body
+      )}
 
       <div className="masonry-gallery">
         {images.map((img, index) => {
@@ -317,20 +377,7 @@ function InspirationPage() {
 
       {!hasMore && images.length > 0 && (
         <div className="no-images-container">
-          {poolExhausted ? (
-            <>
-              <p>Du hast alle fantastischen Community-Kreationen aus diesem Set gesehen! 🎨</p>
-              <button 
-                className="refresh-pool-btn"
-                onClick={refreshPool}
-                disabled={loading}
-              >
-                {loading ? 'Lade neue Bilder...' : 'Neue zufällige Auswahl laden 🎲'}
-              </button>
-            </>
-          ) : (
-            <p>Du hast alle fantastischen Community-Kreationen gesehen! 🎨</p>
-          )}
+          <p>"Du hast alle {imagePool.length} fantastischen Bilder die bis heute generiert wurden gesehen, komm gerne morgen wieder, dann scrollst du länger"</p>
         </div>
       )}
 

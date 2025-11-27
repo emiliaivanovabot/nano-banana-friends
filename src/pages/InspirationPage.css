@@ -349,18 +349,110 @@
 
 /* Modal Styles - Inherit from existing but enhanced */
 .image-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
   background: rgba(0, 0, 0, 0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 9999 !important;
   backdrop-filter: blur(4px);
   animation: fadeIn 0.3s ease;
+  overflow: hidden;
+}
+
+/* Mobile-Optimized Viewport Modal - GUARANTEED viewport centering */
+.mobile-viewport-modal {
+  /* CRITICAL: Fixed positioning relative to viewport, not document */
+  position: fixed !important;
+  
+  /* Force positioning to viewport edges - ignores scroll */
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  
+  /* Explicit viewport dimensions */
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important; /* Dynamic viewport height for mobile */
+  
+  /* Perfect centering with flexbox */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  
+  /* Visual styling */
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  
+  /* Highest z-index to be above everything */
+  z-index: 999999 !important;
+  
+  /* Reset all positioning that could interfere */
+  transform: none !important;
+  translate: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  
+  /* Prevent any scrolling within modal overlay */
+  overflow: hidden !important;
+  overscroll-behavior: contain !important;
+  
+  /* Prevent touch interactions from affecting underlying content */
+  touch-action: none !important;
+  
+  /* iOS Safari specific viewport handling */
+  -webkit-overflow-scrolling: auto !important;
+  
+  /* Smooth animation */
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+/* Mobile browser compatibility for perfect viewport centering */
+.mobile-viewport-modal {
+  /* Multiple height declarations for different browsers */
+  height: 100vh !important; /* Standard browsers */
+  height: 100dvh !important; /* Dynamic viewport for mobile */
+  height: -webkit-fill-available !important; /* iOS Safari fallback */
+  
+  /* Webkit specific positioning fixes */
+  -webkit-transform: none !important;
+  -webkit-backface-visibility: hidden;
+  
+  /* Force layer creation for optimal rendering */
+  will-change: auto;
+  contain: layout style paint;
+}
+
+/* Body styles when modal is open - Mobile optimized */
+body.modal-open {
+  overflow: hidden !important;
+  /* Remove position fixed that causes viewport issues */
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  /* Prevent momentum scrolling on iOS */
+  -webkit-overflow-scrolling: auto !important;
+  /* Prevent touch actions that could cause scrolling */
+  touch-action: none !important;
+  /* Prevent elastic bounce on iOS */
+  overscroll-behavior: contain !important;
+}
+
+/* Additional safety: Prevent any scrolling when modal is active */
+.mobile-viewport-modal,
+.mobile-viewport-modal * {
+  /* Override any scroll behaviors */
+  overscroll-behavior: none !important;
+  /* Prevent momentum scrolling on iOS */
+  -webkit-overflow-scrolling: auto !important;
+  /* Prevent elastic bounce */
+  overscroll-behavior-y: contain !important;
+  overscroll-behavior-x: contain !important;
 }
 
 @keyframes fadeIn {
@@ -368,19 +460,58 @@
   to { opacity: 1; }
 }
 
+@keyframes modalFadeIn {
+  from { 
+    opacity: 0; 
+    backdrop-filter: blur(0px);
+  }
+  to { 
+    opacity: 1; 
+    backdrop-filter: blur(4px);
+  }
+}
+
 .modal-content {
   background: white;
   padding: 0;
   border-radius: 16px;
-  max-width: 90vw;
-  max-height: 90vh;
+  
+  /* Mobile-optimized sizing */
+  max-width: min(90vw, 600px);
+  max-height: min(90vh, 90dvh);
+  width: 90vw;
+  
   display: flex;
   flex-direction: column;
+  
+  /* Premium shadows */
   box-shadow: 
     0 25px 50px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(236, 72, 153, 0.1);
-  animation: slideUp 0.3s ease;
+  
+  /* Smooth entrance animation */
+  animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  /* Controlled scrolling for long content */
   overflow: hidden;
+  
+  /* Positioning */
+  position: relative;
+  
+  /* Visual enhancements */
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  /* Performance optimizations */
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  
+  /* Interaction feedback */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  
+  /* Mobile touch optimization */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 @keyframes slideUp {
@@ -390,6 +521,17 @@
   }
   to {
     transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideUp {
+  from {
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
     opacity: 1;
   }
 }
@@ -502,7 +644,22 @@
   font-size: 14px;
   font-weight: 500;
   font-family: 'Space Grotesk', sans-serif;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+  
+  /* Premium button enhancements */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateZ(0);
+  
+  /* Add subtle gradient overlay for premium feel */
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+}
+
+/* Premium button active states */
+.modal-actions button:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
 .download-button {
@@ -513,7 +670,8 @@
 
 .download-button:hover {
   background: #e5920a;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
 }
 
 .copy-prompt-button {
@@ -524,7 +682,8 @@
 
 .copy-prompt-button:hover {
   background: rgb(157, 62, 204);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(177, 82, 224, 0.3);
 }
 
 .close-modal-button {
@@ -535,7 +694,8 @@
 
 .close-modal-button:hover {
   background: #545b62;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(108, 117, 125, 0.3);
 }
 
 /* Responsive Grid Design */
@@ -650,11 +810,27 @@
     grid-row: span 1; /* Kompakte Squares */
   }
 
-  /* Mobile Modal - wie RecentImagesHistory */
+  /* Mobile Modal Optimization */
   .modal-content {
     max-width: 95vw;
-    max-height: 95vh;
+    max-height: min(95vh, 95dvh);
+    width: 95vw;
     border-radius: 12px;
+    
+    /* Enhanced mobile sizing */
+    min-height: auto;
+    
+    /* Better mobile performance */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+  
+  /* Mobile keyboard accommodation */
+  .mobile-viewport-modal {
+    /* Adjust for virtual keyboard on mobile */
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: -webkit-fill-available !important;
   }
 
   .modal-header {
@@ -848,8 +1024,9 @@
   }
 
   /* Dark Mode Modal */
-  .image-modal {
-    background: rgba(0, 0, 0, 0.9);
+  .image-modal,
+  .mobile-viewport-modal {
+    background: rgba(0, 0, 0, 0.95);
   }
 
   .modal-content {

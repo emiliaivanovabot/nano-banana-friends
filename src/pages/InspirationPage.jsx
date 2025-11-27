@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { supabase } from '../lib/supabase';
@@ -158,11 +159,68 @@ function InspirationPage() {
     return { sizeClass: squareSize, classification: 'square', ratio };
   };
 
-  const handleImageClick = (image) => setSelectedImage(image);
+  const handleImageClick = (image) => {
+    setSelectedImage(image);
+    
+    // Mobile-optimized scroll prevention without position manipulation
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('modal-open');
+    
+    // Store scroll position for restoration (but don't apply positioning)
+    const scrollY = window.scrollY;
+    document.documentElement.style.setProperty('--scroll-y', `${scrollY}px`);
+  };
+  
   const closeModal = () => {
     setSelectedImage(null);
     setIsFullscreen(false);
+    
+    // Restore body scroll when modal is closed
+    document.body.style.overflow = '';
+    document.body.classList.remove('modal-open');
+    
+    // Restore scroll position
+    const scrollY = document.documentElement.style.getPropertyValue('--scroll-y');
+    if (scrollY) {
+      document.documentElement.style.removeProperty('--scroll-y');
+      window.scrollTo(0, parseInt(scrollY, 10));
+    }
   };
+
+  // Enhanced keyboard and mobile navigation for modal
+  useEffect(() => {
+    if (!selectedImage) return;
+    
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeModal();
+      }
+    };
+    
+    // Prevent page scrolling when modal is open
+    const preventScroll = (event) => {
+      if (event.target.closest('.mobile-viewport-modal')) {
+        event.preventDefault();
+      }
+    };
+    
+    // Focus trap for accessibility
+    const modalElement = document.querySelector('.mobile-viewport-modal');
+    if (modalElement) {
+      modalElement.focus();
+    }
+    
+    document.addEventListener('keydown', handleEscape);
+    document.addEventListener('touchmove', preventScroll, { passive: false });
+    document.addEventListener('wheel', preventScroll, { passive: false });
+    
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('touchmove', preventScroll);
+      document.removeEventListener('wheel', preventScroll);
+    };
+  }, [selectedImage]);
 
   const copyPromptAndGenerate = (prompt) => {
     navigator.clipboard.writeText(prompt);
@@ -276,66 +334,84 @@ function InspirationPage() {
         </div>
       )}
 
-      {/* Modal für großes Bild */}
-      {selectedImage && (
-        <div className="image-modal" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h4>Community Inspiration</h4>
+      {/* Mobile-Optimized Viewport Modal */}
+    {selectedImage && ReactDOM.createPortal(
+      <div 
+        className="mobile-viewport-modal"
+        onClick={closeModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        tabIndex={-1}
+        style={{
+          // Ensure modal appears at current viewport position
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 999999
+        }}
+      >
+        <div 
+          className="modal-content"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="modal-header">
+            <h4 id="modal-title">Community Inspiration</h4>
+            <button 
+              onClick={closeModal}
+              className="close-button"
+            >
+              ✖
+            </button>
+          </div>
+          
+          <img 
+            src={selectedImage.result_image_url} 
+            alt="Community Inspiration"
+            className="modal-image"
+          />
+          
+          <div className="modal-info">
+            <p className="modal-date">
+              {getUserDisplayName(selectedImage.username)} • {new Date(selectedImage.created_at).toLocaleString('de-DE')}
+            </p>
+            {selectedImage.prompt && (
+              <p className="modal-prompt">
+                <strong>Prompt:</strong> {selectedImage.prompt}
+              </p>
+            )}
+          </div>
+
+          {selectedImage.prompt && (
+            <div className="modal-actions">
+              <div className="action-buttons-row">
+                <button 
+                  onClick={() => window.open(selectedImage.result_image_url, '_blank')}
+                  className="download-button"
+                >
+                  Bild öffnen
+                </button>
+                <button 
+                  onClick={() => copyPromptAndGenerate(selectedImage.prompt)}
+                  className="copy-prompt-button"
+                >
+                  Prompt kopieren & verwenden
+                </button>
+              </div>
               <button 
-                className="close-button"
                 onClick={closeModal}
-                aria-label="Schließen"
+                className="close-modal-button"
               >
-                ✖
+                Schließen
               </button>
             </div>
-            
-            <img 
-              src={selectedImage.result_image_url} 
-              alt="Community Inspiration"
-              className="modal-image"
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              style={{ cursor: 'pointer' }}
-            />
-            
-            <div className="modal-info">
-              <p className="modal-date">
-                {getUserDisplayName(selectedImage.username)} • {new Date(selectedImage.created_at).toLocaleString('de-DE')}
-              </p>
-              {selectedImage.prompt && (
-                <>
-                  <p className="modal-prompt">
-                    <strong>Prompt:</strong> {selectedImage.prompt}
-                  </p>
-                  <div className="modal-actions">
-                    <div className="action-buttons-row">
-                      <button 
-                        className="copy-prompt-button"
-                        onClick={() => copyPromptAndGenerate(selectedImage.prompt)}
-                      >
-                        Prompt kopieren & verwenden
-                      </button>
-                      <button 
-                        className="download-button"
-                        onClick={() => window.open(selectedImage.result_image_url, '_blank')}
-                      >
-                        Bild öffnen
-                      </button>
-                    </div>
-                    <button 
-                      className="close-modal-button"
-                      onClick={closeModal}
-                    >
-                      Schließen
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>,
+      document.body
+    )}
     </div>
   );
 }

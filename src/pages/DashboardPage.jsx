@@ -101,7 +101,8 @@ function DashboardPage() {
             }
           })
 
-          // Fetch aspect ratios for today and week
+          // Fetch aspect ratios for today and week - DISABLED (broken functionality)
+          /*
           const todayRatios = await getTopAspectRatios(user.id, 1, 2) // 1 day, top 2
           const weekRatios = await getTopAspectRatios(user.id, 7, 2) // 7 days, top 2
           
@@ -109,6 +110,7 @@ function DashboardPage() {
             today: todayRatios.success ? todayRatios.data : [],
             week: weekRatios.success ? weekRatios.data : []
           })
+          */
         }
       } catch (error) {
         console.error('Error loading stats:', error)
@@ -205,7 +207,7 @@ function DashboardPage() {
         </div>
         
         {/* Resolution Breakdown */}
-        <div style={{ marginBottom: aspectRatios?.length > 0 ? '12px' : '0' }}>
+        <div style={{ marginBottom: '0' }}> {/* No spacing needed since formats section is hidden */}
           {/* 4K Row */}
           <div style={{
             display: 'flex',
@@ -299,7 +301,7 @@ function DashboardPage() {
           </div>
         </div>
         
-        {/* Aspect Ratios */}
+        {/* Aspect Ratios - TEMPORARILY HIDDEN (broken functionality) 
         {aspectRatios?.length > 0 && (
           <div>
             <span style={{
@@ -332,7 +334,7 @@ function DashboardPage() {
               ))}
             </div>
           </div>
-        )}
+        )} */}
       </div>
     )
   }

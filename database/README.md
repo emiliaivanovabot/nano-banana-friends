@@ -152,6 +152,17 @@ After setup, you should see:
    - Cost breakdown
    - Feature usage analytics
 
+## Known Issues
+
+### Dashboard Limitations
+
+1. **Aspect Ratio Formats Section**
+   - **Status:** Temporarily disabled (2025-11-27)
+   - **Issue:** Shows "Unknown (96%)" instead of actual format distribution  
+   - **Root Cause:** aspect_ratio field not properly tracked or getTopAspectRatios() function bug
+   - **Workaround:** Section hidden in UI, functionality preserved for future fix
+   - **Files:** DashboardPage.jsx (formats section commented out)
+
 ## Troubleshooting
 
 ### Common Issues
@@ -167,6 +178,11 @@ After setup, you should see:
 3. **Connection Issues**
    - Verify `SUPABASE_URL` is correct
    - Test with `npm run db:verify`
+
+4. **Dashboard Not Updating**
+   - Auto-refresh implemented (30-second intervals)
+   - Manual refresh button available
+   - Check console logs for data fetching debug info
 
 ### Support
 

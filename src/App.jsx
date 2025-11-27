@@ -9,6 +9,7 @@ import QwenPage from './pages/QwenPage.jsx'
 import CommunityPromptsPage from './pages/CommunityPromptsPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import GalleryPage from './pages/GalleryPage.jsx'
+import InspirationPage from './pages/InspirationPage.jsx'
 import LoginPage from './auth/LoginPage.jsx'
 import OnboardingPage from './auth/OnboardingPage.jsx'
 import MobileErrorBoundary from './components/MobileErrorBoundary.jsx'
@@ -75,6 +76,13 @@ function App() {
           <Route path="/community-prompts" element={
             <ProtectedRoute requireCompleteProfile={true}>
               <CommunityPromptsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/inspiration" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <MobileErrorBoundary>
+                <InspirationPage />
+              </MobileErrorBoundary>
             </ProtectedRoute>
           } />
         </Routes>

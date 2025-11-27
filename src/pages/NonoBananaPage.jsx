@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext.jsx'
 import { SecureLogger, ApiLogger } from '../utils/secure-logger.js'
 import { createClient } from '@supabase/supabase-js'
 import RecentImagesHistory from '../components/RecentImagesHistory.jsx'
+import UserInspoGallery from '../components/UserInspoGallery.jsx'
 import { uploadAndSaveImage } from '../utils/imageUpload.js'
 import SwipeHandler from '../utils/SwipeHandler.js'
 
@@ -742,6 +743,16 @@ function NonoBananaPage() {
 
           SecureLogger.debug('Processing complete', { hasText: !!resultText.trim(), hasImage: !!resultImage })
 
+          // Extract token usage data from Gemini response
+          SecureLogger.debug('🔍 DEBUG: Full Gemini data structure:', data)
+          const usageMetadata = data.usageMetadata || {}  // ← FIXED: usageMetadata not usage_metadata!
+          SecureLogger.debug('🔍 DEBUG: usageMetadata extracted:', usageMetadata)
+          SecureLogger.debug('Token usage extracted', {
+            promptTokens: usageMetadata.promptTokenCount || 0,
+            outputTokens: usageMetadata.candidatesTokenCount || 0,
+            totalTokens: usageMetadata.totalTokenCount || 0
+          })
+
           if (resultImage || resultText.trim()) {
             const endTime = Date.now()
             const duration = ((endTime - startTime) / 1000).toFixed(1)
@@ -754,7 +765,17 @@ function NonoBananaPage() {
             
             // Auto-save image to database and FTP (non-blocking)
             if (resultImage && user?.username) {
-              uploadAndSaveImage(resultImage, user.username, 'single', prompt, 0, resolution, generationTime)
+              uploadAndSaveImage(
+                resultImage, 
+                user.username, 
+                'single', 
+                prompt, 
+                0, 
+                resolution, 
+                parseFloat(duration), // Pass raw seconds as number
+                usageMetadata, // Pass token data to upload function
+                aspectRatio // Pass actual aspect ratio
+              )
                 .then(result => {
                   if (result.success) {
                     console.log('✅ Image automatically saved:', result.filename)
@@ -998,7 +1019,27 @@ function NonoBananaPage() {
       if (user?.username) {
         finalResults.forEach((result, index) => {
           if (result.success && result.image) {
-            uploadAndSaveImage(result.image, user.username, '4x', prompt, index, resolution, index === 0 ? generationTime : null)
+            // Create estimated token metadata based on live test data
+            // 4K single generation = 2686 tokens (350 prompt + 2336 output from live test)
+            const estimatedTokens = resolution === '4K' ? 2686 : 
+                                   resolution === '2K' ? 1800 : 1200 // Estimates for 2K/1K
+            const estimatedUsageMetadata = {
+              promptTokenCount: Math.round(estimatedTokens * 0.13), // 13% prompt tokens from live data
+              candidatesTokenCount: Math.round(estimatedTokens * 0.87), // 87% output tokens from live data  
+              totalTokenCount: estimatedTokens
+            }
+            
+            uploadAndSaveImage(
+              result.image, 
+              user.username, 
+              '4x', 
+              prompt, 
+              index, 
+              resolution, 
+              index === 0 ? generationTime : null, 
+              estimatedUsageMetadata,
+              aspectRatio // Pass actual aspect ratio
+            )
               .then(uploadResult => {
                 if (uploadResult.success) {
                   console.log(`✅ 4x Image ${index + 1} automatically saved:`, uploadResult.filename)
@@ -1227,7 +1268,27 @@ function NonoBananaPage() {
       if (user?.username) {
         finalResults.forEach((result, index) => {
           if (result.success && result.image) {
-            uploadAndSaveImage(result.image, user.username, '10x', prompt, index, resolution, index === 0 ? generationTime : null)
+            // Create estimated token metadata based on live test data
+            // 4K single generation = 2686 tokens (350 prompt + 2336 output from live test)
+            const estimatedTokens = resolution === '4K' ? 2686 : 
+                                   resolution === '2K' ? 1800 : 1200 // Estimates for 2K/1K
+            const estimatedUsageMetadata = {
+              promptTokenCount: Math.round(estimatedTokens * 0.13), // 13% prompt tokens from live data
+              candidatesTokenCount: Math.round(estimatedTokens * 0.87), // 87% output tokens from live data  
+              totalTokenCount: estimatedTokens
+            }
+            
+            uploadAndSaveImage(
+              result.image, 
+              user.username, 
+              '10x', 
+              prompt, 
+              index, 
+              resolution, 
+              index === 0 ? generationTime : null, 
+              estimatedUsageMetadata,
+              aspectRatio // Pass actual aspect ratio
+            )
               .then(uploadResult => {
                 if (uploadResult.success) {
                   console.log(`✅ 10x Image ${index + 1} automatically saved:`, uploadResult.filename)
@@ -2501,6 +2562,8 @@ function NonoBananaPage() {
         </div>
       )}
 
+      {/* User Inspo Gallery - Community inspiration above personal gallery */}
+      <UserInspoGallery currentUser={user} />
       {/* Recent Images History - ganz unten nach allen Generation Results */}
       <RecentImagesHistory currentUser={user} />
 

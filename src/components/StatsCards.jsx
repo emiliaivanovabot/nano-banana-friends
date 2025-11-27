@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
-import { BarChart3, Clock, Image, Zap, TrendingUp, Activity } from 'lucide-react'
-import { getDailyUsageHistory } from '../utils/usageTracking'
+import { BarChart3, Clock, Image, Zap, TrendingUp, Activity, Cpu } from 'lucide-react'
+import { getDailyUsageHistory, getUnifiedGenerationStats } from '../utils/usageTracking'
 import { useAuth } from '../auth/AuthContext.jsx'
 
 function StatsCards() {
   const { user } = useAuth()
   const [stats, setStats] = useState({
-    today: { generations: 0, time: 0 },
-    week: { generations: 0, time: 0 },
-    month: { generations: 0, time: 0 },
-    total: { generations: 0, time: 0 }
+    today: { generations: 0, time: 0, tokens: 0 },
+    week: { generations: 0, time: 0, tokens: 0 },
+    month: { generations: 0, time: 0, tokens: 0 },
+    total: { generations: 0, time: 0, tokens: 0 }
   })
   const [isLoading, setIsLoading] = useState(true)
 
@@ -22,36 +22,100 @@ function StatsCards() {
 
   const loadUsageStats = async () => {
     try {
-      const { success, data } = await getDailyUsageHistory(user.username, 30)
+      console.log('🔄 Loading unified generation stats with real tokens...')
+      console.log('User object:', user)
+      console.log('User ID for query:', user.id)
+      const { success, data } = await getUnifiedGenerationStats(user.id, 90)
       
       if (success && data) {
+        console.log('📊 Unified stats loaded:', data.length, 'days of data')
+        console.log('Sample day data:', data[0])
+        
         const today = new Date().toISOString().split('T')[0]
         const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
         const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-        const todayStats = data.find(d => d.usage_date === today) || { generations_count: 0, generation_time_seconds: 0 }
+        const todayStats = data.find(d => d.usage_date === today) || { 
+          generations_count: 0, 
+          generation_time_seconds: 0, 
+          total_tokens: 0 
+        }
         const weekStats = data.filter(d => d.usage_date >= weekAgo)
         const monthStats = data.filter(d => d.usage_date >= monthAgo)
 
         const weekTotals = weekStats.reduce((acc, curr) => ({
           generations: acc.generations + (curr.generations_count || 0),
-          time: acc.time + (curr.generation_time_seconds || 0)
-        }), { generations: 0, time: 0 })
+          time: acc.time + (curr.generation_time_seconds || 0),
+          tokens: acc.tokens + (curr.total_tokens || 0)
+        }), { generations: 0, time: 0, tokens: 0 })
 
         const monthTotals = monthStats.reduce((acc, curr) => ({
           generations: acc.generations + (curr.generations_count || 0),
-          time: acc.time + (curr.generation_time_seconds || 0)
-        }), { generations: 0, time: 0 })
+          time: acc.time + (curr.generation_time_seconds || 0),
+          tokens: acc.tokens + (curr.total_tokens || 0)
+        }), { generations: 0, time: 0, tokens: 0 })
+
+        console.log('📈 Stats calculated:', {
+          today: {
+            generations: todayStats.generations_count || 0,
+            time: todayStats.generation_time_seconds || 0,
+            tokens: todayStats.total_tokens || 0
+          },
+          week: weekTotals,
+          month: monthTotals
+        })
 
         setStats({
           today: {
             generations: todayStats.generations_count || 0,
-            time: todayStats.generation_time_seconds || 0
+            time: todayStats.generation_time_seconds || 0,
+            tokens: todayStats.total_tokens || 0
           },
           week: weekTotals,
           month: monthTotals,
           total: monthTotals // For now, using month as total
         })
+      } else {
+        console.log('❌ Failed to load unified stats, trying fallback...')
+        // Fallback to materialized view daily_usage_history if unified stats fail
+        const { success: fallbackSuccess, data: fallbackData } = await getDailyUsageHistory(user.id, 30)
+        if (fallbackSuccess && fallbackData?.length > 0) {
+          console.log('📊 Fallback data loaded:', fallbackData.length, 'records')
+          
+          const today = new Date().toISOString().split('T')[0]
+          const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          
+          const todayStats = fallbackData.find(d => d.usage_date === today) || { 
+            generations_count: 0, 
+            generation_time_seconds: 0, 
+            prompt_tokens: 0,
+            output_tokens: 0
+          }
+          
+          const weekStats = fallbackData.filter(d => d.usage_date >= weekAgo)
+          const weekTotals = weekStats.reduce((acc, curr) => ({
+            generations: acc.generations + (curr.generations_count || 0),
+            time: acc.time + (curr.generation_time_seconds || 0),
+            tokens: acc.tokens + (curr.prompt_tokens || 0) + (curr.output_tokens || 0)
+          }), { generations: 0, time: 0, tokens: 0 })
+          
+          const monthTotals = fallbackData.reduce((acc, curr) => ({
+            generations: acc.generations + (curr.generations_count || 0),
+            time: acc.time + (curr.generation_time_seconds || 0),
+            tokens: acc.tokens + (curr.prompt_tokens || 0) + (curr.output_tokens || 0)
+          }), { generations: 0, time: 0, tokens: 0 })
+          
+          setStats({
+            today: {
+              generations: todayStats.generations_count || 0,
+              time: todayStats.generation_time_seconds || 0,
+              tokens: (todayStats.prompt_tokens || 0) + (todayStats.output_tokens || 0)
+            },
+            week: weekTotals,
+            month: monthTotals,
+            total: monthTotals
+          })
+        }
       }
     } catch (error) {
       console.error('Error loading usage stats:', error)
@@ -65,6 +129,13 @@ function StatsCards() {
     if (seconds < 60) return `${Math.round(seconds)}s`
     if (seconds < 3600) return `${Math.round(seconds / 60)}m`
     return `${Math.round(seconds / 3600)}h`
+  }
+
+  const formatTokens = (tokens) => {
+    if (!tokens) return '0'
+    if (tokens < 1000) return tokens.toString()
+    if (tokens < 1000000) return `${(tokens / 1000).toFixed(1)}K`
+    return `${(tokens / 1000000).toFixed(1)}M`
   }
 
   const statsConfig = [
@@ -89,14 +160,14 @@ function StatsCards() {
       trend: '+5%'
     },
     {
-      title: 'Diesen Monat',
-      description: '30 Tage Übersicht',
-      icon: BarChart3,
-      value: stats.month.generations,
-      subtitle: `${formatTime(stats.month.time)} Zeit`,
-      gradient: 'from-purple-500 to-purple-600',
-      iconBg: 'bg-purple-100 text-purple-600',
-      trend: '+18%'
+      title: 'Token (Monat)',
+      description: 'Gemini API Tokens',
+      icon: Cpu,
+      value: formatTokens(stats.month.tokens),
+      subtitle: `${stats.month.tokens} gesamt`,
+      gradient: 'from-indigo-500 to-indigo-600',
+      iconBg: 'bg-indigo-100 text-indigo-600',
+      trend: '+22%'
     },
     {
       title: 'Effizienz',

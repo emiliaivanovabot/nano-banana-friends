@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { useState, useEffect } from 'react'
-import { getDailyUsageHistory } from '../utils/usageTracking'
+import { getDailyUsageHistory, getUnifiedGenerationStats, getTopAspectRatios } from '../utils/usageTracking'
 
 function DashboardPage() {
   const { user, logout } = useAuth()
@@ -10,10 +10,15 @@ function DashboardPage() {
   const [disabledToolName, setDisabledToolName] = useState('')
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
   const [stats, setStats] = useState({
-    today: { images: 0, time: 0, tokens: 0 },
-    week: { images: 0, time: 0, tokens: 0 },
+    today: { images: 0, time: 0, tokens: 0, cost: 0, count_1k: 0, count_2k: 0, count_4k: 0 },
+    week: { images: 0, time: 0, tokens: 0, cost: 0, count_1k: 0, count_2k: 0, count_4k: 0 },
     month: { cost: 0 }
   })
+  const [aspectRatios, setAspectRatios] = useState({
+    today: [],
+    week: []
+  })
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Mobile detection
   useEffect(() => {
@@ -24,54 +29,109 @@ function DashboardPage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  useEffect(() => {
-    const loadStats = async () => {
-      if (user?.username) {
-        try {
-          const usageData = await getDailyUsageHistory(user.username, 30)
-          if (usageData.success) {
-            const today = new Date().toISOString().split('T')[0]
-            const todayData = usageData.data.find(d => d.usage_date === today)
-            
-            // Calculate weekly stats
-            const weekStart = new Date()
-            weekStart.setDate(weekStart.getDate() - 7)
-            const weekData = usageData.data.filter(d => 
-              new Date(d.usage_date) >= weekStart
-            )
-            
-            const weekStats = weekData.reduce((acc, day) => ({
-              images: acc.images + (day.generations_count || 0),
-              time: acc.time + (day.generation_time_seconds || 0),
-              tokens: acc.tokens + (day.prompt_tokens || 0) + (day.output_tokens || 0)
-            }), { images: 0, time: 0, tokens: 0 })
+  const loadStats = async () => {
+    if (user?.id) {
+      try {
+        // Use materialized view for real-time token data
+        const usageData = await getDailyUsageHistory(user.id, 30)
+        if (usageData.success) {
+          const today = new Date().toISOString().split('T')[0]
+          const todayData = usageData.data.find(d => d.usage_date === today)
+          
+          console.log('🔍 Dashboard debug - today:', today)
+          console.log('🔍 Dashboard debug - todayData:', todayData)
+          console.log('🔍 Dashboard debug - all data:', usageData.data)
+          
+          // Calculate weekly stats
+          const weekStart = new Date()
+          weekStart.setDate(weekStart.getDate() - 7)
+          const weekData = usageData.data.filter(d => 
+            new Date(d.usage_date) >= weekStart
+          )
+          
+          console.log('🔍 Dashboard debug - weekData:', weekData)
+          console.log('🔍 Dashboard debug - weekStart:', weekStart)
+          
+          const weekStats = weekData.reduce((acc, day) => ({
+            images: acc.images + (day.generations_count || 0),
+            time: acc.time + (day.generation_time_seconds || 0),
+            tokens: acc.tokens + (day.prompt_tokens || 0) + (day.output_tokens || 0),
+            cost: acc.cost + (parseFloat(day.cost_usd) || 0),
+            count_1k: acc.count_1k + (day.count_1k || 0),
+            count_2k: acc.count_2k + (day.count_2k || 0),
+            count_4k: acc.count_4k + (day.count_4k || 0)
+          }), { images: 0, time: 0, tokens: 0, cost: 0, count_1k: 0, count_2k: 0, count_4k: 0 })
+          
+          console.log('🔍 Dashboard debug - weekStats calculated:', weekStats)
 
-            // Calculate monthly cost
-            const monthCost = usageData.data.reduce((acc, day) => 
-              acc + (parseFloat(day.cost_usd) || 0), 0
-            )
+          // Calculate daily cost (today)
+          const todayCost = parseFloat(todayData?.cost_usd) || 0
+          
+          // Calculate monthly cost  
+          const monthCost = usageData.data.reduce((acc, day) => 
+            acc + (parseFloat(day.cost_usd) || 0), 0
+          )
 
-            setStats({
-              today: {
-                images: todayData?.generations_count || 0,
-                time: Math.round((todayData?.generation_time_seconds || 0) / 60),
-                tokens: Math.round(((todayData?.prompt_tokens || 0) + (todayData?.output_tokens || 0)) / 1000)
-              },
-              week: {
-                images: weekStats.images,
-                time: Math.round(weekStats.time / 60),
-                tokens: Math.round(weekStats.tokens / 1000)
-              },
-              month: {
-                cost: monthCost * 1.1 // Convert USD to EUR approximately
-              }
-            })
-          }
-        } catch (error) {
-          console.error('Error loading stats:', error)
+          setStats({
+            today: {
+              images: todayData?.generations_count || 0,
+              time: Math.round((todayData?.generation_time_seconds || 0) / 60),
+              tokens: Math.round(((todayData?.prompt_tokens || 0) + (todayData?.output_tokens || 0)) / 1000),
+              cost: todayCost * 1.1, // Convert USD to EUR approximately
+              count_1k: todayData?.count_1k || 0,
+              count_2k: todayData?.count_2k || 0,
+              count_4k: todayData?.count_4k || 0
+            },
+            week: {
+              images: weekStats.images,
+              time: Math.round(weekStats.time / 60),
+              tokens: Math.round(weekStats.tokens / 1000),
+              cost: weekStats.cost * 1.1, // Convert USD to EUR approximately  
+              count_1k: weekStats.count_1k,
+              count_2k: weekStats.count_2k,
+              count_4k: weekStats.count_4k
+            },
+            month: {
+              cost: monthCost * 1.1 // Convert USD to EUR approximately
+            }
+          })
+
+          // Fetch aspect ratios for today and week
+          const todayRatios = await getTopAspectRatios(user.id, 1, 2) // 1 day, top 2
+          const weekRatios = await getTopAspectRatios(user.id, 7, 2) // 7 days, top 2
+          
+          setAspectRatios({
+            today: todayRatios.success ? todayRatios.data : [],
+            week: weekRatios.success ? weekRatios.data : []
+          })
         }
+      } catch (error) {
+        console.error('Error loading stats:', error)
       }
     }
+  }
+
+  const handleRefreshData = async () => {
+    setIsRefreshing(true)
+    try {
+      // Call refresh API endpoint
+      const response = await fetch('/src/pages/api/refresh-view.js', { method: 'POST' })
+      if (response.ok) {
+        console.log('✅ Materialized view refreshed')
+      }
+      
+      // Reload stats regardless
+      await loadStats()
+    } catch (error) {
+      console.error('Error refreshing data:', error)
+      // Still try to reload stats
+      await loadStats()
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
+  useEffect(() => {
     loadStats()
   }, [user])
 
@@ -89,6 +149,175 @@ function DashboardPage() {
     if (!username) return 'User'
     const firstName = username.split('.')[0] || username
     return firstName.charAt(0).toUpperCase() + firstName.slice(1)
+  }
+
+  const ImageDetailsSection = ({ stats, aspectRatios, period }) => {
+    const maxCount = Math.max(stats.count_4k, stats.count_2k, stats.count_1k) || 1
+    
+    return (
+      <div style={{
+        background: 'hsl(var(--muted) / 0.05)',
+        border: '1px solid hsl(var(--border) / 0.3)',
+        borderRadius: '12px',
+        padding: isMobile ? '12px' : '16px',
+        marginTop: '12px',
+        transition: 'all 0.3s ease'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'hsl(var(--muted) / 0.08)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'hsl(var(--muted) / 0.05)'
+      }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          marginBottom: '12px'
+        }}>
+          <span style={{ fontSize: '14px', opacity: 0.7 }}>🖼️</span>
+          <span style={{
+            fontSize: isMobile ? '13px' : '14px',
+            fontWeight: '600',
+            color: 'hsl(var(--foreground))',
+            letterSpacing: '0.25px'
+          }}>
+            Bild Details
+          </span>
+        </div>
+        
+        {/* Resolution Breakdown */}
+        <div style={{ marginBottom: aspectRatios?.length > 0 ? '12px' : '0' }}>
+          {/* 4K Row */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '8px'
+          }}>
+            <span style={{
+              fontSize: '13px',
+              color: 'hsl(var(--muted-foreground))',
+              fontWeight: '500'
+            }}>{isMobile ? '4K' : '4K Ultra'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{
+                fontSize: '15px',
+                fontWeight: '700',
+                color: 'hsl(280 70% 60%)',
+                minWidth: '20px',
+                textAlign: 'right'
+              }}>{stats.count_4k}</span>
+              <div style={{
+                width: `${Math.min((stats.count_4k / maxCount) * 60, 60)}px`,
+                height: isMobile ? '4px' : '6px',
+                background: 'linear-gradient(90deg, hsl(280 70% 60%), hsl(280 70% 70%))',
+                borderRadius: '3px',
+                boxShadow: '0 2px 4px hsl(280 70% 60% / 0.2)',
+                transition: 'filter 0.2s ease'
+              }} />
+            </div>
+          </div>
+          
+          {/* 2K Row */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '8px'
+          }}>
+            <span style={{
+              fontSize: '13px',
+              color: 'hsl(var(--muted-foreground))',
+              fontWeight: '500'
+            }}>{isMobile ? '2K' : '2K Qualität'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{
+                fontSize: '15px',
+                fontWeight: '700',
+                color: 'hsl(47 100% 65%)',
+                minWidth: '20px',
+                textAlign: 'right'
+              }}>{stats.count_2k}</span>
+              <div style={{
+                width: `${Math.min((stats.count_2k / maxCount) * 60, 60)}px`,
+                height: isMobile ? '4px' : '6px',
+                background: 'linear-gradient(90deg, hsl(47 100% 65%), hsl(47 100% 75%))',
+                borderRadius: '3px',
+                boxShadow: '0 2px 4px hsl(47 100% 65% / 0.2)',
+                transition: 'filter 0.2s ease'
+              }} />
+            </div>
+          </div>
+          
+          {/* 1K Row */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <span style={{
+              fontSize: '13px',
+              color: 'hsl(var(--muted-foreground))',
+              fontWeight: '500'
+            }}>{isMobile ? '1K' : '1K Standard'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{
+                fontSize: '15px',
+                fontWeight: '700',
+                color: 'hsl(var(--primary))',
+                minWidth: '20px',
+                textAlign: 'right'
+              }}>{stats.count_1k}</span>
+              <div style={{
+                width: `${Math.min((stats.count_1k / maxCount) * 60, 60)}px`,
+                height: isMobile ? '4px' : '6px',
+                background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.8))',
+                borderRadius: '3px',
+                boxShadow: '0 2px 4px hsl(var(--primary) / 0.2)',
+                transition: 'filter 0.2s ease'
+              }} />
+            </div>
+          </div>
+        </div>
+        
+        {/* Aspect Ratios */}
+        {aspectRatios?.length > 0 && (
+          <div>
+            <span style={{
+              fontSize: '12px',
+              color: 'hsl(var(--muted-foreground))',
+              marginBottom: '6px',
+              display: 'block'
+            }}>{isMobile ? 'Formate' : 'Beliebte Formate'}</span>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {aspectRatios.map((ratio, index) => (
+                <span key={index} style={{
+                  background: 'hsl(var(--secondary) / 0.2)',
+                  color: 'hsl(var(--secondary-foreground))',
+                  borderRadius: '20px',
+                  padding: '4px 12px',
+                  fontSize: isMobile ? '11px' : '12px',
+                  fontWeight: '500',
+                  border: '1px solid hsl(var(--border) / 0.5)',
+                  transition: 'transform 0.2s ease',
+                  cursor: 'default'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)'
+                }}>
+                  {ratio.aspect_ratio} ({ratio.percentage}%)
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )
   }
 
   const handleDisabledToolClick = (toolName) => {
@@ -203,6 +432,40 @@ function DashboardPage() {
             gap: '12px',
             alignItems: 'center'
           }}>
+            <button
+              onClick={handleRefreshData}
+              disabled={isRefreshing}
+              style={{
+                background: isRefreshing ? 'hsl(var(--muted) / 0.5)' : 'hsl(280 70% 60% / 0.2)',
+                border: `1px solid ${isRefreshing ? 'hsl(var(--border))' : 'hsl(280 70% 60%)'}`,
+                borderRadius: '12px',
+                padding: '12px',
+                color: isRefreshing ? 'hsl(var(--muted-foreground))' : 'hsl(280 70% 60%)',
+                fontSize: '18px',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '48px',
+                height: '48px',
+                cursor: isRefreshing ? 'not-allowed' : 'pointer'
+              }}
+              onMouseEnter={(e) => {
+                if (!isRefreshing) {
+                  e.target.style.background = 'hsl(280 70% 60% / 0.3)'
+                  e.target.style.transform = 'scale(1.05)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isRefreshing) {
+                  e.target.style.background = 'hsl(280 70% 60% / 0.2)'
+                  e.target.style.transform = 'scale(1)'
+                }
+              }}
+              title={isRefreshing ? 'Daten werden aktualisiert...' : 'Token-Daten aktualisieren'}
+            >
+              {isRefreshing ? '🔄' : '🔄'}
+            </button>
             <Link 
               to="/settings"
               style={{
@@ -304,10 +567,22 @@ function DashboardPage() {
               <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Zeit:</span>
               <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--secondary))' }}>{stats.today.time} min</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
               <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Tokens:</span>
               <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--accent))' }}>{stats.today.tokens}K</span>
             </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Kosten:</span>
+              <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--destructive))' }}>€{(stats.today.cost || 0).toFixed(2)}</span>
+            </div>
+            
+            
+            {/* Enhanced Image Details Section */}
+            <ImageDetailsSection 
+              stats={stats.today} 
+              aspectRatios={aspectRatios.today}
+              period="today"
+            />
           </div>
 
             {/* Diese Woche */}
@@ -336,10 +611,22 @@ function DashboardPage() {
                 <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Zeit:</span>
                 <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--secondary))' }}>{stats.week.time} min</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Tokens:</span>
                 <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--accent))' }}>{stats.week.tokens}K</span>
               </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Kosten:</span>
+                <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--destructive))' }}>€{(stats.week.cost || 0).toFixed(2)}</span>
+              </div>
+              
+              
+              {/* Enhanced Image Details Section */}
+              <ImageDetailsSection 
+                stats={stats.week} 
+                aspectRatios={aspectRatios.week}
+                period="week"
+              />
             </div>
 
             {/* Monat - Desktop: Third column, Mobile: Hidden here */}

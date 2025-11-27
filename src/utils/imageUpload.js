@@ -261,10 +261,101 @@ const convertToOptimalFormat = async (base64Image, quality = 0.8) => {
  * @param {number} imageIndex - Index for batch uploads (0 for single)
  * @param {string} resolution - '1K', '2K', or '4K' (optional)
  * @param {number} generationTimeSeconds - Generation time for batch (optional, only for first image)
+ * @param {Object} usageMetadata - Token usage data from Gemini API (optional)
+ * @param {string} aspectRatio - '9:16', '16:9', '4:3', '3:4', '2:3', '3:2' (optional)
  * @returns {Promise<Object>} Complete upload result
  */
-export const uploadAndSaveImage = async (base64Image, username, generationType, promptUsed, imageIndex = 0, resolution = '4K', generationTimeSeconds = null) => {
+export const uploadAndSaveImage = async (base64Image, username, generationType, promptUsed, imageIndex = 0, resolution = '4K', generationTimeSeconds = null, usageMetadata = null, aspectRatio = '9:16') => {
   try {
+    console.log('🔥 UPLOADANDSAVEIMAGE CALLED WITH:', { username, generationType, imageIndex, generationTimeSeconds, hasUsageMetadata: !!usageMetadata })
+    
+    // 🚀 PRIORITY: Store token data FIRST before upload (in case upload fails)
+    if (imageIndex === 0 && usageMetadata) {
+      console.log('🔍 DEBUG usageMetadata structure:', usageMetadata)
+      console.log('📊 Storing real token data in generations table:', {
+        promptTokens: usageMetadata.promptTokenCount || 0,
+        outputTokens: usageMetadata.candidatesTokenCount || 0,
+        totalTokens: usageMetadata.totalTokenCount || 0
+      })
+      
+      try {
+        // Create admin client for user lookup (bypasses RLS)
+        const adminSupabase = createClient(
+          import.meta.env.VITE_SUPABASE_URL,
+          import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+        )
+        
+        const { data: userData } = await adminSupabase
+          .from('users')
+          .select('id')
+          .eq('username', username)
+          .single()
+          
+        console.log('👤 User lookup result:', userData)
+        
+        if (userData) {
+          const insertPayload = {
+            id: crypto.randomUUID(), // Manual UUID generation
+            user_id: userData.id,
+            prompt: promptUsed,
+            status: 'completed',
+            resolution: resolution,
+            aspect_ratio: aspectRatio, // Use actual aspect ratio parameter
+            generation_time_seconds: Math.round(generationTimeSeconds || 0),
+            gemini_metadata: {
+              usageMetadata: usageMetadata,
+              model: 'gemini-3-pro-image-preview',
+              generation_type: generationType
+            },
+            completed_at: new Date().toISOString()
+          }
+          
+          console.log('🔍 ABOUT TO INSERT:', insertPayload)
+          console.log('🔍 ASPECT RATIO CHECK:', { aspectRatio, insertedAspectRatio: insertPayload.aspect_ratio })
+          
+          const { data: insertData, error: insertError } = await supabase
+            .from('generations')
+            .insert(insertPayload)
+            .select() // ← WICHTIG: select() hinzugefügt um data zurück zu bekommen
+          
+          console.log('🔍 INSERT RESULT:', { 
+            data: insertData, 
+            error: insertError,
+            count: insertData?.length || 0
+          })
+          
+          if (insertError) {
+            console.error('❌ Failed to insert generation record:', insertError)
+            throw insertError
+          }
+          
+          if (!insertData || insertData.length === 0) {
+            console.error('❌ Insert "successful" but no data returned - RLS problem?')
+            throw new Error('Insert failed - no data returned (possible RLS issue)')
+          }
+          
+          console.log('✅ Generation data ACTUALLY stored!', insertData[0])
+          
+          // 🚀 CRITICAL FIX: Refresh materialized view to show new data in dashboard  
+          // Also refreshes corrected pricing calculation
+          try {
+            const { error: refreshError } = await adminSupabase
+              .rpc('refresh_daily_usage_stats')
+            
+            if (refreshError) {
+              console.error('❌ Failed to refresh daily usage stats:', refreshError)
+            } else {
+              console.log('✅ Daily usage materialized view refreshed with corrected pricing!')
+            }
+          } catch (refreshError) {
+            console.error('❌ Error refreshing materialized view:', refreshError)
+          }
+        }
+      } catch (error) {
+        console.error('❌ Failed to store generation data:', error)
+      }
+    }
+    
     console.log('🚀 Starting direct upload process with AVIF conversion...')
     
     // Check original size
@@ -319,18 +410,8 @@ export const uploadAndSaveImage = async (base64Image, username, generationType, 
       fileSizeBytes
     )
     
-    // Update daily usage statistics (only for first image in batch to avoid duplicates)
-    if (imageIndex === 0 && generationTimeSeconds) {
-      const generationCount = generationType === 'single' ? 1 : 
-                              generationType === '4x' ? 4 : 10
-      
-      await updateDailyUsage(
-        username,
-        resolution,
-        generationCount,
-        generationTimeSeconds
-      )
-    }
+    
+    console.log('✅ Upload complete - statistics handled by materialized view')
     
     console.log('✅ Direct upload process successful!', {
       filename,

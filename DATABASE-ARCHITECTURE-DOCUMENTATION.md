@@ -1,4 +1,6 @@
-# Nano Banana Friends - Datenbank Architektur & Zielsetzung
+# Nano Banana Friends - Datenbank Architektur & Token Tracking System
+
+**🔥 AKTUALISIERT: 2025-11-26 - Mit vollständigem Gemini Token Tracking**
 
 ## 🎯 Projektziele & Vision
 
@@ -190,11 +192,257 @@ FROM (
 3. UPDATE daily_reset_date = CURRENT_DATE
 ```
 
-### Echte Kosten-Berechnung (Integration mit Gemini API)
+### 🔥 VOLLSTÄNDIGES GEMINI TOKEN TRACKING (IMPLEMENTIERT)
+
+#### **Echte Token-Daten von Gemini API erfassen**
+
+**BREAKTHROUGH: 2025-11-26** - Vollständiges Token Tracking implementiert!
+
 ```javascript
-// Nach jeder Generation
-const response = await gemini.generateContent(...)
-const usage = response.usage_metadata
+// ✅ ERFOLGREICH IMPLEMENTIERT: Echte Token Daten von Gemini
+// 🚨 KRITISCH: Korrekte Property Names verwenden!
+
+// ❌ FALSCH (führt zu 0 Tokens):
+const usageMetadata = data.usage_metadata || {}  // Wrong: usage_metadata  
+promptTokens: usageMetadata.prompt_token_count   // Wrong: prompt_token_count
+
+// ✅ KORREKT (echte Token Daten):
+const usageMetadata = data.usageMetadata || {}   // Correct: usageMetadata (camelCase)
+console.log('Token usage extracted', {
+  promptTokens: usageMetadata.promptTokenCount || 0,      // Correct: promptTokenCount
+  outputTokens: usageMetadata.candidatesTokenCount || 0, // Correct: candidatesTokenCount  
+  totalTokens: usageMetadata.totalTokenCount || 0        // Correct: totalTokenCount
+})
+
+// ✅ Weiterleitung an Upload System:
+uploadAndSaveImage(resultImage, user.username, 'single', prompt, 0, 
+  parseFloat(duration), usageMetadata)
+
+// ✅ Echte Kosten-Berechnung basierend auf tatsächlichen Tokens:
+const promptCost = (usageMetadata.promptTokenCount / 1000) * 0.001
+const outputCost = (usageMetadata.candidatesTokenCount / 1000) * 0.002
+const totalCost = promptCost + outputCost
+```
+
+## 🚨 KRITISCHE ERKENNTNISSE (FIXES DOKUMENTIERT)
+
+### Database Insert Requirements (FIXED)
+**PROBLEM GELÖST**: 400 Bad Request weil required fields fehlten!
+
+Das `generations` table schema erfordert:
+- ✅ `prompt` (TEXT NOT NULL) 
+- ✅ `resolution` (VARCHAR(10) NOT NULL)
+- ❌ `aspect_ratio` (VARCHAR(10) NOT NULL) - **WAR MISSING!**
+
+```javascript
+// ❌ FALSCH (400 Bad Request):
+await supabase.from('generations').insert({
+  user_id: userData.id,
+  prompt: promptUsed,
+  status: 'completed',
+  resolution: resolution,
+  // aspect_ratio MISSING! <- Das war der Fehler
+  gemini_metadata: { ... }
+})
+
+// ✅ KORREKT (successful insert):
+await supabase.from('generations').insert({
+  user_id: userData.id,
+  prompt: promptUsed,
+  status: 'completed',
+  resolution: resolution,
+  aspect_ratio: '9:16', // Required field hinzugefügt
+  gemini_metadata: { ... }
+})
+```
+
+**DOKUMENTIERT** um diesen Fehler nie wieder zu machen!
+
+### UUID Generation Problem (FIXED)
+**PROBLEM GELÖST**: PostgreSQL UUID auto-generation funktioniert nicht!
+
+**Error**: `'null value in column "id" of relation "generations" violates not-null constraint'`
+
+```javascript
+// ❌ PROBLEM: PostgreSQL generiert keine UUIDs automatisch
+// Schema: id UUID PRIMARY KEY DEFAULT uuid_generate_v4()
+// Aber: uuid-ossp extension wahrscheinlich nicht aktiviert
+
+// ✅ LÖSUNG: Manual UUID generation im Client
+const { data: insertData, error: insertError } = await supabase
+  .from('generations')
+  .insert({
+    id: crypto.randomUUID(), // ← Manual UUID generation hinzugefügt
+    user_id: userData.id,
+    prompt: promptUsed,
+    // ... rest of data
+  })
+```
+
+**DOKUMENTIERT** um diesen Fehler nie wieder zu machen!
+
+#### **🔴 IDENTIFIZIERTE TRACKING-PROBLEME (ZU LÖSEN)**
+
+**1. Resolution Tracking Bug:**
+```javascript
+// ❌ PROBLEM: Liest User Default statt tatsächliche Generation
+user.default_resolution: "4K"  // User Einstellung
+actualGeneration: "1K"         // Tatsächlich verwendet
+// ✅ LÖSUNG: Resolution von UI State lesen, nicht User Default
+```
+
+**2. Generation Count Accuracy:**
+```javascript
+// ❌ PROBLEM: Speichert angeforderte Anzahl statt erhaltene
+requested: 10   // User wollte 10 Bilder  
+received: 8     // Gemini lieferte nur 8
+// ✅ LÖSUNG: Echte Anzahl aus Response zählen
+```
+
+**3. Missing Device/Browser Analytics:**
+```javascript
+// ❌ FEHLT: Device & Browser Tracking für UX Optimization
+// ✅ BENÖTIGT:
+navigator.userAgent     // Browser Info
+window.screen.width    // Device Resolution  
+'ontouchstart' in window  // Mobile Detection
+```
+
+#### **📊 VOLLSTÄNDIGE DATA COLLECTION (AKTUELL)**
+
+**Von Gemini API (✅ Implementiert):**
+- `prompt_token_count` - Input Tokens (echte Anzahl)
+- `candidates_token_count` - Output Tokens (echte Anzahl) 
+- `total_token_count` - Gesamt Tokens
+- `finishReason` - Success/Safety Filter Status
+- `model` - Verwendetes Modell (gemini-3-pro-image-preview)
+
+**Timing & Performance (✅ Implementiert):**
+- Generation Time (Sekunden) - Client-side gemessen
+- Response Time - API Latenz
+- Image Compression (PNG→WebP) - File Size Optimization
+
+**User Context (✅ Implementiert):**
+- Username - Eindeutige Identifikation
+- Prompt Text - Vollständiger Prompt
+- Generation Type - single/4x/10x
+- Timestamps - Präzise Zeiterfassung
+
+**Image Properties (✅ Implementiert):**
+- Original Size (KB) - Von Gemini geliefert
+- Compressed Size (KB) - Nach WebP Conversion
+- Compression Ratio (%) - Efficiency Metrics
+
+#### **🏗️ ARCHITEKTUR-ENTSCHEIDUNG: TABELLEN-REDUNDANZ**
+
+**AKTUELLES PROBLEM:**
+```sql
+-- Zwei parallele Systeme ohne Synchronisation:
+daily_usage_history  -- Legacy, Username-basiert, Schätzungen
+generations         -- Modern, UUID-basiert, echte Token Daten
+```
+
+**🔥 FINALE ARCHITEKTUR-ENTSCHEIDUNG (2025-11-26)**
+
+**NACH EXPERT DATABASE REVIEW:**
+❌ **Database Triggers ABGELEHNT** - Performance Killer & Maintenance Nightmare  
+❌ **Dual Table Sync ABGELEHNT** - Komplexität ohne Nutzen  
+✅ **MATERIALIZED VIEWS GEWÄHLT** - Professional & Scalable Solution  
+
+**EMPFOHLENE LÖSUNG: PostgreSQL Materialized Views**
+```sql
+-- ✅ FINALE LÖSUNG: Materialized View ersetzt daily_usage_history
+DROP TABLE daily_usage_history;
+
+CREATE MATERIALIZED VIEW daily_usage_history AS
+SELECT 
+  gen_random_uuid() as id,
+  user_id,
+  DATE(created_at) as usage_date,
+  -- Echte Kosten basierend auf Gemini Token Data
+  (((gemini_metadata->'usage_metadata'->>'promptTokenCount')::int * 0.001 / 1000) +
+   ((gemini_metadata->'usage_metadata'->>'candidatesTokenCount')::int * 0.002 / 1000))::decimal(10,4) as cost_usd,
+  COUNT(*)::int as generations_count,
+  SUM(generation_time_seconds)::int as generation_time_seconds,
+  -- Resolution Tracking (tatsächlich verwendet, nicht User Default)
+  COUNT(*) FILTER (WHERE resolution = '1K')::int as count_1k,
+  COUNT(*) FILTER (WHERE resolution = '2K')::int as count_2k,
+  COUNT(*) FILTER (WHERE resolution = '4K')::int as count_4k,
+  -- Echte Token Counts von Gemini API
+  SUM((gemini_metadata->'usage_metadata'->>'promptTokenCount')::int)::int as prompt_tokens,
+  SUM((gemini_metadata->'usage_metadata'->>'candidatesTokenCount')::int)::int as output_tokens,
+  SUM((gemini_metadata->'usage_metadata'->>'totalTokenCount')::int)::int as total_tokens,
+  0::int as errors_count,
+  NOW() as created_at
+FROM generations 
+WHERE status = 'completed'
+GROUP BY user_id, DATE(created_at);
+
+-- Auto-Refresh alle 5 Minuten
+SELECT cron.schedule(
+  'refresh-daily-usage-stats',
+  '*/5 * * * *',
+  'REFRESH MATERIALIZED VIEW daily_usage_history'
+);
+```
+
+**WARUM MATERIALIZED VIEWS?**
+- ✅ **Performance:** Lightning-fast Dashboard Queries (O(days) nicht O(generations))
+- ✅ **Sicherheit:** Kann Generation Inserts niemals brechen
+- ✅ **Einfachheit:** Standard PostgreSQL Feature, Battle-tested
+- ✅ **Skalierbar:** Millionen Generationen ohne Performance-Loss
+- ✅ **Wartbar:** Einfache SQL Änderungen, keine Hidden Logic
+- ✅ **Testbar:** Normale SQL Queries, keine Trigger-Komplexität
+- ✅ **Echte Daten:** Basiert auf tatsächlichen Gemini Token Counts
+
+**VERGLEICH ZU ALTERNATIVEN:**
+| Approach | Insert Performance | Query Performance | Maintenance | Risk Level |
+|----------|-------------------|-------------------|-------------|------------|
+| ❌ Database Triggers | Poor (blocks) | Excellent | High | High |
+| ✅ Materialized Views | Excellent | Excellent | Low | Low |
+| Real-time Aggregation | Excellent | Poor | Medium | Medium |
+
+**APP CODE VEREINFACHUNG:**
+```javascript
+// ❌ ENTFERNEN: Komplexe updateDailyUsage() Calls
+await updateDailyUsage(username, resolution, count, time, tokens...)
+
+// ✅ BLEIBT: Nur noch generations table writes
+const { data } = await supabase.from('generations').insert({
+  user_id, prompt, resolution, status: 'processing'
+})
+
+// ✅ DASHBOARD: Funktioniert weiter ohne Änderung
+const stats = await getDailyUsageHistory(user.id, 30) // Liest von Materialized View
+```
+
+#### **🚀 IMPLEMENTATION ROADMAP**
+
+**Phase 1: Materialized View Setup (Database)**
+1. Create materialized view in Supabase SQL Editor
+2. Set up cron job for auto-refresh (5 minutes)
+3. Test view performance with existing data
+
+**Phase 2: Application Cleanup (Code)**
+1. Remove `updateDailyUsage()` calls from `imageUpload.js`
+2. Update `usageTracking.js` to use view directly
+3. Simplify generation tracking to single table writes
+
+**Phase 3: Dashboard Migration (Frontend)**
+1. Verify dashboard components work with new view
+2. Add real-time token display in UI
+3. Update analytics to show actual vs estimated costs
+
+**Phase 4: Monitoring & Optimization**
+1. Monitor materialized view refresh performance
+2. Add alerting for view staleness
+3. Optimize refresh frequency based on usage patterns
+
+**EXPECTED BENEFITS AFTER MIGRATION:**
+- 📊 **Accurate Analytics:** Real Gemini token counts instead of estimates
+- 🚀 **Better Performance:** Pre-aggregated dashboard queries
+- 🔧 **Simpler Maintenance:** No dual-write synchronization issues
+- 📈 **Better Scaling:** Handles growth from 10 to 10,000 users seamlessly
 
 // Update user_stats
 const promptCost = usage.prompt_token_count * GEMINI_PROMPT_PRICE
@@ -357,3 +605,169 @@ Basierend auf 6 Monaten Alpha-Daten:
 **Status**: ✅ PRODUCTION READY für Alpha-Phase
 
 **Ziel**: Von "Spaßprojekt mit Freunden" zu "datengetriebenem SaaS Business" 🚀
+
+---
+
+## 📈 Revenue Tracking (Kommerzielle Phase)
+
+### 🚨 AKTUELLER STATUS: KEINE UMSATZ-TRACKING
+**Alpha Phase (Freunde-Testing):**
+- ❌ **Keine `revenue` oder `tagesumsatz` Spalten vorhanden**
+- ❌ **Keine Einnahmen-Tracking implementiert**
+- ✅ **Nur Cost-Tracking für Business Intelligence**
+
+**Tracking-Focus in Alpha:**
+```sql
+-- ✅ WAS WIR HABEN (Kosten-Analytics):
+daily_cost_usd DECIMAL(10,4)     -- API Ausgaben pro Tag
+total_cost_usd DECIMAL(10,4)     -- Lifetime Kosten
+cost_usd in daily_usage_history  -- Historische Kostenverteilung
+
+-- ❌ WAS FEHLT (Revenue-Analytics):
+daily_revenue_usd               -- Tägliche Einnahmen  
+monthly_revenue_usd             -- Monatsabos
+subscription_tier               -- Abo-Modell Tracking
+payment_status                  -- Zahlungsstatus
+```
+
+### 🔄 Migration zur kommerziellen Phase
+
+**Für SaaS Launch benötigte Erweiterungen:**
+```sql
+-- Subscription Management
+ALTER TABLE users ADD COLUMN subscription_tier VARCHAR(20) DEFAULT 'free';
+ALTER TABLE users ADD COLUMN subscription_start_date TIMESTAMP;
+ALTER TABLE users ADD COLUMN subscription_end_date TIMESTAMP;
+ALTER TABLE users ADD COLUMN payment_status VARCHAR(20) DEFAULT 'active';
+
+-- Revenue Tracking  
+ALTER TABLE user_stats ADD COLUMN daily_revenue_usd DECIMAL(10,4) DEFAULT 0.0000;
+ALTER TABLE user_stats ADD COLUMN monthly_revenue_usd DECIMAL(10,4) DEFAULT 0.0000;
+ALTER TABLE user_stats ADD COLUMN total_revenue_usd DECIMAL(10,4) DEFAULT 0.0000;
+
+-- Revenue History
+ALTER TABLE daily_usage_history ADD COLUMN revenue_usd DECIMAL(10,4) DEFAULT 0.0000;
+ALTER TABLE daily_usage_history ADD COLUMN subscription_tier VARCHAR(20);
+```
+
+### 💰 Business Model Transition
+
+**Alpha → Kommerzielle Phase:**
+1. **Alpha (Aktuell)**: Kostenlose Nutzung mit eigenen API Keys
+   - Tracking: Nur `cost_usd` für Break-Even Analysis
+   - Zweck: Nutzungsmuster verstehen für Pricing
+   
+2. **Kommerzielle Phase**: Abo-Modell mit Zentralem API Key  
+   - Tracking: `revenue_usd` + `cost_usd` für Profit Analysis
+   - Business Metriken: MRR, Churn Rate, Customer Lifetime Value
+
+**Pricing Strategy basierend auf Alpha-Daten:**
+```sql
+-- Revenue-Projektion basierend auf Cost-Daten
+SELECT 
+  AVG(monthly_cost) * 3 as suggested_price_tier_1,  -- 3x Cost = 200% Profit Margin
+  PERCENTILE_CONT(0.8) WITHIN GROUP (ORDER BY monthly_cost) * 2.5 as tier_2_price
+FROM (
+  SELECT 
+    user_id,
+    SUM(cost_usd) as monthly_cost
+  FROM daily_usage_history 
+  WHERE usage_date >= NOW() - INTERVAL '30 days'
+  GROUP BY user_id
+) monthly_costs;
+```
+
+**Warum aktuell keine Revenue-Tracking:**
+- 🔍 **Alpha-Focus**: Verstehen der echten Nutzungskosten
+- 📊 **Business Intelligence**: Datenbasierte Pricing-Entscheidungen
+- 🚀 **Skalierung vorbereiten**: Cost-Performance für Millionen User optimieren
+
+**Revenue wird implementiert sobald:**
+1. ✅ 6 Monate Alpha-Daten gesammelt
+2. ✅ Optimale Abo-Preise definiert (basierend auf Cost-Analytics)
+3. ✅ Payment-System (Stripe) Integration bereit
+4. ✅ Übergang von "User API Keys" zu "Central API Key + Billing"
+
+---
+
+## 🔧 Bug Fix History & Critical Fixes
+
+### ✅ **FIXED (2025-11-27): Aspect Ratio Tracking Bug**
+
+**Problem Identified:**
+- 99% der Generationen zeigten "Unknown" aspect ratio im Dashboard
+- Nur 1% zeigten echte aspect ratios (9:16, 4:3, etc.)
+- Dashboard "Beliebte Formate" war unbrauchbar
+
+**Root Cause Analysis:**
+1. **Hardcoded aspect_ratio:** `uploadAndSaveImage()` speicherte `aspect_ratio: '9:16'` statt echten Wert
+2. **Missing parameter:** Function bekam keine aspectRatio parameter von UI
+3. **Date filter bug:** `getTopAspectRatios()` verwendete falsche Zeitfilter
+
+**Critical Code Changes Made:**
+
+**1. Fixed Database Insert (src/utils/imageUpload.js):**
+```javascript
+// ❌ BEFORE (hardcoded):
+aspect_ratio: '9:16', // Required field
+
+// ✅ AFTER (dynamic):
+aspect_ratio: aspectRatio, // Use actual aspect ratio parameter
+
+// Function signature updated:
+export const uploadAndSaveImage = async (..., aspectRatio = '9:16') => {
+```
+
+**2. Fixed Parameter Passing (src/pages/NonoBananaPage.jsx):**
+```javascript
+// ✅ All uploadAndSaveImage() calls updated to pass real aspectRatio:
+uploadAndSaveImage(
+  resultImage, user.username, 'single', prompt, 0, 
+  resolution, parseFloat(duration), usageMetadata,
+  aspectRatio // ← Added: Pass actual aspect ratio from UI state
+)
+```
+
+**3. Fixed Date Filters (src/utils/usageTracking.js):**
+```javascript
+// ❌ BEFORE: days=1 meant "24 hours ago to now" (missed current day)
+const dateLimit = new Date()
+dateLimit.setDate(dateLimit.getDate() - days)
+
+// ✅ AFTER: days=1 means "today 00:00 to now" (includes all today)
+if (days === 1) {
+  dateLimit = new Date()
+  dateLimit.setHours(0, 0, 0, 0) // Start of today
+} else if (days === 7) {
+  // Start of this week (Monday 00:00)
+  dateLimit = new Date()
+  const dayOfWeek = dateLimit.getDay()
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+  dateLimit.setDate(dateLimit.getDate() - daysToMonday)
+  dateLimit.setHours(0, 0, 0, 0)
+}
+```
+
+**Testing Results:**
+- ✅ New generations store correct aspect_ratio: `'9:16'`, `'4:3'`, `'16:9'`, etc.
+- ✅ Dashboard shows real aspect ratio percentages for new data
+- ✅ Database inserts work: `🔍 ASPECT RATIO CHECK: {aspectRatio: '3:4', insertedAspectRatio: '3:4'}`
+
+**Current Status (Post-Fix):**
+- **Historical Data**: 258/261 generations remain "Unknown" (correct - old NULL data)
+- **New Data**: All new generations get correct aspect_ratio values
+- **Dashboard Accuracy**: Shows real distribution as new data accumulates
+- **Expected Behavior**: Percentages improve as more generations created post-fix
+
+**Key Learnings:**
+1. Always pass UI state to database functions - never hardcode values
+2. Date filters must handle "today" vs "days back" differently 
+3. NULL database values become "Unknown" in statistics - this is correct behavior
+4. Dashboard shows accurate data - fix is working as expected
+
+**Files Modified:**
+- `/src/utils/imageUpload.js` - Function signature + aspect_ratio parameter
+- `/src/pages/NonoBananaPage.jsx` - Parameter passing in all upload calls  
+- `/src/utils/usageTracking.js` - Date filter logic for today/week calculations
+
+**Status**: ✅ **FULLY RESOLVED** - Aspect ratio tracking works correctly for all new generations

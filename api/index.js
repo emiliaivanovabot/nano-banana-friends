@@ -206,6 +206,11 @@ const generateWithGemini = async (generationData, userApiKey) => {
                   model,
                   attempt,
                   finishReason: candidate.finishReason
+                },
+                usageMetadata: responseData.usageMetadata || {
+                  promptTokenCount: 0,
+                  candidatesTokenCount: 0,
+                  totalTokenCount: 0
                 }
               }
             }
@@ -330,7 +335,10 @@ const processGenerationInBackground = async (generationId, generationData, userA
           status: 'completed',
           result_image_url: result.image ? 'base64_stored' : null, // Flag for base64 storage
           result_base64: result.image,
-          gemini_metadata: result.metadata,
+          gemini_metadata: {
+            ...result.metadata,
+            usageMetadata: result.usageMetadata
+          },
           completed_at: new Date().toISOString()
         })
         .eq('id', generationId)

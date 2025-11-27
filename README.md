@@ -1,6 +1,14 @@
 # 🍌 Nano Banana Friends
 
-Ein AI-basierter Multi-Projekt Hub mit drei verschiedenen Generierungstools und Community Features:
+Ein AI-basierter Multi-Projekt Hub mit drei verschiedenen Generierungstools und Community Features.
+
+> **📋 NEW AGENTS START HERE:** Read [`CURRENT-DATABASE-STATE.md`](./CURRENT-DATABASE-STATE.md) first - this is the definitive documentation of what's actually running.
+
+## 📚 **Essential Documentation**
+- **[`CURRENT-DATABASE-STATE.md`](./CURRENT-DATABASE-STATE.md)** - 🎯 **SINGLE SOURCE OF TRUTH** (Read this first!)
+- [`DATABASE-ARCHITECTURE-DOCUMENTATION.md`](./DATABASE-ARCHITECTURE-DOCUMENTATION.md) - Full technical details
+- [`AUTHENTICATION-SYSTEM-DOCUMENTATION.md`](./AUTHENTICATION-SYSTEM-DOCUMENTATION.md) - Auth system
+- [`GEMINI-DOCS.md`](./GEMINI-DOCS.md) - Gemini API integration
 
 ## 🚀 Projekte
 

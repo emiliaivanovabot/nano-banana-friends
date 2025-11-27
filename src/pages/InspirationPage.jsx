@@ -44,27 +44,24 @@ const InspirationPage = () => {
         !img.prompt.toLowerCase().includes('debug')
       ) || [];
 
-      // Image Validation - prüfe ob Bilder wirklich ladbar sind
-      const validateImage = (url) => {
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.onload = () => resolve(true);
-          img.onerror = () => resolve(false);
-          img.src = url;
-          // Timeout nach 3 Sekunden
-          setTimeout(() => resolve(false), 3000);
-        });
-      };
-
-      // Validiere alle Bilder parallel
-      console.log('🔍 Validiere Bilder von', qualityImages.length, 'Kandidaten...');
-      const imageValidationPromises = qualityImages.map(async (img) => {
-        const isValid = await validateImage(img.result_image_url);
-        return { ...img, isValid };
+      // Echte Bilddimensionen analysieren für intelligente Darstellung
+      console.log('🔍 Analysiere Bilddimensionen von', qualityImages.length, 'Kandidaten...');
+      const imageAnalysisPromises = qualityImages.map(async (img) => {
+        try {
+          const dimensions = await analyzeImageDimensions(img.result_image_url);
+          return { 
+            ...img, 
+            dimensions,
+            isValid: true
+          };
+        } catch (error) {
+          console.warn('❌ Fehler bei Bildanalyse:', img.result_image_url);
+          return { ...img, isValid: false };
+        }
       });
 
-      const validatedImages = await Promise.all(imageValidationPromises);
-      const validImages = validatedImages.filter(img => img.isValid);
+      const analyzedImages = await Promise.all(imageAnalysisPromises);
+      const validImages = analyzedImages.filter(img => img.isValid);
       
       console.log('✅ Gültige Bilder:', validImages.length, 'von', qualityImages.length);
       console.log('❌ Defekte Bilder gefiltert:', qualityImages.length - validImages.length);
@@ -78,24 +75,18 @@ const InspirationPage = () => {
         ratioCount[ratio] = (ratioCount[ratio] || 0) + 1;
       });
       
-      // Test grid size assignment mit FORCE VARIETY für mehr Abwechslung!
-      validImages.forEach((img, index) => {
-        // Jedes 3. Bild bekommt Forced Variety für mehr Mix
-        const shouldForceVariety = index % 3 === 0;
-        const gridSize = getGridSizeClass(img.aspect_ratio, shouldForceVariety);
-        gridSizeCount[gridSize] = (gridSizeCount[gridSize] || 0) + 1;
-        
-        // Log individual assignments for debugging
-        if (img.aspect_ratio) {
-          const [w, h] = img.aspect_ratio.split(':').map(Number);
-          const ratio = w / h;
-          const forced = shouldForceVariety ? ' [FORCED]' : '';
-          console.log(`📐 ${img.aspect_ratio} (${ratio.toFixed(2)}) → ${gridSize}${forced}`);
+      // Debug echte Bilddimensionen
+      const classificationCount = {};
+      validImages.forEach((img) => {
+        if (img.dimensions) {
+          const { width, height, ratio, classification } = img.dimensions;
+          classificationCount[classification] = (classificationCount[classification] || 0) + 1;
+          console.log(`📐 ${width}x${height} (ratio: ${ratio.toFixed(2)}) → ${classification}`);
         }
       });
       
       console.log('📊 Aspect Ratios in Community:', ratioCount);
-      console.log('🔲 Grid Size Distribution:', gridSizeCount);
+      console.log('🖼️ Image Classifications:', classificationCount);
 
       // Group by user and take variety from each
       const imagesByUser = {};
@@ -167,69 +158,41 @@ const InspirationPage = () => {
     return username;
   };
 
-  const getGridSizeClass = (aspectRatio, forceVariety = false) => {
-    if (!aspectRatio) return 'size-1x1'; // Default square
-    
-    const [width, height] = aspectRatio.split(':').map(Number);
-    if (!width || !height) return 'size-1x1';
-    
-    const ratio = width / height;
-    
-    // FORCED VARIETY MODE: Erstelle künstlich mehr Vielfalt!
-    if (forceVariety) {
-      const random = Math.random();
-      if (random < 0.3) return 'size-1x2'; // 30% Portrait
-      if (random < 0.5) return 'size-2x1'; // 20% Landscape  
-      return 'size-1x1'; // 50% Square
-    }
-    
-    // Original Logic - aber viel aggressiver
-    if (aspectRatio === '9:16') {
-      return 'size-1x2'; // Portrait MUSS Portrait bleiben
-    } else if (aspectRatio === '16:9') {
-      return 'size-2x1'; // Landscape MUSS Landscape bleiben
-    } else if (aspectRatio === '1:1') {
-      return 'size-1x1'; // Square MUSS Square bleiben
-    } else if (ratio >= 1.6) {
-      return 'size-2x1'; // Breit
-    } else if (ratio <= 0.6) {
-      return 'size-1x2'; // Hoch
-    } else {
-      return 'size-1x1'; // Neutral
-    }
-  };
-
-  const optimizeGridLayout = (imagesWithSizes) => {
-    // Mische erstmal für Zufälligkeit
-    const shuffled = [...imagesWithSizes].sort(() => Math.random() - 0.5);
-    
-    // Gelegentlich ein 2x2 "Featured" Bild für Extra-Impact (nur Desktop)
-    if (shuffled.length > 12 && window.innerWidth > 768) {
-      // Jedes 8-10te Bild wird zu einem großen 2x2 Feature
-      const featureIndices = [0, 9, 18, 27];
-      featureIndices.forEach(index => {
-        if (shuffled[index] && Math.random() > 0.5) {
-          shuffled[index].gridSize = 'size-2x2';
+  const analyzeImageDimensions = (imageUrl) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const ratio = img.naturalWidth / img.naturalHeight;
+        let classification;
+        
+        if (ratio >= 1.5) {
+          classification = 'landscape'; // Breit
+        } else if (ratio <= 0.67) {
+          classification = 'portrait'; // Hoch
+        } else {
+          classification = 'square'; // Quadratisch
         }
-      });
-    }
-
-    // Für bessere Verteilung: Sortiere so, dass nicht alle großen Bilder am Anfang sind
-    const balanced = [];
-    const large = shuffled.filter(img => img.gridSize === 'size-2x2' || img.gridSize === 'size-2x1');
-    const medium = shuffled.filter(img => img.gridSize === 'size-1x2');
-    const small = shuffled.filter(img => img.gridSize === 'size-1x1');
-    
-    // Interleave für natürlicheres Layout
-    const maxLength = Math.max(large.length, medium.length, small.length);
-    for (let i = 0; i < maxLength; i++) {
-      if (small[i]) balanced.push(small[i]);
-      if (medium[i]) balanced.push(medium[i]);
-      if (large[i]) balanced.push(large[i]);
-    }
-
-    return balanced;
+        
+        resolve({
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+          ratio: ratio,
+          classification: classification
+        });
+      };
+      img.onerror = () => {
+        resolve({ 
+          width: 512, 
+          height: 512, 
+          ratio: 1, 
+          classification: 'square' 
+        }); // Fallback
+      };
+      img.src = imageUrl;
+    });
   };
+
+  // Entfernt - verwenden jetzt echte Bilddimensionen statt starres Grid-Layout
 
   const handleModalClick = (e) => {
     if (e.target.className === 'image-modal') {
@@ -285,41 +248,50 @@ const InspirationPage = () => {
         ) : (
           <div className="masonry-gallery">
             {(() => {
-              // Berechne Grid-Größen für jedes Bild mit FORCED VARIETY
-              const imagesWithSizes = images.map((img, index) => {
-                // Jedes 3. Bild bekommt Forced Variety für mehr Mix
-                const shouldForceVariety = index % 3 === 0;
-                return {
-                  ...img,
-                  gridSize: getGridSizeClass(img.aspect_ratio, shouldForceVariety)
-                };
-              });
+              // Verwende echte Bilddimensionen für dynamische Höhen
+              const imagesWithDimensions = images.filter(img => img.dimensions);
               
-              // Optimiere Layout für Tetris-Effect
-              const optimizedImages = optimizeGridLayout(imagesWithSizes);
+              console.log('🎨 Displaying', imagesWithDimensions.length, 'images with real dimensions');
               
-              return optimizedImages.map((img) => (
-                <div 
-                  key={img.id} 
-                  className={`masonry-item ${img.gridSize}`}
-                  data-aspect-ratio={img.aspect_ratio}
-                  data-grid-size={img.gridSize}
-                >
-                  <img
-                    src={img.result_image_url}
-                    className="masonry-image"
-                    onClick={() => handleImageClick(img)}
-                    loading="lazy"
-                    alt={`Inspiration by ${getUserDisplayName(img.username)}`}
-                  />
-                  <div className="image-overlay">
-                    <div className="image-info">
-                      <span className="username">{getUserDisplayName(img.username)}</span>
-                      <span className="date">{new Date(img.created_at).toLocaleDateString('de-DE')}</span>
+              return imagesWithDimensions.map((img) => {
+                const { width, height, ratio, classification } = img.dimensions;
+                // Berechne dynamische Höhe basierend auf echter Bildgröße
+                const baseWidth = 280; // Base width für Berechnung
+                const calculatedHeight = baseWidth / ratio;
+                
+                return (
+                  <div 
+                    key={img.id} 
+                    className={`masonry-item dynamic-size ${classification}`}
+                    data-classification={classification}
+                    data-ratio={ratio.toFixed(2)}
+                    style={{
+                      height: `${Math.max(180, Math.min(500, calculatedHeight))}px` // Min 180px, Max 500px
+                    }}
+                  >
+                    <img
+                      src={img.result_image_url}
+                      className="masonry-image"
+                      onClick={() => handleImageClick(img)}
+                      loading="lazy"
+                      alt={`Inspiration by ${getUserDisplayName(img.username)} - ${classification}`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        objectPosition: 'center'
+                      }}
+                    />
+                    <div className="image-overlay">
+                      <div className="image-info">
+                        <span className="username">{getUserDisplayName(img.username)}</span>
+                        <span className="date">{new Date(img.created_at).toLocaleDateString('de-DE')}</span>
+                        <span className="dimensions">{width}×{height}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ));
+                );
+              });
             })()}
           </div>
         )}

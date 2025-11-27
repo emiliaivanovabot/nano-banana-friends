@@ -85,16 +85,15 @@
   color: #666;
 }
 
-/* Intelligentes Puzzle Grid - wie Google Photos */
+/* Echte Pinterest-Style Masonry mit dynamischen Höhen */
 .masonry-gallery {
   max-width: 1200px;
   margin: 30px auto;
   padding: 0 20px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  grid-auto-rows: 200px;
-  gap: 12px;
-  grid-auto-flow: dense; /* Wichtig für Tetris-Effect */
+  columns: auto;
+  column-width: 280px;
+  column-gap: 16px;
+  column-fill: balance;
 }
 
 .masonry-item {
@@ -105,6 +104,26 @@
   transition: all 0.3s ease;
   cursor: pointer;
   background: white;
+  margin-bottom: 16px;
+  break-inside: avoid;
+  display: block;
+  width: 100%;
+}
+
+.masonry-item.dynamic-size {
+  /* Dynamische Höhe wird via style="" gesetzt */
+}
+
+.masonry-item.portrait {
+  /* Portrait-spezifische Styles */
+}
+
+.masonry-item.landscape {
+  /* Landscape-spezifische Styles */ 
+}
+
+.masonry-item.square {
+  /* Square-spezifische Styles */
 }
 
 /* Grid Size Classes - Tetris Style */

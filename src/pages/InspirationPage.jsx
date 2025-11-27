@@ -72,10 +72,30 @@ const InspirationPage = () => {
       // DEBUG: Aspect Ratios analysieren
       const aspectRatios = validImages.map(img => img.aspect_ratio).filter(Boolean);
       const ratioCount = {};
+      const gridSizeCount = {};
+      
       aspectRatios.forEach(ratio => {
         ratioCount[ratio] = (ratioCount[ratio] || 0) + 1;
       });
+      
+      // Test grid size assignment mit FORCE VARIETY für mehr Abwechslung!
+      validImages.forEach((img, index) => {
+        // Jedes 3. Bild bekommt Forced Variety für mehr Mix
+        const shouldForceVariety = index % 3 === 0;
+        const gridSize = getGridSizeClass(img.aspect_ratio, shouldForceVariety);
+        gridSizeCount[gridSize] = (gridSizeCount[gridSize] || 0) + 1;
+        
+        // Log individual assignments for debugging
+        if (img.aspect_ratio) {
+          const [w, h] = img.aspect_ratio.split(':').map(Number);
+          const ratio = w / h;
+          const forced = shouldForceVariety ? ' [FORCED]' : '';
+          console.log(`📐 ${img.aspect_ratio} (${ratio.toFixed(2)}) → ${gridSize}${forced}`);
+        }
+      });
+      
       console.log('📊 Aspect Ratios in Community:', ratioCount);
+      console.log('🔲 Grid Size Distribution:', gridSizeCount);
 
       // Group by user and take variety from each
       const imagesByUser = {};
@@ -147,7 +167,7 @@ const InspirationPage = () => {
     return username;
   };
 
-  const getGridSizeClass = (aspectRatio) => {
+  const getGridSizeClass = (aspectRatio, forceVariety = false) => {
     if (!aspectRatio) return 'size-1x1'; // Default square
     
     const [width, height] = aspectRatio.split(':').map(Number);
@@ -155,25 +175,27 @@ const InspirationPage = () => {
     
     const ratio = width / height;
     
-    // Viel aggressivere Unterscheidung für mehr Vielfalt
-    if (ratio >= 2.0) {
-      // Ultra-breit (2:1+) -> 2x1 Querformat
-      return 'size-2x1';
-    } else if (ratio >= 1.4) {
-      // Breit (16:10, 16:9) -> 2x1 Querformat
-      return 'size-2x1';
-    } else if (ratio >= 1.1) {
-      // Leicht breit -> 1x1 Quadrat
-      return 'size-1x1';
-    } else if (ratio >= 0.9) {
-      // Ungefähr quadratisch -> 1x1
-      return 'size-1x1';
-    } else if (ratio >= 0.7) {
-      // Leicht hoch -> 1x2 Portrait
-      return 'size-1x2';
+    // FORCED VARIETY MODE: Erstelle künstlich mehr Vielfalt!
+    if (forceVariety) {
+      const random = Math.random();
+      if (random < 0.3) return 'size-1x2'; // 30% Portrait
+      if (random < 0.5) return 'size-2x1'; // 20% Landscape  
+      return 'size-1x1'; // 50% Square
+    }
+    
+    // Original Logic - aber viel aggressiver
+    if (aspectRatio === '9:16') {
+      return 'size-1x2'; // Portrait MUSS Portrait bleiben
+    } else if (aspectRatio === '16:9') {
+      return 'size-2x1'; // Landscape MUSS Landscape bleiben
+    } else if (aspectRatio === '1:1') {
+      return 'size-1x1'; // Square MUSS Square bleiben
+    } else if (ratio >= 1.6) {
+      return 'size-2x1'; // Breit
+    } else if (ratio <= 0.6) {
+      return 'size-1x2'; // Hoch
     } else {
-      // Portrait (9:16, etc.) -> 1x2 Hochformat
-      return 'size-1x2';
+      return 'size-1x1'; // Neutral
     }
   };
 
@@ -263,11 +285,15 @@ const InspirationPage = () => {
         ) : (
           <div className="masonry-gallery">
             {(() => {
-              // Berechne Grid-Größen für jedes Bild
-              const imagesWithSizes = images.map(img => ({
-                ...img,
-                gridSize: getGridSizeClass(img.aspect_ratio)
-              }));
+              // Berechne Grid-Größen für jedes Bild mit FORCED VARIETY
+              const imagesWithSizes = images.map((img, index) => {
+                // Jedes 3. Bild bekommt Forced Variety für mehr Mix
+                const shouldForceVariety = index % 3 === 0;
+                return {
+                  ...img,
+                  gridSize: getGridSizeClass(img.aspect_ratio, shouldForceVariety)
+                };
+              });
               
               // Optimiere Layout für Tetris-Effect
               const optimizedImages = optimizeGridLayout(imagesWithSizes);

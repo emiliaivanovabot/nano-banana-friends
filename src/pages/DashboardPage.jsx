@@ -32,6 +32,8 @@ function DashboardPage() {
   const loadStats = async () => {
     if (user?.id) {
       try {
+        console.log('📊 Loading dashboard stats for user:', user.id)
+        
         // Use materialized view for real-time token data
         const usageData = await getDailyUsageHistory(user.id, 30)
         if (usageData.success) {
@@ -39,8 +41,11 @@ function DashboardPage() {
           const todayData = usageData.data.find(d => d.usage_date === today)
           
           console.log('🔍 Dashboard debug - today:', today)
-          console.log('🔍 Dashboard debug - todayData:', todayData)
-          console.log('🔍 Dashboard debug - all data:', usageData.data)
+          console.log('📊 Today data found:', todayData)
+          if (usageData.data.length > 0) {
+            console.log('📈 Total records from DB:', usageData.data.length)
+            console.log('📅 Date range:', usageData.data[0].usage_date, 'to', usageData.data[usageData.data.length - 1].usage_date)
+          }
           
           // Calculate weekly stats
           const weekStart = new Date()
@@ -133,6 +138,18 @@ function DashboardPage() {
 
   useEffect(() => {
     loadStats()
+  }, [user])
+
+  // Auto-refresh dashboard data every 30 seconds for real-time updates
+  useEffect(() => {
+    if (!user?.id) return
+
+    const refreshInterval = setInterval(() => {
+      console.log('🔄 Auto-refreshing dashboard stats...')
+      loadStats()
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(refreshInterval)
   }, [user])
 
   const handleLogout = async () => {

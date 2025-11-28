@@ -866,6 +866,32 @@ function NonoBananaPage() {
       setResult(results)
       console.log(`🎉 ${results.filter(r => r.success).length}/${results.length} Bilder erfolgreich generiert!`)
 
+      // Auto-save all successful images individually (non-blocking) - like ModelPage
+      results.forEach(async (result, index) => {
+        if (result.success && result.image) {
+          // Create estimated token metadata like in ModelPage
+          const estimatedTokens = resolution === '4K' ? 2686 : 
+                                 resolution === '2K' ? 1800 : 1200
+          const estimatedUsageMetadata = {
+            promptTokenCount: Math.round(estimatedTokens * 0.13),
+            candidatesTokenCount: Math.round(estimatedTokens * 0.87),
+            totalTokenCount: estimatedTokens
+          }
+          
+          uploadAndSaveImage(
+            result.image, 
+            user.username, 
+            'multi', 
+            result.prompt || `Multi-prompt ${result.promptNumber}`, 
+            index, 
+            resolution, 
+            index === 0 ? parseFloat(((endTime - startTime) / 1000).toFixed(1)) : null, 
+            estimatedUsageMetadata,
+            aspectRatio
+          )
+        }
+      })
+
     } catch (error) {
       console.error('❌ Multi-generation failed:', error)
       clearInterval(timerInterval)

@@ -181,6 +181,8 @@ function NonoBananaPage() {
   const { user, logout } = useAuth()
   const [prompt, setPrompt] = useState('')
   const [images, setImages] = useState([])
+  const [splitPrompts, setSplitPrompts] = useState([])
+  const [showSplitPrompts, setShowSplitPrompts] = useState(false)
   const [userGender, setUserGender] = useState('female') // Default to female (90% of users)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
@@ -197,6 +199,7 @@ function NonoBananaPage() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
   const [multiResults, setMultiResults] = useState([])
   const [multiLoading, setMultiLoading] = useState(false)
+  const [hasCollabPartner, setHasCollabPartner] = useState(false)
   const [multiTimer, setMultiTimer] = useState(0)
   const [multiResults10, setMultiResults10] = useState([])
   const [multiLoading10, setMultiLoading10] = useState(false)
@@ -540,6 +543,287 @@ function NonoBananaPage() {
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+    }
+  }
+
+  // Split prompts based on "Prompt 1", "Prompt 2", etc.
+  const splitMultiPrompts = () => {
+    if (!prompt.trim()) {
+      alert('Bitte gib einen oder mehrere Prompts ein')
+      return
+    }
+
+    // Split by "Prompt" followed by number
+    const promptRegex = /Prompt\s+(\d+)/gi
+    const parts = prompt.split(promptRegex)
+    
+    const prompts = []
+    for (let i = 1; i < parts.length; i += 2) {
+      const promptNumber = parts[i]
+      const promptText = parts[i + 1]?.trim()
+      
+      if (promptText) {
+        prompts.push({
+          number: parseInt(promptNumber),
+          text: promptText,
+          id: `prompt-${promptNumber}`
+        })
+      }
+    }
+
+    if (prompts.length === 0) {
+      alert('Keine Prompts gefunden. Bitte verwende das Format "Prompt 1", "Prompt 2", etc.')
+      return
+    }
+
+    setSplitPrompts(prompts)
+    setShowSplitPrompts(true)
+    console.log(`✅ ${prompts.length} Prompts gefunden:`, prompts.map(p => `Prompt ${p.number}`))
+  }
+
+  // Generate multiple images from split prompts
+  const generateMultiPrompts = async () => {
+    if (!showSplitPrompts || splitPrompts.length === 0) {
+      alert('Bitte verwende zuerst "Let\'s Go" um die Prompts zu splitten')
+      return
+    }
+
+    setLoading(true)
+    setResult(null)
+    setGenerationTime(null)
+    setLiveTimer(0)
+    
+    // Prevent mobile sleep during generation
+    let wakeLock = null
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen')
+        console.log('📱 Wake Lock activated - phone will stay awake')
+      }
+    } catch (err) {
+      console.log('Wake Lock not supported or failed:', err)
+    }
+
+    const startTime = Date.now()
+    
+    // Live Timer während Generierung
+    const timerInterval = setInterval(() => {
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+      setLiveTimer(elapsed)
+    }, 100)
+
+    console.log(`🚀 Starte ${splitPrompts.length} parallele Generierungen...`)
+
+    try {
+      // Parallel generation for all prompts
+      const results = await Promise.all(
+        splitPrompts.map(async (promptObj) => {
+          try {
+            // Get user settings
+            const apiKey = userSettings?.gemini_api_key
+            const model = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-image'
+            
+            if (!apiKey) {
+              throw new Error('Dein Gemini API Key fehlt')
+            }
+
+            // Build final prompt with personalization if enabled and face image is visible - EXACT COPY from ModelPage
+            let finalPrompt = promptObj.text
+            if (showPersonalization && userSettings?.main_face_image_url && showMainFaceImage && userSettings) {
+              const personalizationText = generatePersonalizationText()
+              if (personalizationText) {
+                finalPrompt = `${personalizationText}. ${promptObj.text}`
+              }
+            }
+
+            console.log(`📝 Prompt ${promptObj.number}: Sende Request...`)
+            console.log(`🎯 Prompt ${promptObj.number} FINAL TEXT:`, finalPrompt)
+            console.log(`⚙️ Prompt ${promptObj.number} PERSONALIZATION:`, showPersonalization ? 'ENABLED' : 'DISABLED')
+            console.log(`👤 Prompt ${promptObj.number} FACE IMAGE:`, userSettings?.main_face_image_url ? 'AVAILABLE' : 'NOT AVAILABLE')
+            console.log(`👁️ Prompt ${promptObj.number} FACE VISIBLE:`, showMainFaceImage ? 'VISIBLE' : 'HIDDEN')
+
+            // Build request body like in the working generate function
+            const parts = [{
+              text: finalPrompt
+            }]
+
+            // Add main face image if available and face image is visible - EXACT COPY from ModelPage 
+            if (userSettings?.main_face_image_url && showMainFaceImage) {
+              try {
+                const response = await fetch(userSettings.main_face_image_url)
+                const blob = await response.blob()
+                const base64Data = await new Promise((resolve) => {
+                  const reader = new FileReader()
+                  reader.onload = () => resolve(reader.result)
+                  reader.readAsDataURL(blob)
+                })
+                
+                const base64String = base64Data.split(',')[1] // Remove "data:image/...;base64," prefix
+                const mimeType = base64Data.split(';')[0].split(':')[1] // Extract MIME type
+                
+                parts.push({
+                  inline_data: {
+                    mime_type: mimeType,
+                    data: base64String
+                  }
+                })
+                console.log(`📸 Prompt ${promptObj.number}: Main face image added to generation`)
+                console.log(`🖼️ Prompt ${promptObj.number} IMAGE DETAILS:`, {
+                  mimeType: mimeType,
+                  sizeKB: Math.round(base64String.length / 1024),
+                  url: userSettings.main_face_image_url.substring(0, 50) + '...'
+                })
+              } catch (error) {
+                console.warn(`⚠️ Prompt ${promptObj.number}: Failed to load main face image for generation:`, error)
+              }
+            }
+
+            const requestBody = {
+              contents: [{
+                role: "user", 
+                parts: parts
+              }],
+              generationConfig: {
+                response_modalities: ['TEXT', 'IMAGE'],
+                image_config: {
+                  aspect_ratio: aspectRatio,
+                  image_size: resolution
+                }
+              }
+            }
+            
+            // Add additional uploaded images - MISSING FROM MY IMPLEMENTATION!
+            images.forEach((img, imgIndex) => {
+              try {
+                const base64Data = img.base64.split(',')[1] // Remove "data:image/...;base64," prefix
+                const mimeType = img.base64.split(';')[0].split(':')[1] // Extract MIME type
+                
+                parts.push({
+                  inline_data: {
+                    mime_type: mimeType,
+                    data: base64Data
+                  }
+                })
+                console.log(`🖼️ Prompt ${promptObj.number}: Additional image ${imgIndex + 1} added (${mimeType})`)
+              } catch (error) {
+                console.warn(`⚠️ Prompt ${promptObj.number}: Failed to add additional image ${imgIndex + 1}:`, error)
+              }
+            })
+            
+            // Add collab partner image if available - MISSING FROM MY IMPLEMENTATION!
+            if (collabPartnerImage && collabPartnerImage.base64) {
+              try {
+                const base64Data = collabPartnerImage.base64.split(',')[1] // Remove "data:image/...;base64," prefix
+                const mimeType = collabPartnerImage.base64.split(';')[0].split(':')[1] // Extract MIME type
+                
+                parts.push({
+                  inline_data: {
+                    mime_type: mimeType,
+                    data: base64Data
+                  }
+                })
+                console.log(`🤝 Prompt ${promptObj.number}: Collab partner image added (${mimeType})`)
+              } catch (error) {
+                console.warn(`⚠️ Prompt ${promptObj.number}: Failed to add collab partner image:`, error)
+              }
+            }
+            
+            console.log(`📦 Prompt ${promptObj.number} REQUEST BODY:`, {
+              partsCount: parts.length,
+              hasText: parts.some(p => p.text),
+              hasImage: parts.some(p => p.inline_data),
+              aspectRatio: aspectRatio,
+              resolution: resolution
+            })
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': apiKey
+              },
+              body: JSON.stringify(requestBody)
+            })
+
+            if (!response.ok) {
+              throw new Error(`API Error: ${response.status}`)
+            }
+
+            const data = await response.json()
+            console.log(`✅ Prompt ${promptObj.number}: Response received`)
+            
+            // Process response like in the working generate function
+            let resultImage = null
+            let resultText = null
+            
+            if (data.candidates && data.candidates[0]) {
+              const candidate = data.candidates[0]
+              
+              // Check finishReason first
+              if (candidate.finishReason && candidate.finishReason !== 'STOP') {
+                throw new Error(`Generation stopped: ${candidate.finishReason}`)
+              }
+              
+              if (candidate.content && candidate.content.parts) {
+                for (const part of candidate.content.parts) {
+                  if (part.text) {
+                    resultText = part.text
+                  } else if (part.inline_data && part.inline_data.mime_type && part.inline_data.mime_type.startsWith('image/')) {
+                    resultImage = `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`
+                  } else if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/')) {
+                    resultImage = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
+                  }
+                }
+              }
+            }
+            
+            if (!resultImage) {
+              throw new Error('Kein Bild in der Response gefunden')
+            }
+            
+            console.log(`🎨 Prompt ${promptObj.number}: Bild erfolgreich generiert!`)
+            
+            return {
+              promptNumber: promptObj.number,
+              image: resultImage,
+              text: resultText,
+              prompt: finalPrompt,
+              success: true
+            }
+          } catch (error) {
+            console.error(`❌ Prompt ${promptObj.number} failed:`, error)
+            return {
+              promptNumber: promptObj.number,
+              error: error.message,
+              prompt: promptObj.text,
+              success: false
+            }
+          }
+        })
+      )
+
+      clearInterval(timerInterval)
+      const endTime = Date.now()
+      setGenerationTime((endTime - startTime) / 1000)
+      
+      // Release wake lock
+      if (wakeLock) {
+        wakeLock.release()
+        console.log('📱 Wake Lock released')
+      }
+
+      // Store results
+      setResult(results)
+      console.log(`🎉 ${results.filter(r => r.success).length}/${results.length} Bilder erfolgreich generiert!`)
+
+    } catch (error) {
+      console.error('❌ Multi-generation failed:', error)
+      clearInterval(timerInterval)
+      if (wakeLock) wakeLock.release()
+      alert('Fehler bei der Generierung: ' + error.message)
+    } finally {
+      setLoading(false)
+      setLiveTimer(0)
     }
   }
 
@@ -2394,63 +2678,167 @@ function NonoBananaPage() {
         <textarea 
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Beschreibe was du generieren möchtest..."
+          placeholder="Füge hier deine Prompts ein (Prompt 1, Prompt 2, Prompt 3, etc.)..."
           className="mobile-prompt-textarea"
         />
+        
+        {/* Let's Go Button for Multi-Prompt Splitting */}
+        <button 
+          onClick={splitMultiPrompts}
+          disabled={!prompt.trim()}
+          style={{
+            marginTop: '12px',
+            background: prompt.trim() ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#6b7280',
+            color: 'white',
+            border: 'none',
+            borderRadius: '12px',
+            padding: '12px 20px',
+            fontSize: '16px',
+            fontWeight: '600',
+            cursor: prompt.trim() ? 'pointer' : 'not-allowed',
+            transition: 'all 0.3s ease',
+            boxShadow: prompt.trim() ? '0 4px 12px rgba(16, 185, 129, 0.3)' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}
+          onMouseEnter={(e) => {
+            if (prompt.trim()) {
+              e.target.style.transform = 'translateY(-2px)'
+              e.target.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (prompt.trim()) {
+              e.target.style.transform = 'translateY(0)'
+              e.target.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)'
+            }
+          }}
+        >
+          ⚡ Let's Go
+        </button>
       </div>
 
-
+      {/* Split Prompts Display */}
+      {showSplitPrompts && splitPrompts.length > 0 && (
+        <div style={{ 
+          marginBottom: '20px',
+          padding: '16px',
+          background: 'hsl(var(--card))',
+          borderRadius: '12px',
+          border: '1px solid hsl(var(--border))'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <h3 style={{ 
+              margin: 0, 
+              fontSize: '1.1rem',
+              fontWeight: '600',
+              fontFamily: "'Space Grotesk', sans-serif",
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>
+              {splitPrompts.length} Prompts gefunden
+            </h3>
+            <button
+              onClick={() => {
+                setShowSplitPrompts(false)
+                setSplitPrompts([])
+              }}
+              style={{
+                background: '#f87171',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '6px 12px',
+                fontSize: '0.85rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              ✕ Schließen
+            </button>
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {splitPrompts.map((promptObj, index) => (
+              <div
+                key={promptObj.id}
+                style={{
+                  background: 'rgba(34, 197, 94, 0.1)',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  position: 'relative'
+                }}
+              >
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '8px'
+                }}>
+                  <span style={{
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#059669'
+                  }}>
+                    Prompt {promptObj.number}
+                  </span>
+                  <span style={{
+                    fontSize: '12px',
+                    color: '#6B7280',
+                    background: 'rgba(107, 114, 128, 0.1)',
+                    padding: '2px 6px',
+                    borderRadius: '4px'
+                  }}>
+                    {promptObj.text.length} Zeichen
+                  </span>
+                </div>
+                <div style={{
+                  fontSize: '13px',
+                  color: 'hsl(var(--foreground))',
+                  lineHeight: '1.4',
+                  maxHeight: '100px',
+                  overflow: 'auto',
+                  padding: '4px 0'
+                }}>
+                  {promptObj.text}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Generate Buttons Container */}
       <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
         {/* Single Generate Button */}
         <button 
-          onClick={generateImage}
+          onClick={showSplitPrompts && splitPrompts.length > 0 ? generateMultiPrompts : generateImage}
           disabled={!prompt.trim() || loading || multiLoading || multiLoading10}
           className={`mobile-generate-button ${loading ? 'loading' : ''} ${!prompt.trim() ? 'disabled' : ''}`}
           style={{ 
             background: loading ? 
               'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 
-              'linear-gradient(135deg, hsl(47 100% 65%) 0%, #f59e0b 100%)'
+              showSplitPrompts && splitPrompts.length > 0 ? 
+                'linear-gradient(135deg, #10b981 0%, #059669 100%)' :
+                'linear-gradient(135deg, hsl(47 100% 65%) 0%, #f59e0b 100%)'
           }}
         >
-          <span className="generate-icon">🍌</span>
-          <span className="generate-text">
-            {loading ? 'Generiere...' : 'Bild generieren'}
+          <span className="generate-icon">
+            {showSplitPrompts && splitPrompts.length > 0 ? '⚡' : '🍌'}
           </span>
-        </button>
-
-        {/* 4x Generate Button */}
-        <button 
-          onClick={generate4Images}
-          disabled={!prompt.trim() || loading || multiLoading || multiLoading10}
-          className={`mobile-generate-button ${multiLoading ? 'loading' : ''} ${!prompt.trim() ? 'disabled' : ''}`}
-          style={{ 
-            background: multiLoading ? 
-              'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 
-              'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)'
-          }}
-        >
-          <span className="generate-icon">🍌🍌🍌🍌</span>
           <span className="generate-text">
-            {multiLoading ? '4x Generiere...' : '4x Generierung'}
-          </span>
-        </button>
-
-        {/* 10x Generate Button */}
-        <button 
-          onClick={generate10Images}
-          disabled={!prompt.trim() || loading || multiLoading || multiLoading10}
-          className={`mobile-generate-button ${multiLoading10 ? 'loading' : ''} ${!prompt.trim() ? 'disabled' : ''}`}
-          style={{ 
-            background: multiLoading10 ? 
-              'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 
-              'linear-gradient(135deg, hsl(280 70% 60%) 0%, #7c3aed 100%)'
-          }}
-        >
-          <span className="generate-icon">🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌</span>
-          <span className="generate-text">
-            {multiLoading10 ? '10x Generiere...' : '10x Generierung'}
+            {loading ? 
+              `Generiere ${showSplitPrompts ? `${splitPrompts.length} Bilder` : ''}...` : 
+              showSplitPrompts && splitPrompts.length > 0 ? 
+                `${splitPrompts.length} Bilder generieren` : 
+                'Bild generieren'
+            }
           </span>
         </button>
       </div>
@@ -2480,78 +2868,193 @@ function NonoBananaPage() {
         </div>
       )}
 
-      {/* Result */}
+      {/* Results */}
       {result && (
-        <div style={{ 
-          marginTop: '20px',
-          padding: '15px',
-          backgroundColor: '#F3F4F6',
-          borderRadius: '8px',
-          width: '100%',
-          maxWidth: '100%',
-          overflow: 'hidden',
-          boxSizing: 'border-box'
-        }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginBottom: '10px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h3 style={{ margin: '0', color: '#1F2937' }}>Ergebnis:</h3>
-              {generationTime && (
-                <span style={{
-                  backgroundColor: '#E5E7EB',
-                  color: 'hsl(var(--muted-foreground))',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontFamily: 'monospace'
-                }}>
-                  ⏱️ {generationTime}
-                </span>
+        <div style={{ marginTop: '20px' }}>
+          {/* Multi-Prompt Results */}
+          {Array.isArray(result) ? (
+            <div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                marginBottom: '20px',
+                padding: '12px',
+                background: 'hsl(var(--card))',
+                borderRadius: '8px',
+                border: '1px solid hsl(var(--border))'
+              }}>
+                <h3 style={{ margin: '0', fontSize: '1.1rem', fontWeight: '600' }}>
+                  {result.filter(r => r.success).length} von {result.length} Bilder generiert
+                </h3>
+                {generationTime && (
+                  <span style={{
+                    backgroundColor: '#E5E7EB',
+                    color: 'hsl(var(--muted-foreground))',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    fontFamily: 'monospace'
+                  }}>
+                    ⏱️ {generationTime}s
+                  </span>
+                )}
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {result.map((res, index) => (
+                  <div
+                    key={`result-${res.promptNumber}-${index}`}
+                    style={{
+                      padding: '15px',
+                      background: res.success ? 'hsl(var(--card))' : 'rgba(239, 68, 68, 0.1)',
+                      border: res.success ? '1px solid hsl(var(--border))' : '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: '12px',
+                      position: 'relative'
+                    }}
+                  >
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '12px'
+                    }}>
+                      <h4 style={{
+                        margin: '0',
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: res.success ? '#059669' : '#dc2626'
+                      }}>
+                        Prompt {res.promptNumber} {res.success ? '✅' : '❌'}
+                      </h4>
+                      {res.success && res.image && (
+                        <button
+                          onClick={() => {
+                            const link = document.createElement('a')
+                            link.href = res.image
+                            link.download = `nano-banana-prompt-${res.promptNumber}-${Date.now()}.webp`
+                            document.body.appendChild(link)
+                            link.click()
+                            document.body.removeChild(link)
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#10B981',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          📥 Download
+                        </button>
+                      )}
+                    </div>
+                    
+                    {res.success ? (
+                      res.image && (
+                        <img 
+                          src={res.image}
+                          alt={`Generated image for Prompt ${res.promptNumber}`}
+                          style={{
+                            width: '100%',
+                            maxWidth: '100%',
+                            height: 'auto',
+                            borderRadius: '8px',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      )
+                    ) : (
+                      <p style={{
+                        margin: '0',
+                        fontSize: '14px',
+                        color: '#dc2626',
+                        backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                        padding: '8px',
+                        borderRadius: '6px'
+                      }}>
+                        Fehler: {res.error}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* Single Result */
+            <div style={{ 
+              padding: '15px',
+              backgroundColor: '#F3F4F6',
+              borderRadius: '8px',
+              width: '100%',
+              maxWidth: '100%',
+              overflow: 'hidden',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '10px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <h3 style={{ margin: '0', color: '#1F2937' }}>Ergebnis:</h3>
+                  {generationTime && (
+                    <span style={{
+                      backgroundColor: '#E5E7EB',
+                      color: 'hsl(var(--muted-foreground))',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      fontFamily: 'monospace'
+                    }}>
+                      ⏱️ {generationTime}s
+                    </span>
+                  )}
+                </div>
+                {result.image && (
+                  <button
+                    onClick={downloadImage}
+                    style={{
+                      padding: '8px 15px',
+                      backgroundColor: '#10B981',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}
+                  >
+                    📥 Download
+                  </button>
+                )}
+              </div>
+              
+              <p style={{ marginBottom: '15px', color: result.style?.color || 'hsl(var(--foreground))' }}>{result.text}</p>
+              
+              {result.image && (
+                <img 
+                  src={result.image} 
+                  alt="Generated" 
+                  style={{ 
+                    width: '100%', 
+                    maxWidth: 'min(400px, 100%)',
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    cursor: 'pointer',
+                    height: 'auto',
+                    boxSizing: 'border-box'
+                  }}
+                  onClick={downloadImage}
+                  title="Klicken zum Download"
+                />
               )}
             </div>
-            {result.image && (
-              <button
-                onClick={downloadImage}
-                style={{
-                  padding: '8px 15px',
-                  backgroundColor: '#10B981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px'
-                }}
-              >
-                📥 Download
-              </button>
-            )}
-          </div>
-          
-          <p style={{ marginBottom: '15px', color: result.style?.color || 'hsl(var(--foreground))' }}>{result.text}</p>
-          
-          {result.image && (
-            <img 
-              src={result.image} 
-              alt="Generated" 
-              style={{ 
-                width: '100%', 
-                maxWidth: 'min(400px, 100%)',
-                borderRadius: '8px',
-                border: '1px solid #D1D5DB',
-                cursor: 'pointer',
-                height: 'auto',
-                boxSizing: 'border-box'
-              }}
-              onClick={downloadImage}
-              title="Klicken zum Download"
-            />
           )}
         </div>
       )}

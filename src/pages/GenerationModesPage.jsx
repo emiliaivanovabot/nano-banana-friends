@@ -55,6 +55,16 @@ function GenerationModesPage() {
       emoji: '⚡',
       gradient: 'linear-gradient(135deg, #10b981, #059669)',
       available: true
+    },
+    {
+      id: 'prompt-creator',
+      path: '/prompt-creator',
+      title: 'AI Prompt Creator',
+      subtitle: 'Lass Grok deine Prompts erstellen',
+      description: 'Beschreibe deine Idee und lass AI professionelle Prompts generieren',
+      emoji: '🤖',
+      gradient: 'linear-gradient(135deg, #f59e0b, #d97706)',
+      available: true
     }
   ]
 
@@ -159,7 +169,7 @@ function GenerationModesPage() {
                 style={{
                   textDecoration: 'none',
                   display: 'block',
-                  background: mode.id === 'model-generation' ? '#a86d09' : mode.id === 'collab-generation' ? '#5a387d' : mode.id === 'image-to-image' ? '#992f63' : mode.id === 'multi-prompts' ? '#059669' : 'hsl(var(--card))',
+                  background: mode.id === 'model-generation' ? '#a86d09' : mode.id === 'collab-generation' ? '#5a387d' : mode.id === 'image-to-image' ? '#992f63' : mode.id === 'multi-prompts' ? '#059669' : mode.id === 'prompt-creator' ? '#d97706' : 'hsl(var(--card))',
                   borderRadius: '25px',
                   padding: '30px',
                   boxShadow: '0 15px 35px hsl(var(--background) / 0.2)',

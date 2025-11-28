@@ -210,15 +210,65 @@ function NonoBananaPage() {
   
   const fileRef = useRef(null)
 
+  // Auto-fill von Prompt Creator Page
+  useEffect(() => {
+    if (location.state?.generatedPrompts) {
+      console.log('🎯 Auto-filling prompts from PromptCreator:', location.state)
+      
+      const { 
+        generatedPrompts, 
+        originalIdea, 
+        userSettings: transferredUserSettings,
+        userFaceImages: transferredFaceImages,
+        transferredFromPromptCreator
+      } = location.state
+      
+      // Split prompts für Multi-Prompt setzen - mit richtiger Struktur
+      setSplitPrompts(generatedPrompts.map((prompt, index) => ({
+        id: `auto-${index + 1}`,
+        number: index + 1,
+        prompt: prompt,
+        text: prompt  // Fallback für Kompatibilität
+      })))
+      setShowSplitPrompts(true)
+      
+      // Original Idee in das Hauptprompt-Feld
+      if (originalIdea) {
+        setPrompt(`Generiert von AI Prompt Creator: "${originalIdea}"`)
+      }
+      
+      // User Settings übertragen wenn vorhanden
+      if (transferredUserSettings && transferredFromPromptCreator) {
+        console.log('📋 Transferring user settings:', transferredUserSettings)
+        setUserSettings(transferredUserSettings)
+        
+        // Personalization Text generieren (verwende existierende Funktion)
+        const personalText = generatePersonalizationText(transferredUserSettings)
+        if (personalText) {
+          setPersonalAppearanceText(personalText)
+          setUsePersonalization(true)
+        }
+      }
+      
+      // TODO: Face Images übertragen - braucht weitere Integration
+      if (transferredFaceImages?.length > 0) {
+        console.log('🖼️ Face images available:', transferredFaceImages.length)
+        // Hier könntest du die Face Images in den entsprechenden State setzen
+      }
+      
+      console.log('✅ Auto-filled', generatedPrompts.length, 'prompts with user data')
+    }
+  }, [location.state])
+
   // Generate natural personalization text from user settings
-  const generatePersonalizationText = () => {
-    if (!userSettings) return ""
+  const generatePersonalizationText = (settings = userSettings) => {
+    if (!settings) return ""
     
     const parts = []
     
     // Age - convert to natural description
-    if (userSettings.age_range) {
-      switch(userSettings.age_range) {
+    if (settings.age_range) {
+      switch(settings.age_range) {
         case 'under-20': parts.push("A teenage woman"); break;
         case 'young-adult': parts.push("A young adult woman"); break;
         case 'adult': parts.push("A confident woman"); break;
@@ -230,18 +280,18 @@ function NonoBananaPage() {
     const details = []
     
     // Hair
-    if (userSettings.hair_color) {
-      details.push(`${userSettings.hair_color.toLowerCase()} hair`)
+    if (settings.hair_color) {
+      details.push(`${settings.hair_color.toLowerCase()} hair`)
     }
     
     // Eyes  
-    if (userSettings.eye_color) {
-      details.push(`${userSettings.eye_color.toLowerCase()} eyes`)
+    if (settings.eye_color) {
+      details.push(`${settings.eye_color.toLowerCase()} eyes`)
     }
     
     // Skin
-    if (userSettings.skin_tone) {
-      details.push(`${userSettings.skin_tone.toLowerCase()} skin tone`)
+    if (settings.skin_tone) {
+      details.push(`${settings.skin_tone.toLowerCase()} skin tone`)
     }
     
     // Build the base sentence
@@ -2795,7 +2845,7 @@ function NonoBananaPage() {
                     padding: '2px 6px',
                     borderRadius: '4px'
                   }}>
-                    {promptObj.text.length} Zeichen
+                    {(promptObj.prompt || promptObj.text || '').length} Zeichen
                   </span>
                 </div>
                 <div style={{
@@ -2806,7 +2856,7 @@ function NonoBananaPage() {
                   overflow: 'auto',
                   padding: '4px 0'
                 }}>
-                  {promptObj.text}
+                  {promptObj.prompt || promptObj.text || ''}
                 </div>
               </div>
             ))}

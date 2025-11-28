@@ -10,6 +10,7 @@ import NonoBananaModelPage from './pages/NonoBananaModelPage.jsx'
 import NonoBananaCollabPage from './pages/NonoBananaCollabPage.jsx'
 import NonoBananaImage2ImagePage from './pages/NonoBananaImage2ImagePage.jsx'
 import NonoBananaMultiPromptsPage from './pages/NonoBananaMultiPromptsPage.jsx'
+import PromptCreatorPage from './pages/PromptCreatorPage.jsx'
 import QwenPage from './pages/QwenPage.jsx'
 import CommunityPromptsPage from './pages/CommunityPromptsPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
@@ -79,6 +80,11 @@ function App() {
           <Route path="/nono-banana-multi-prompts" element={
             <ProtectedRoute requireCompleteProfile={true}>
               <NonoBananaMultiPromptsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/prompt-creator" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <PromptCreatorPage />
             </ProtectedRoute>
           } />
           <Route path="/wan-video" element={

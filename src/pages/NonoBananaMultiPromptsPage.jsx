@@ -891,7 +891,7 @@ function NonoBananaPage() {
           uploadAndSaveImage(
             result.image, 
             user.username, 
-            'multi', 
+            'single', 
             result.prompt || `Multi-prompt ${result.promptNumber}`, 
             index, 
             resolution, 

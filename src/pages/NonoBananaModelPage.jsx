@@ -731,11 +731,20 @@ function NonoBananaPage() {
           const duration = ((endTime - startTime) / 1000).toFixed(1)
           setGenerationTime(`${duration}s`)
           
-          const safetyMessage = data.candidates[0].finishMessage || 
-            'Bild wurde von Google Safety Filter blockiert. Versuche einen anderen Prompt.'
+          const hotMessages = [
+            "Du bist zu hot! 🔥",
+            "Wow, zu heiß für Gemini! 🌶️",
+            "Das ist zu spicy! 🌶️🔥",
+            "Gemini kann nicht mit dieser Hitze! 😅",
+            "Zu hot to handle! 🔥💥",
+            "Das brennt zu sehr! 🔥",
+            "Gemini braucht kaltes Wasser! 💧🔥"
+          ]
+          
+          const randomMessage = hotMessages[Math.floor(Math.random() * hotMessages.length)]
           
           setResult({
-            text: `🛡️ Safety Filter: ${safetyMessage}`,
+            text: randomMessage,
             image: null
           })
           return
@@ -815,7 +824,27 @@ function NonoBananaPage() {
           }
         } else {
           SecureLogger.warn('No content.parts found in candidate')
-          throw new Error('Keine content.parts in der Antwort gefunden')
+          const endTime = Date.now()
+          const duration = ((endTime - startTime) / 1000).toFixed(1)
+          setGenerationTime(`${duration}s`)
+          
+          const hotMessages = [
+            "Du bist zu hot! 🔥",
+            "Wow, zu heiß für Gemini! 🌶️",
+            "Das ist zu spicy! 🌶️🔥",
+            "Gemini kann nicht mit dieser Hitze! 😅",
+            "Zu hot to handle! 🔥💥",
+            "Das brennt zu sehr! 🔥",
+            "Gemini braucht kaltes Wasser! 💧🔥"
+          ]
+          
+          const randomMessage = hotMessages[Math.floor(Math.random() * hotMessages.length)]
+          
+          setResult({
+            text: randomMessage,
+            image: null
+          })
+          return
         }
       } else {
         SecureLogger.warn('No candidates found in response')

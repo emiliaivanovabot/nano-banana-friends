@@ -800,11 +800,20 @@ function NonoBananaPage() {
           const duration = ((endTime - startTime) / 1000).toFixed(1)
           setGenerationTime(`${duration}s`)
           
-          const safetyMessage = data.candidates[0].finishMessage || 
-            'Bild wurde von Google Safety Filter blockiert. Versuche einen anderen Prompt.'
+          const hotMessages = [
+            "Du bist zu hot! 🔥",
+            "Wow, zu heiß für Gemini! 🌶️",
+            "Das ist zu spicy! 🌶️🔥",
+            "Gemini kann nicht mit dieser Hitze! 😅",
+            "Zu hot to handle! 🔥💥",
+            "Das brennt zu sehr! 🔥",
+            "Gemini braucht kaltes Wasser! 💧🔥"
+          ]
+          
+          const randomMessage = hotMessages[Math.floor(Math.random() * hotMessages.length)]
           
           setResult({
-            text: `🛡️ Safety Filter: ${safetyMessage}`,
+            text: randomMessage,
             image: null
           })
           return
@@ -884,7 +893,27 @@ function NonoBananaPage() {
           }
         } else {
           SecureLogger.warn('No content.parts found in candidate')
-          throw new Error('Keine content.parts in der Antwort gefunden')
+          const endTime = Date.now()
+          const duration = ((endTime - startTime) / 1000).toFixed(1)
+          setGenerationTime(`${duration}s`)
+          
+          const hotMessages = [
+            "Du bist zu hot! 🔥",
+            "Wow, zu heiß für Gemini! 🌶️",
+            "Das ist zu spicy! 🌶️🔥",
+            "Gemini kann nicht mit dieser Hitze! 😅",
+            "Zu hot to handle! 🔥💥",
+            "Das brennt zu sehr! 🔥",
+            "Gemini braucht kaltes Wasser! 💧🔥"
+          ]
+          
+          const randomMessage = hotMessages[Math.floor(Math.random() * hotMessages.length)]
+          
+          setResult({
+            text: randomMessage,
+            image: null
+          })
+          return
         }
       } else {
         SecureLogger.warn('No candidates found in response')
@@ -1534,6 +1563,28 @@ function NonoBananaPage() {
         🍌 Collab Partner
       </h1>
 
+      <div style={{
+        textAlign: 'center',
+        marginBottom: '10px'
+      }}>
+        <p style={{
+          margin: '0 0 4px 0',
+          fontSize: '1.1rem',
+          color: 'hsl(var(--foreground))',
+          fontWeight: '500'
+        }}>
+          Lade das Gesicht von deinem Collab Partner hoch und wähle einen Prompt, oder schreibe selbst einen
+        </p>
+        <p style={{
+          margin: '0',
+          fontSize: '0.8rem',
+          color: 'hsl(var(--muted-foreground))',
+          fontFamily: "'Space Grotesk', sans-serif"
+        }}>
+          nano banana pro
+        </p>
+      </div>
+
       {/* Username Display */}
       {user && (
         <div style={{
@@ -1831,41 +1882,62 @@ function NonoBananaPage() {
           </div>
         </div>
 
-        {/* Upload Section */}
-        <div 
-          style={{ 
-            padding: '16px',
-            background: 'hsl(var(--card))',
-            borderRadius: '8px',
-            border: '1px solid hsl(var(--border))',
-            aspectRatio: '1',
-            minHeight: '120px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            cursor: 'pointer',
-            textAlign: 'center'
-          }}
-          onClick={() => document.getElementById('neutral-upload').click()}
-        >
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            fontWeight: '600',
-            fontSize: '0.95rem',
-            fontFamily: "'Space Grotesk', sans-serif",
-            background: 'linear-gradient(135deg, #ec4899 0%, #f59e0b 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            pointerEvents: 'none'
-          }}>
-            weitere Bilder
-            <span style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: 'normal' }}>(optional)</span>
+        {/* Upload Section with Delete Button */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div 
+            style={{ 
+              padding: '16px',
+              background: 'hsl(var(--card))',
+              borderRadius: '8px',
+              border: '1px solid hsl(var(--border))',
+              aspectRatio: '1',
+              minHeight: '120px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              cursor: 'pointer',
+              textAlign: 'center'
+            }}
+            onClick={() => document.getElementById('neutral-upload').click()}
+          >
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px',
+              fontWeight: '600',
+              fontSize: '0.95rem',
+              fontFamily: "'Space Grotesk', sans-serif",
+              background: 'linear-gradient(135deg, #ec4899 0%, #f59e0b 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              pointerEvents: 'none'
+            }}>
+              weitere Bilder
+              <span style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: 'normal' }}>(optional)</span>
+            </div>
           </div>
+          
+          {/* Clear all button unter dem weitere Bilder Feld */}
+          {images.length > 0 && (
+            <button 
+              onClick={clearAllImages}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#EF4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                width: '100%'
+              }}
+            >
+              Alle löschen
+            </button>
+          )}
         </div>
         
         {/* Hidden file inputs for different genders */}
@@ -1948,24 +2020,8 @@ function NonoBananaPage() {
             </>
           )}
           
-          {/* Clear all button inside the flex container when images exist */}
-          {images.length > 0 && (
-            <button 
-              onClick={clearAllImages}
-              style={{
-                padding: '8px 12px',
-                backgroundColor: '#EF4444',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.8rem'
-              }}
-            >
-              🗑️ Alle löschen
-            </button>
-          )}
         </div>
+
 
       </div>
 
@@ -1974,10 +2030,20 @@ function NonoBananaPage() {
         marginBottom: '20px',
         textAlign: 'center' 
       }}>
-        <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px' }}>
-          {images.length + 1 + (collabPartnerImage ? 1 : 0)}/14 Bilder • Text-to-Image wenn keine Bilder, Image-Edit wenn Bilder vorhanden
+        <div style={{ 
+          fontSize: '13px', 
+          color: 'hsl(var(--muted-foreground))',
+          marginBottom: '8px',
+          fontStyle: 'italic',
+          maxWidth: '400px',
+          margin: '0 auto 8px'
+        }}>
+          Lade gerne noch Hintergründe und Outfit hoch. Allerdings brauchst du hierfür einen eigenen Prompt.
         </div>
         
+        <div style={{ fontSize: '12px', color: '#6B7280' }}>
+          {images.length + 1 + (collabPartnerImage ? 1 : 0)}/14 Bilder • Text-to-Image wenn keine Bilder, Image-Edit wenn Bilder vorhanden
+        </div>
       </div>
 
       {/* Image Preview */}

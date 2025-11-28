@@ -760,23 +760,23 @@ function NonoBananaPage() {
             ]
           } else if (finishReason === 'RECITATION') {
             messages = [
-              "Das klingt zu bekannt! 🤔",
-              "Gemini hat Déjà-vu! 👁️‍🗨️",
-              "Copyright-Alarm! 🚨📝",
-              "Das haben wir schon mal gehört! 👂",
-              "Gemini ist ein Gentlemen! 🎩",
-              "Originalität first! ✨📜",
-              "Zu bekannt für Gemini! 🤷‍♂️"
+              "Dein Prompt ist urheberrechtlich geschützt! 📝⚖️",
+              "Das erinnert Gemini an bekannte Werke! 🎭📚",
+              "Copyright-Warnung: Zu ähnlich zu existierenden Inhalten! ⚠️",
+              "Gemini erkennt geschützte Inhalte in deinem Prompt! 🛡️",
+              "Deine Idee klingt nach einem bekannten Werk! 🎨📖",
+              "Urheberrecht sagt nein - versuch's anders! 🚫✍️",
+              "Zu nah an copyrighted Material! Umformulieren! 🔄"
             ]
           } else {
             // Fallback für unbekannte finishReasons
             messages = [
-              "Gemini ist verwirrt! 🤖❓",
-              "Irgendwas ist schief gelaufen! 🤷‍♂️",
-              "Gemini braucht einen Neustart! 🔄",
-              "Das war unerwartet! 😮",
-              "Gemini ist ratlos! 🤯",
-              "Technischer Schluckauf! ⚙️💫"
+              "Unbekannter Gemini-Fehler! Probier's nochmal! 🤖❓",
+              "Technisches Problem bei der Generierung! 🔧💫",
+              "Gemini hatte einen Schluckauf! Neuer Versuch? 🔄",
+              "Unerwarteter Server-Fehler! Retry empfohlen! ⚠️",
+              "API-Problem: Versuch es in einem Moment nochmal! ⏰",
+              "Gemini-Service temporär gestört! 🚨⚡"
             ]
           }
           
@@ -2403,7 +2403,7 @@ function NonoBananaPage() {
             )}
           </div>
           
-          <p style={{ marginBottom: '15px', color: 'hsl(var(--foreground))' }}>{result.text}</p>
+          <p style={{ marginBottom: '15px', color: result.style?.color || 'hsl(var(--foreground))' }}>{result.text}</p>
           
           {result.image && (
             <img 

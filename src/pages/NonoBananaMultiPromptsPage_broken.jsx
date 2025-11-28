@@ -175,7 +175,7 @@ function PremiumDropdown({ label, value, onChange, options }) {
   )
 }
 
-function NonoBananaPage() {
+function NonoBananaMultiPromptsPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -1505,7 +1505,7 @@ function NonoBananaPage() {
       </div>
       
       <h1 className="nano-banana-title">
-        🍌 nano banana pro
+        ⚡ nano banana multi prompts
       </h1>
 
       {/* Username Display */}
@@ -1717,165 +1717,7 @@ function NonoBananaPage() {
         </div>
       </div>
 
-      {/* Image Upload Section */}
-      <div style={{ 
-        marginBottom: '20px',
-        padding: '16px',
-        background: 'hsl(var(--card))',
-        borderRadius: '12px',
-        border: '1px solid hsl(var(--border))'
-      }}>
-        <label style={{ 
-          display: 'flex', 
-          alignItems: 'center',
-          gap: '8px',
-          marginBottom: '12px', 
-          fontWeight: '600',
-          fontSize: '0.95rem',
-          fontFamily: "'Space Grotesk', sans-serif",
-          background: 'linear-gradient(135deg, #ec4899 0%, #f59e0b 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text'
-        }}>
-          <span>📷</span>
-          Bilder hochladen (optional, max 14):
-        </label>
-        
-        {/* Hidden file inputs for different genders */}
-        <input 
-          ref={fileRef}
-          type="file" 
-          multiple
-          accept="image/*" 
-          onChange={(e) => handleImageUpload(e, 'female')}
-          style={{ display: 'none' }}
-        />
-        
-        <input 
-          id="male-upload"
-          type="file" 
-          multiple
-          accept="image/*" 
-          onChange={(e) => handleImageUpload(e, 'male')}
-          style={{ display: 'none' }}
-        />
-        
-        <input 
-          id="neutral-upload"
-          type="file" 
-          multiple
-          accept="image/*" 
-          onChange={(e) => handleImageUpload(e, userGender)}
-          style={{ display: 'none' }}
-        />
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Show gender-specific buttons only when main face is removed AND no additional images */}
-          {!showMainFaceImage && images.length === 0 ? (
-            <>
-              <button 
-                onClick={() => fileRef.current.click()}
-                style={{
-                  padding: '10px 15px',
-                  backgroundColor: '#F59E0B',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-              >
-                👩 Frauengesicht
-              </button>
-              
-              <button 
-                onClick={() => document.getElementById('male-upload').click()}
-                style={{
-                  padding: '6px 12px',
-                  backgroundColor: '#3B82F6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.75rem',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-                title="Spezial-Upload für männliche Fotos - optimiert für Mann-zu-Frau Generierung"
-              >
-                👨 Manngesicht
-              </button>
-            </>
-          ) : (
-            /* Show neutral upload button when images already exist */
-            <button 
-              onClick={() => document.getElementById('neutral-upload').click()}
-              style={{
-                padding: '10px 15px',
-                background: '#9CA3AF',
-                color: 'black',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              Weitere Bilder hinzufügen
-            </button>
-          )}
-          
-          {/* Clear all button inside the flex container when images exist */}
-          {images.length > 0 && (
-            <button 
-              onClick={clearAllImages}
-              style={{
-                padding: '8px 12px',
-                backgroundColor: '#EF4444',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.8rem'
-              }}
-            >
-              🗑️ Alle löschen
-            </button>
-          )}
-        </div>
 
-        <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
-          {images.length}/14 Bilder • Text-to-Image wenn keine Bilder, Image-Edit wenn Bilder vorhanden
-        </div>
-        
-        <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px', fontStyle: 'italic' }}>
-          {!showMainFaceImage && images.length === 0 ? (
-            <>💡 Wähle den passenden Button: "Frauengesicht" (90% der Nutzer) oder "Manngesicht" für männliche Fotos</>
-          ) : (
-            <>📎 {showMainFaceImage ? 'Gesichtsbild geladen' : 'Gender festgelegt'} - du kannst bis zu {showMainFaceImage ? (13 - images.length) : (14 - images.length)} weitere Bilder hinzufügen</>
-          )}
-        </div>
-      </div>
-
-      {/* Image Preview */}
-      {images.length > 0 && (
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', 
-            gap: '10px',
-            width: '100%',
-            maxWidth: '100%',
-            overflow: 'hidden',
-            boxSizing: 'border-box'
-          }}>
-            {images.map((img, index) => (
               <div key={index} style={{ position: 'relative' }}>
                 <img 
                   src={img.base64} 
@@ -2706,4 +2548,4 @@ function NonoBananaPage() {
   )
 }
 
-export default NonoBananaPage
+export default NonoBananaMultiPromptsPage

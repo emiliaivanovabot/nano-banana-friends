@@ -1794,7 +1794,7 @@ function NonoBananaPage() {
           {!showMainFaceImage && images.length === 0 ? (
             <>💡 Wähle den passenden Button: "Frauengesicht" (90% der Nutzer) oder "Manngesicht" für männliche Fotos</>
           ) : (
-            <>📎 {showMainFaceImage ? 'Gesichtsbild geladen' : 'Gender festgelegt'} - du kannst bis zu {14 - images.length} weitere Bilder hinzufügen</>
+            <>📎 {showMainFaceImage ? 'Gesichtsbild geladen' : 'Gender festgelegt'} - du kannst bis zu {showMainFaceImage ? (13 - images.length) : (14 - images.length)} weitere Bilder hinzufügen</>
           )}
         </div>
       </div>

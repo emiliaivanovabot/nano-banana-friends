@@ -45,6 +45,16 @@ function GenerationModesPage() {
       emoji: '🔄',
       gradient: 'linear-gradient(135deg, hsl(280 70% 60%), #a855f7)',
       available: true
+    },
+    {
+      id: 'multi-prompts',
+      path: '/nono-banana-multi-prompts',
+      title: 'Multi Prompts Generation',
+      subtitle: 'Mehrere Prompts gleichzeitig',
+      description: 'Generiere Bilder aus mehreren Prompts parallel',
+      emoji: '⚡',
+      gradient: 'linear-gradient(135deg, #10b981, #059669)',
+      available: true
     }
   ]
 
@@ -149,7 +159,7 @@ function GenerationModesPage() {
                 style={{
                   textDecoration: 'none',
                   display: 'block',
-                  background: mode.id === 'model-generation' ? '#a86d09' : mode.id === 'collab-generation' ? '#5a387d' : mode.id === 'image-to-image' ? '#992f63' : 'hsl(var(--card))',
+                  background: mode.id === 'model-generation' ? '#a86d09' : mode.id === 'collab-generation' ? '#5a387d' : mode.id === 'image-to-image' ? '#992f63' : mode.id === 'multi-prompts' ? '#059669' : 'hsl(var(--card))',
                   borderRadius: '25px',
                   padding: '30px',
                   boxShadow: '0 15px 35px hsl(var(--background) / 0.2)',

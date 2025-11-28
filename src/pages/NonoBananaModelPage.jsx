@@ -725,27 +725,67 @@ function NonoBananaPage() {
       if (data.candidates && data.candidates[0]) {
         SecureLogger.debug('Candidate found in response')
         
-        // Safety Filter Check
-        if (data.candidates[0].finishReason === 'IMAGE_SAFETY') {
+        // Enhanced finishReason Check
+        const finishReason = data.candidates[0].finishReason
+        if (finishReason && finishReason !== 'STOP') {
           const endTime = Date.now()
           const duration = ((endTime - startTime) / 1000).toFixed(1)
           setGenerationTime(`${duration}s`)
           
-          const hotMessages = [
-            "Du bist zu hot! 🔥",
-            "Wow, zu heiß für Gemini! 🌶️",
-            "Das ist zu spicy! 🌶️🔥",
-            "Gemini kann nicht mit dieser Hitze! 😅",
-            "Zu hot to handle! 🔥💥",
-            "Das brennt zu sehr! 🔥",
-            "Gemini braucht kaltes Wasser! 💧🔥"
-          ]
+          let messages = []
           
-          const randomMessage = hotMessages[Math.floor(Math.random() * hotMessages.length)]
+          if (finishReason === 'IMAGE_SAFETY' || finishReason === 'SAFETY') {
+            messages = [
+              "Du bist zu hot! 🔥",
+              "Wow, zu heiß für Gemini! 🌶️",
+              "Das ist zu spicy! 🌶️🔥",
+              "Gemini kann nicht mit dieser Hitze! 😅",
+              "Zu hot to handle! 🔥💥",
+              "Das brennt zu sehr! 🔥",
+              "Gemini braucht kaltes Wasser! 💧🔥",
+              "Safety first, aber du bist fire! 🔥🛡️",
+              "Gemini ist heute schüchtern! 😳🔥",
+              "Too spicy for Google! 🌶️💨"
+            ]
+          } else if (finishReason === 'LENGTH' || finishReason === 'MAX_TOKENS') {
+            messages = [
+              "Gemini ist aus der Puste! 😵‍💫",
+              "Token-Limit erreicht! 🏃‍♂️💨",
+              "Gemini braucht eine Pause! ☕",
+              "Zu viele Wörter für Gemini! 📚💤",
+              "Gemini ist müde geworden! 😴",
+              "Das war zu viel Text! 📄💥",
+              "Gemini hat einen Krampf! 🤖⚡",
+              "Token-Tank ist leer! ⛽😵"
+            ]
+          } else if (finishReason === 'RECITATION') {
+            messages = [
+              "Das klingt zu bekannt! 🤔",
+              "Gemini hat Déjà-vu! 👁️‍🗨️",
+              "Copyright-Alarm! 🚨📝",
+              "Das haben wir schon mal gehört! 👂",
+              "Gemini ist ein Gentlemen! 🎩",
+              "Originalität first! ✨📜",
+              "Zu bekannt für Gemini! 🤷‍♂️"
+            ]
+          } else {
+            // Fallback für unbekannte finishReasons
+            messages = [
+              "Gemini ist verwirrt! 🤖❓",
+              "Irgendwas ist schief gelaufen! 🤷‍♂️",
+              "Gemini braucht einen Neustart! 🔄",
+              "Das war unerwartet! 😮",
+              "Gemini ist ratlos! 🤯",
+              "Technischer Schluckauf! ⚙️💫"
+            ]
+          }
+          
+          const randomMessage = messages[Math.floor(Math.random() * messages.length)]
           
           setResult({
             text: randomMessage,
-            image: null
+            image: null,
+            style: { color: 'rgb(177, 82, 224)' }
           })
           return
         }
@@ -828,21 +868,25 @@ function NonoBananaPage() {
           const duration = ((endTime - startTime) / 1000).toFixed(1)
           setGenerationTime(`${duration}s`)
           
-          const hotMessages = [
+          const messages = [
             "Du bist zu hot! 🔥",
             "Wow, zu heiß für Gemini! 🌶️",
             "Das ist zu spicy! 🌶️🔥",
             "Gemini kann nicht mit dieser Hitze! 😅",
             "Zu hot to handle! 🔥💥",
             "Das brennt zu sehr! 🔥",
-            "Gemini braucht kaltes Wasser! 💧🔥"
+            "Gemini braucht kaltes Wasser! 💧🔥",
+            "Safety first, aber du bist fire! 🔥🛡️",
+            "Gemini ist heute schüchtern! 😳🔥",
+            "Too spicy for Google! 🌶️💨"
           ]
           
-          const randomMessage = hotMessages[Math.floor(Math.random() * hotMessages.length)]
+          const randomMessage = messages[Math.floor(Math.random() * messages.length)]
           
           setResult({
             text: randomMessage,
-            image: null
+            image: null,
+            style: { color: 'rgb(177, 82, 224)' }
           })
           return
         }

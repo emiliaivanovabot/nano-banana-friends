@@ -8,6 +8,11 @@ import SwipeHandler from '../utils/SwipeHandler.js';
 function GalleryPage() {
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  
+  // Check if this is admin mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const isAdminMode = urlParams.get('admin') === 'true' && user?.username === 'emilia.ivanova';
+  
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -15,7 +20,7 @@ function GalleryPage() {
   const [poolIndex, setPoolIndex] = useState(0);
   const [poolExhausted, setPoolExhausted] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [filter, setFilter] = useState('all'); // 'all', 'single', '4x', '10x'
+  const [filter, setFilter] = useState('all'); // Start with 'all' in both modes
   const [copySuccess, setCopySuccess] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -38,17 +43,33 @@ function GalleryPage() {
 
     try {
       setLoading(true);
-      console.log('🎲 Initializing gallery image pool for:', user?.username);
+      console.log('🎲 Initializing gallery image pool for:', isAdminMode ? 'ADMIN MODE' : user?.username);
       
-      // Load ALL user images at once
-      const { data, error } = await supabase
+      // Load images based on mode
+      let query = supabase
         .from('generations')
-        .select('id, result_image_url, prompt, generation_type, created_at, original_filename')
-        .eq('username', user.username)
+        .select('id, result_image_url, prompt, generation_type, created_at, original_filename, username')
         .eq('status', 'completed')
+        .not('result_image_url', 'is', null) // Ensure image exists
+        .not('username', 'is', null) // Ensure username exists
         .order('created_at', { ascending: false });
+      
+      // In admin mode, load all users' images; otherwise just current user
+      if (!isAdminMode) {
+        query = query.eq('username', user.username);
+      }
+      // In admin mode, we don't add any user filter, so it loads ALL users
+      
+      const { data, error } = await query;
 
       if (error) throw error;
+
+      // Debug: Log what users we found
+      if (isAdminMode && data) {
+        const uniqueUsers = [...new Set(data.map(img => img.username).filter(Boolean))];
+        console.log('🔍 Admin mode: Found users:', uniqueUsers);
+        console.log('🔍 Total images:', data.length);
+      }
 
       setImagePool(data || []);
       setPoolIndex(0);
@@ -69,7 +90,7 @@ function GalleryPage() {
     } finally {
       setLoading(false);
     }
-  }, [user?.username, authLoading]);
+  }, [user?.username, authLoading, isAdminMode]);
 
   // Load more from pool (smooth, no database calls)
   const loadMoreFromPool = useCallback(() => {
@@ -148,8 +169,14 @@ function GalleryPage() {
   const filteredImages = useMemo(() => {
     if (!images || !Array.isArray(images)) return [];
     if (filter === 'all') return images;
-    return images.filter(img => img && img.generation_type === filter);
-  }, [images, filter]);
+    
+    // In admin mode, filter by username; in normal mode, filter by generation_type
+    if (isAdminMode) {
+      return images.filter(img => img && img.username === filter);
+    } else {
+      return images.filter(img => img && img.generation_type === filter);
+    }
+  }, [images, filter, isAdminMode]);
 
   const handleImageClick = (image) => {
     setSelectedImage(image);
@@ -448,7 +475,7 @@ function GalleryPage() {
               backgroundClip: 'text',
               WebkitTextFillColor: 'transparent'
             }}>
-              Meine Bilder
+              {isAdminMode ? 'User Galerie (Admin)' : 'Meine Bilder'}
             </h1>
             <p style={{ 
               margin: 0, 
@@ -489,12 +516,28 @@ function GalleryPage() {
           flexWrap: 'wrap',
           justifyContent: isMobile ? 'center' : 'flex-start'
         }}>
-          {[
-            { key: 'all', label: 'Alle', count: images.length },
-            { key: 'single', label: 'Einzeln', count: images.filter(img => img.generation_type === 'single').length },
-            { key: '4x', label: '4x', count: images.filter(img => img.generation_type === '4x').length },
-            { key: '10x', label: '10x', count: images.filter(img => img.generation_type === '10x').length }
-          ].map(filterOption => (
+          {(() => {
+            if (isAdminMode) {
+              // Admin mode: fixed user filters based on known users
+              const knownUsers = ['jessy.germany', 'selina.luna', 'tyra.foxi', 'emilia.berlin'];
+              return [
+                { key: 'all', label: 'Alle User', count: images.length },
+                ...knownUsers.map(username => ({
+                  key: username,
+                  label: username,
+                  count: images.filter(img => img.username === username).length
+                }))
+              ];
+            } else {
+              // Normal mode: filter by generation types
+              return [
+                { key: 'all', label: 'Alle', count: images.length },
+                { key: 'single', label: 'Einzeln', count: images.filter(img => img.generation_type === 'single').length },
+                { key: '4x', label: '4x', count: images.filter(img => img.generation_type === '4x').length },
+                { key: '10x', label: '10x', count: images.filter(img => img.generation_type === '10x').length }
+              ];
+            }
+          })().map(filterOption => (
             <button
               key={filterOption.key}
               onClick={() => setFilter(filterOption.key)}

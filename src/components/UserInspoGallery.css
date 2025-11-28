@@ -40,8 +40,11 @@
 .inspiration-link-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 10px 16px;
+  width: 140px;
+  height: 44px;
   background: #ffc947;
   border: 1px solid #ffc947;
   color: #333;
@@ -254,6 +257,10 @@
   .inspiration-link-button {
     padding: 8px 12px;
     font-size: 0.8rem;
+    font-weight: 500;
+    font-family: 'Space Grotesk', sans-serif;
+    width: 100px;
+    height: 36px;
     flex-shrink: 0;
   }
 

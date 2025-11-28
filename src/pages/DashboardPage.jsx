@@ -366,6 +366,15 @@ function DashboardPage() {
       gradient: 'linear-gradient(135deg, #667eea, #764ba2)',
       available: true
     },
+    // Admin-only tool for emilia.ivanova
+    ...(user?.username === 'emilia.ivanova' ? [{
+      id: 'user-gallery',
+      path: '/gallery?admin=true',
+      title: 'User Galerie',
+      subtitle: 'Admin: User Bilder',
+      gradient: 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
+      available: true
+    }] : []),
     {
       id: 'wan-video',
       title: 'WAN 2.2 Video',
@@ -740,7 +749,7 @@ function DashboardPage() {
                 style={{
                   textDecoration: 'none',
                   display: 'block',
-                  background: tool.id === 'nano-banana' ? '#a86d09' : tool.id === 'gallery' ? '#5a387d' : 'hsl(var(--card))',
+                  background: tool.id === 'nano-banana' ? '#a86d09' : tool.id === 'gallery' ? '#5a387d' : tool.id === 'user-gallery' ? '#c44c4c' : 'hsl(var(--card))',
                   borderRadius: '25px',
                   padding: '30px',
                   boxShadow: '0 15px 35px hsl(var(--background) / 0.2)',

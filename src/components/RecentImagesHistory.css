@@ -1,8 +1,7 @@
 /* Recent Images History Component Styles */
 .recent-images-history {
-  margin-top: 40px;
-  border-top: 1px solid #e0e0e0;
-  padding-top: 20px;
+  margin-top: 20px;
+  padding-top: 10px;
 }
 
 .recent-images-header {
@@ -26,13 +25,16 @@
 .gallery-link-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 10px 16px;
+  width: 120px;
+  height: 44px;
   background: rgb(177, 82, 224);
   border: 1px solid rgb(177, 82, 224);
   color: white;
   text-decoration: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 0.9rem;
   font-weight: 500;
   font-family: 'Space Grotesk', sans-serif;
@@ -293,13 +295,23 @@
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .recent-images-history {
-    margin-top: 30px;
-    padding-top: 15px;
+    margin-top: 0px;
+    padding-top: 0px;
   }
 
   .recent-images-history h3 {
     font-size: 1.1rem;
     margin-bottom: 12px;
+  }
+
+  .gallery-link-button {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    font-family: 'Space Grotesk', sans-serif;
+    width: 100px;
+    height: 36px;
+    flex-shrink: 0;
   }
 
   .thumbnail {

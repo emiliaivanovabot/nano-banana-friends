@@ -177,7 +177,7 @@ const UserInspoGallery = ({ currentUser }) => {
             className="inspiration-link-button"
             title="Zur vollständigen Community Galerie"
           >
-            Mehr Auswahl
+            Zur Galerie
           </Link>
         </div>
         

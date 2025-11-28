@@ -537,7 +537,11 @@ USER INPUT:
                   value={promptCount}
                   onChange={(e) => {
                     setPromptCount(Number(e.target.value))
-                    if (generatedPrompts.length > 0) setEditedAfterGeneration(true)
+                    // Reset generated prompts wenn Anzahl geändert wird
+                    if (generatedPrompts.length > 0) {
+                      setGeneratedPrompts([])
+                      setEditedAfterGeneration(false)
+                    }
                   }}
                   disabled={isLoading}
                   style={{
@@ -561,7 +565,11 @@ USER INPUT:
                   value={photoStyle}
                   onChange={(e) => {
                     setPhotoStyle(e.target.value)
-                    if (generatedPrompts.length > 0) setEditedAfterGeneration(true)
+                    // Reset generated prompts wenn Style geändert wird
+                    if (generatedPrompts.length > 0) {
+                      setGeneratedPrompts([])
+                      setEditedAfterGeneration(false)
+                    }
                   }}
                   disabled={isLoading}
                   style={{
@@ -588,7 +596,11 @@ USER INPUT:
                   value={consistencyMode}
                   onChange={(e) => {
                     setConsistencyMode(e.target.value)
-                    if (generatedPrompts.length > 0) setEditedAfterGeneration(true)
+                    // Reset generated prompts wenn Konsistenz geändert wird
+                    if (generatedPrompts.length > 0) {
+                      setGeneratedPrompts([])
+                      setEditedAfterGeneration(false)
+                    }
                   }}
                   disabled={isLoading}
                   style={{
@@ -612,8 +624,10 @@ USER INPUT:
                 value={userIdea}
                 onChange={(e) => {
                   setUserIdea(e.target.value)
+                  // Reset generated prompts wenn Prompt geändert wird
                   if (generatedPrompts.length > 0) {
-                    setEditedAfterGeneration(true)
+                    setGeneratedPrompts([])
+                    setEditedAfterGeneration(false)
                   }
                 }}
                 placeholder="Deine Idee..."

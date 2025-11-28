@@ -274,7 +274,7 @@ function NonoBananaPage() {
 
         const { data, error } = await supabase
           .from('users')
-          .select('default_resolution, default_aspect_ratio, main_face_image_url, gemini_api_key, hair_color, eye_color, skin_tone, age_range, personal_appearance_text')
+          .select('default_resolution, default_aspect_ratio, main_face_image_url, gemini_api_key, hair_color, eye_color, skin_tone, age_range, personal_appearance_text, use_personalization, use_personal_appearance_text')
           .eq('id', user.id)
           .single()
 
@@ -291,12 +291,16 @@ function NonoBananaPage() {
             eye_color: data.eye_color,
             skin_tone: data.skin_tone,
             age_range: data.age_range,
+            use_personalization: data.use_personalization,
+            use_personal_appearance_text: data.use_personal_appearance_text,
             showMainFaceImage: showMainFaceImage
           })
           setUserSettings(data)
           setResolution(data.default_resolution || '2K')
           setAspectRatio(data.default_aspect_ratio || '9:16')
           setPersonalAppearanceText(data.personal_appearance_text || '')
+          setShowPersonalization(data.use_personalization !== false) // Set from database
+          setUsePersonalization(data.use_personal_appearance_text !== false) // Set text toggle from database
           
         } else {
           console.log('No user settings data found')
@@ -2265,7 +2269,31 @@ function NonoBananaPage() {
             background: 'hsl(var(--card))'
           }}>
             <button
-              onClick={() => setShowPersonalization(!showPersonalization)}
+              onClick={async () => {
+                const newValue = !showPersonalization
+                setShowPersonalization(newValue)
+                
+                // Save to database
+                try {
+                  const supabase = createClient(
+                    import.meta.env.VITE_SUPABASE_URL,
+                    import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+                  )
+                  
+                  const { error } = await supabase
+                    .from('users')
+                    .update({ use_personalization: newValue })
+                    .eq('id', user?.id)
+                  
+                  if (error) {
+                    console.error('❌ Database error:', error)
+                  } else {
+                    console.log('✅ Saved to database:', newValue)
+                  }
+                } catch (error) {
+                  console.error('❌ Exception:', error)
+                }
+              }}
               style={{
                 width: '100%',
                 padding: '10px 15px',
@@ -2381,7 +2409,31 @@ function NonoBananaPage() {
                         )}
                       </div>
                       <div
-                        onClick={() => setUsePersonalization(!usePersonalization)}
+                        onClick={async () => {
+                          const newValue = !usePersonalization
+                          setUsePersonalization(newValue)
+                          
+                          // Save to database
+                          try {
+                            const supabase = createClient(
+                              import.meta.env.VITE_SUPABASE_URL,
+                              import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+                            )
+                            
+                            const { error } = await supabase
+                              .from('users')
+                              .update({ use_personal_appearance_text: newValue })
+                              .eq('id', user?.id)
+                            
+                            if (error) {
+                              console.error('❌ Database error (text toggle):', error)
+                            } else {
+                              console.log('✅ Saved text toggle to database:', newValue)
+                            }
+                          } catch (error) {
+                            console.error('❌ Exception (text toggle):', error)
+                          }
+                        }}
                         style={{
                           cursor: 'pointer',
                           width: '28px',

@@ -207,6 +207,47 @@ function NonoBananaPage() {
       [promptId]: !prev[promptId]
     }))
   }
+
+  // Download function for multi-prompt images
+  const downloadMultiImage = (imageUrl, index) => {
+    if (imageUrl) {
+      const link = document.createElement('a')
+      link.href = imageUrl
+      link.download = `nano-banana-multiprompt-${index + 1}-${Date.now()}.png`
+      link.click()
+    }
+  }
+
+  // Download all multi-prompt images at once
+  const downloadAllMultiImages = () => {
+    multiResults.forEach((result, index) => {
+      if (result.success && result.image) {
+        setTimeout(() => {
+          downloadMultiImage(result.image, index)
+        }, index * 100) // Kleine Verzögerung zwischen Downloads
+      }
+    })
+  }
+
+  // Download all 10x multi-prompt images at once
+  const downloadAll10MultiImages = () => {
+    multiResults10.forEach((result, index) => {
+      if (result.success && result.image) {
+        setTimeout(() => {
+          downloadMultiImage(result.image, index)
+        }, index * 100) // Kleine Verzögerung zwischen Downloads
+      }
+    })
+  }
+
+  // Dynamic grid columns based on image count
+  const getGridColumns = (imageCount) => {
+    if (isMobile) return 'repeat(2, 1fr)' // Mobile always 2 columns
+    if (imageCount <= 4) return 'repeat(2, 1fr)' // 2x2
+    if (imageCount <= 6) return 'repeat(3, 1fr)' // 2x3  
+    if (imageCount <= 8) return 'repeat(4, 1fr)' // 2x4
+    return 'repeat(5, 1fr)' // 2x5 max
+  }
   const [multiResults, setMultiResults] = useState([])
   const [multiLoading, setMultiLoading] = useState(false)
   const [hasCollabPartner, setHasCollabPartner] = useState(false)
@@ -872,8 +913,8 @@ function NonoBananaPage() {
         console.log('📱 Wake Lock released')
       }
 
-      // Store results
-      setResult(results)
+      // Store results in multiResults for display
+      setMultiResults(results)
       console.log(`🎉 ${results.filter(r => r.success).length}/${results.length} Bilder erfolgreich generiert!`)
 
       // Auto-save all successful images individually (non-blocking) - like ModelPage
@@ -1845,15 +1886,6 @@ function NonoBananaPage() {
     }
   }
 
-  // Download function for multi images
-  const downloadMultiImage = (imageUrl, index) => {
-    if (imageUrl) {
-      const link = document.createElement('a')
-      link.href = imageUrl
-      link.download = `nano-banana-4x-${index + 1}-${Date.now()}.png`
-      link.click()
-    }
-  }
 
   // Download all 4 images at once
   const downloadAllImages = () => {
@@ -2986,6 +3018,37 @@ function NonoBananaPage() {
         </div>
       )}
 
+      {/* Top Generate Button - nur wenn vom Prompt Creator */}
+      {transferredFromPromptCreator && showSplitPrompts && splitPrompts.length > 0 && (
+        <div style={{ 
+          marginTop: '16px',
+          marginBottom: '20px',
+          display: 'flex',
+          justifyContent: 'center'
+        }}>
+          <button 
+            onClick={generateMultiPrompts}
+            disabled={splitPrompts.length === 0 || loading || multiLoading || multiLoading10}
+            className={`mobile-generate-button ${loading ? 'loading' : ''} ${splitPrompts.length === 0 ? 'disabled' : ''}`}
+            style={{ 
+              background: loading ? 
+                'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 
+                'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              width: 'auto',
+              minWidth: '200px',
+              padding: '16px 24px',
+              fontSize: '16px',
+              fontWeight: '600'
+            }}
+          >
+            {loading ? 
+              `⏳ ${splitPrompts.length}x wird generiert...` :
+              `🚀 ${splitPrompts.length}x Generieren`
+            }
+          </button>
+        </div>
+      )}
+
       {/* Generate Buttons Container */}
       <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
         {/* Single Generate Button */}
@@ -3321,7 +3384,7 @@ function NonoBananaPage() {
               )}
             </div>
             <button
-              onClick={downloadAllImages}
+              onClick={downloadAllMultiImages}
               style={{
                 padding: '8px 15px',
                 backgroundColor: '#10B981',
@@ -3343,7 +3406,7 @@ function NonoBananaPage() {
           
           <div style={{ 
             display: 'grid', 
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(2, 1fr)',
+            gridTemplateColumns: getGridColumns(multiResults.filter(r => r.success).length),
             gap: '10px'
           }}>
             {multiResults.map((result, index) => (
@@ -3403,7 +3466,7 @@ function NonoBananaPage() {
               )}
             </div>
             <button
-              onClick={downloadAll10Images}
+              onClick={downloadAll10MultiImages}
               style={{
                 padding: '8px 15px',
                 backgroundColor: '#8b5cf6',
@@ -3425,7 +3488,7 @@ function NonoBananaPage() {
           
           <div style={{ 
             display: 'grid', 
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
+            gridTemplateColumns: getGridColumns(multiResults10.filter(r => r.success).length),
             gap: '10px'
           }}>
             {multiResults10.map((result, index) => (

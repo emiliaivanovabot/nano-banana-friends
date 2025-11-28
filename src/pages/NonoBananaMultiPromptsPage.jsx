@@ -311,6 +311,18 @@ function NonoBananaPage() {
     }
   }, [location.state])
 
+  // Auto-scroll to generate button when coming from Prompt Creator
+  useEffect(() => {
+    if (transferredFromPromptCreator && splitPrompts.length > 0) {
+      setTimeout(() => {
+        document.getElementById('generate-button')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        })
+      }, 100)
+    }
+  }, [transferredFromPromptCreator, splitPrompts.length])
+
   // Generate natural personalization text from user settings
   const generatePersonalizationText = (settings = userSettings) => {
     if (!settings) return ""
@@ -3018,39 +3030,9 @@ function NonoBananaPage() {
         </div>
       )}
 
-      {/* Top Generate Button - nur wenn vom Prompt Creator */}
-      {transferredFromPromptCreator && showSplitPrompts && splitPrompts.length > 0 && (
-        <div style={{ 
-          marginTop: '16px',
-          marginBottom: '20px',
-          display: 'flex',
-          justifyContent: 'center'
-        }}>
-          <button 
-            onClick={generateMultiPrompts}
-            disabled={splitPrompts.length === 0 || loading || multiLoading || multiLoading10}
-            className={`mobile-generate-button ${loading ? 'loading' : ''} ${splitPrompts.length === 0 ? 'disabled' : ''}`}
-            style={{ 
-              background: loading ? 
-                'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 
-                'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              width: 'auto',
-              minWidth: '200px',
-              padding: '16px 24px',
-              fontSize: '16px',
-              fontWeight: '600'
-            }}
-          >
-            {loading ? 
-              `⏳ ${splitPrompts.length}x wird generiert...` :
-              `🚀 ${splitPrompts.length}x Generieren`
-            }
-          </button>
-        </div>
-      )}
 
       {/* Generate Buttons Container */}
-      <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+      <div id="generate-button" style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
         {/* Single Generate Button */}
         <button 
           onClick={showSplitPrompts && splitPrompts.length > 0 ? generateMultiPrompts : generateImage}
@@ -3077,7 +3059,6 @@ function NonoBananaPage() {
           </span>
         </button>
       </div>
-
 
       {/* Loading State mit Live Timer */}
       {loading && (

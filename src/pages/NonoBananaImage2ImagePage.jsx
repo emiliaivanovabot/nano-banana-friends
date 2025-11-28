@@ -2263,9 +2263,6 @@ function NonoBananaPage() {
         {userSettings?.main_face_image_url && showMainFaceImage && userSettings && (userSettings.hair_color || userSettings.eye_color || userSettings.skin_tone || userSettings.age) && (
           <div style={{
             marginBottom: '15px',
-            border: '1px solid rgba(251, 191, 36, 0.3)',
-            borderRadius: '8px',
-            overflow: 'hidden',
             background: 'hsl(var(--card))'
           }}>
             <button
@@ -2341,17 +2338,15 @@ function NonoBananaPage() {
             
             {showPersonalization && (
               <div style={{
-                padding: '15px',
-                background: 'rgba(251, 191, 36, 0.05)'
+                background: 'rgba(34, 197, 94, 0.1)'
               }}>
                 {/* Endresultat-Feld */}
                 {personalAppearanceText.trim() && (
                   <div style={{
-                    marginTop: '10px',
                     padding: '8px',
                     background: 'rgba(34, 197, 94, 0.1)',
                     border: '1px solid rgba(34, 197, 94, 0.3)',
-                    borderRadius: '6px',
+                    borderRadius: '0 0 6px 6px',
                     fontSize: '12px',
                     color: '#059669',
                     fontWeight: '500'
@@ -2392,21 +2387,31 @@ function NonoBananaPage() {
                           }
                           return parts[0]
                         })()}
+                        {usePersonalization && personalAppearanceText.trim() && (
+                          <span style={{
+                            color: '#059669',
+                            fontWeight: '500',
+                            fontSize: '14px'
+                          }}>
+                            {`, ${personalAppearanceText.trim()}`}
+                          </span>
+                        )}
                       </span>
                     </div>
                     
-                    {/* Reihe 2: Grüner Text + Toggle */}
-                    <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                      <div style={{ flex: '1' }}>
-                        {usePersonalization && personalAppearanceText.trim() && (
-                          <span style={{
-                            color: '#D1D5DB',
-                            fontWeight: '500',
-                            fontSize: '13px'
-                          }}>
-                            {personalAppearanceText.trim()}
-                          </span>
-                        )}
+                    {/* Reihe 2: Toggle und Editierfeld */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                      <div 
+                        style={{
+                          fontSize: '12px',
+                          color: '#f59e0b',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          padding: '4px 0'
+                        }}
+                        onClick={() => setIsEditingPersonalText(!isEditingPersonalText)}
+                      >
+                        + Persönliche Details ändern <span style={{ fontSize: '10px', color: '#6B7280' }}>← klicken</span>
                       </div>
                       <div
                         onClick={async () => {
@@ -2467,19 +2472,6 @@ function NonoBananaPage() {
                     marginTop: '10px',
                     padding: isEditingPersonalText ? '0 15px 15px 15px' : '0 15px'
                   }}>
-                    <div 
-                      style={{
-                        fontSize: '12px',
-                        color: '#f59e0b',
-                        fontWeight: '500',
-                        marginBottom: '6px',
-                        cursor: 'pointer',
-                        padding: '4px 0'
-                      }}
-                      onClick={() => setIsEditingPersonalText(!isEditingPersonalText)}
-                    >
-                      + Persönliche Details ändern <span style={{ fontSize: '10px', color: '#6B7280' }}>← klicken</span>
-                    </div>
                     {isEditingPersonalText && (
                       <textarea
                         value={personalAppearanceText}

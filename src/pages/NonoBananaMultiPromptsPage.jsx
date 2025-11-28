@@ -436,51 +436,6 @@ function NonoBananaPage() {
 
   // Prompt-Vorlagen für AI Model Shootings
   const promptTemplates = [
-    {
-      category: "Freundschafts-Szenen",
-      prompts: [
-        "Using the provided images, create a scene with both people from the first and second image together. Show them laughing together in a casual, friendly moment. Place them sitting side by side on a park bench with natural lighting. Ensure both faces maintain their original features completely while creating a warm, genuine friendship vibe.",
-        "Using the provided images, create a scene with both people from the first and second image together. Show them walking side by side, having an animated conversation with big smiles. Set the scene on a sunny street or pathway. Ensure both faces maintain their original features completely while capturing their natural friendship energy.",
-        "Using the provided images, create a scene with both people from the first and second image together. Show them in a spontaneous moment of shared laughter, perhaps looking at something funny together. Create a cozy indoor setting like a café. Ensure both faces maintain their original features completely."
-      ],
-      labels: ["Park Lachen", "Spaziergang", "Café Moment"]
-    },
-    {
-      category: "Selfie-Szenen",
-      prompts: [
-        "Using the provided images, create a selfie scene where one person (from the first image) is holding the phone taking a selfie with the second person. Both should be smiling at the camera with natural, close-up expressions. Ensure both faces maintain their original features completely while creating an authentic selfie perspective.",
-        "Using the provided images, create a scene where both people are being photographed by a third person while they're embracing or hugging. Show them in a candid, joyful moment unaware of the camera. Ensure both faces maintain their original features completely with natural lighting and authentic emotions.",
-        "Using the provided images, create a candid 'behind the scenes' shot where both people are caught in the moment of taking a selfie together - like a photo of them taking a photo. Show the spontaneous, unposed reality. Ensure both faces maintain their original features completely."
-      ],
-      labels: ["Selfie zusammen", "Umarmung Foto", "Behind the Scenes"]
-    },
-    {
-      category: "Portrait-Duetts",
-      prompts: [
-        "Using the provided images, create a professional portrait of both people from the first and second image together. Position them in an elegant studio setting with professional lighting, both looking confidently at the camera. Ensure both faces maintain their original features completely while creating a sophisticated, magazine-quality composition.",
-        "Using the provided images, create an artistic black and white portrait of both people together. Position them with dramatic lighting creating beautiful shadows and contrast. Show them in a timeless, classic pose. Ensure both faces maintain their original features completely.",
-        "Using the provided images, create a corporate-style professional headshot of both people together. Show them in business attire with clean background and even lighting. Both should have confident, professional expressions. Ensure both faces maintain their original features completely."
-      ],
-      labels: ["Studio Portrait", "Schwarz-Weiß", "Business Headshot"]
-    },
-    {
-      category: "Situative Szenen",
-      prompts: [
-        "Using the provided images, create a scene with both people from the first and second image together at an elegant restaurant. Show them sitting across from each other, engaged in conversation over dinner with warm ambient lighting. Ensure both faces maintain their original features completely while creating a sophisticated dining atmosphere.",
-        "Using the provided images, create a lively party scene with both people together. Show them at a celebration, perhaps toasting with drinks, surrounded by festive decorations and lighting. Capture their joyful expressions and party energy. Ensure both faces maintain their original features completely.",
-        "Using the provided images, create a cozy scene with both people together at a coffee shop or bookstore. Show them in a relaxed, intimate conversation setting with warm, natural lighting. Capture their comfortable, casual interaction. Ensure both faces maintain their original features completely."
-      ],
-      labels: ["Restaurant Dinner", "Party Feier", "Coffee Shop"]
-    },
-    {
-      category: "Fashion & Kreativ",
-      prompts: [
-        "Using the provided images, create an artistic fashion editorial with both people from the first and second image together. Style them in complementary high-fashion outfits with dramatic lighting and sophisticated poses. Create a luxury magazine aesthetic. Ensure both faces maintain their original features completely.",
-        "Using the provided images, create a creative artistic composition with both people together. Use interesting angles, creative lighting, and artistic elements like geometric shapes or color overlays. Make it gallery-worthy modern art. Ensure both faces maintain their original features completely.",
-        "Using the provided images, create a vintage-inspired fashion shoot with both people together. Style them in retro outfits with classic poses and vintage photography aesthetics. Think 70s or 80s fashion editorial. Ensure both faces maintain their original features completely while maintaining the vintage vibe."
-      ],
-      labels: ["High Fashion", "Artistic Modern", "Vintage Editorial"]
-    }
   ]
 
   const insertPromptTemplate = (template, categoryIndex, promptIndex) => {
@@ -2140,69 +2095,6 @@ function NonoBananaPage() {
         </div>
       )}
 
-      {/* Collapsible Prompt Templates Section */}
-      <div className="mobile-prompt-templates-section">
-        <div 
-          className="mobile-templates-header" 
-          onClick={() => setTemplatesCollapsed(!templatesCollapsed)} 
-          style={{ 
-            cursor: 'pointer', 
-            padding: '8px 16px',
-            background: 'hsl(var(--card))',
-            borderRadius: '8px',
-            border: '1px solid hsl(var(--border))',
-            marginBottom: templatesCollapsed ? '8px' : '16px'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h3 className="mobile-templates-title" style={{ margin: 0, fontSize: '1rem' }}>
-              Prompt Vorlagen
-            </h3>
-            <span style={{ 
-              fontSize: '0.8rem', 
-              color: 'hsl(var(--muted-foreground))', 
-              transition: 'transform 0.3s ease', 
-              transform: templatesCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' 
-            }}>
-              ▼
-            </span>
-          </div>
-        </div>
-        
-        {!templatesCollapsed && promptTemplates.map((category, categoryIndex) => (
-          <div key={categoryIndex} className="mobile-template-category">
-            <div className="mobile-category-header">
-              <span className="mobile-category-title">{category.category}</span>
-            </div>
-            
-            <div className="mobile-template-grid">
-              {category.prompts.map((template, promptIndex) => {
-                const templateId = `${categoryIndex}-${promptIndex}`
-                const isSelected = selectedTemplate === templateId
-                
-                return (
-                  <button
-                    key={promptIndex}
-                    onClick={() => insertPromptTemplate(template, categoryIndex, promptIndex)}
-                    className={`mobile-template-button ${isSelected ? 'selected' : ''}`}
-                  >
-                    <div className="template-button-content">
-                      <div className="template-button-title">
-                        {/* Studio Business - 3 prompts */}
-                        {template.includes('banco alto de madeira') ? 'Wood Bench' :
-                         template.includes('black pantsuit') ? 'Office Chair' :
-                         template.includes('navy blazer') ? 'Standing Pose' :
-                         category.labels && category.labels[promptIndex] ? category.labels[promptIndex] : `Option ${promptIndex + 1}`}
-                      </div>
-                      {isSelected && <div className="selection-indicator">✓</div>}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* Mobile Optimized Prompt Input */}
       <div style={{ 
@@ -2262,9 +2154,6 @@ function NonoBananaPage() {
         {userSettings?.main_face_image_url && showMainFaceImage && userSettings && (userSettings.hair_color || userSettings.eye_color || userSettings.skin_tone || userSettings.age) && (
           <div style={{
             marginBottom: '15px',
-            border: '1px solid rgba(251, 191, 36, 0.3)',
-            borderRadius: '8px',
-            overflow: 'hidden',
             background: 'hsl(var(--card))'
           }}>
             <button
@@ -2340,17 +2229,15 @@ function NonoBananaPage() {
             
             {showPersonalization && (
               <div style={{
-                padding: '15px',
-                background: 'rgba(251, 191, 36, 0.05)'
+                background: 'rgba(34, 197, 94, 0.1)'
               }}>
                 {/* Endresultat-Feld */}
                 {personalAppearanceText.trim() && (
                   <div style={{
-                    marginTop: '10px',
                     padding: '8px',
                     background: 'rgba(34, 197, 94, 0.1)',
                     border: '1px solid rgba(34, 197, 94, 0.3)',
-                    borderRadius: '6px',
+                    borderRadius: '0 0 6px 6px',
                     fontSize: '12px',
                     color: '#059669',
                     fontWeight: '500'
@@ -2391,21 +2278,31 @@ function NonoBananaPage() {
                           }
                           return parts[0]
                         })()}
+                        {usePersonalization && personalAppearanceText.trim() && (
+                          <span style={{
+                            color: '#059669',
+                            fontWeight: '500',
+                            fontSize: '14px'
+                          }}>
+                            {`, ${personalAppearanceText.trim()}`}
+                          </span>
+                        )}
                       </span>
                     </div>
                     
                     {/* Reihe 2: Grüner Text + Toggle */}
-                    <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                      <div style={{ flex: '1' }}>
-                        {usePersonalization && personalAppearanceText.trim() && (
-                          <span style={{
-                            color: '#D1D5DB',
-                            fontWeight: '500',
-                            fontSize: '13px'
-                          }}>
-                            {personalAppearanceText.trim()}
-                          </span>
-                        )}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                      <div 
+                        style={{
+                          fontSize: '12px',
+                          color: '#f59e0b',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          padding: '4px 0'
+                        }}
+                        onClick={() => setIsEditingPersonalText(!isEditingPersonalText)}
+                      >
+                        + Persönliche Details ändern <span style={{ fontSize: '10px', color: '#6B7280' }}>← klicken</span>
                       </div>
                       <div
                         onClick={async () => {
@@ -2456,28 +2353,6 @@ function NonoBananaPage() {
                           boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
                         }} />
                       </div>
-                    </div>
-                  </div>
-                )}
-            
-                {/* Editierfeld nach dem Endresultat */}
-                {showPersonalization && (
-                  <div style={{
-                    marginTop: '10px',
-                    padding: isEditingPersonalText ? '0 15px 15px 15px' : '0 15px'
-                  }}>
-                    <div 
-                      style={{
-                        fontSize: '12px',
-                        color: '#f59e0b',
-                        fontWeight: '500',
-                        marginBottom: '6px',
-                        cursor: 'pointer',
-                        padding: '4px 0'
-                      }}
-                      onClick={() => setIsEditingPersonalText(!isEditingPersonalText)}
-                    >
-                      + Persönliche Details ändern <span style={{ fontSize: '10px', color: '#6B7280' }}>← klicken</span>
                     </div>
                     {isEditingPersonalText && (
                       <textarea

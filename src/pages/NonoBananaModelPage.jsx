@@ -364,7 +364,7 @@ function NonoBananaPage() {
     }
   }, [location, images.length, userGender, userSettings?.main_face_image_url, showMainFaceImage])
 
-  // Handle prompt from Inspiration page navigation
+  // Handle prompt from Inspiration page navigation or Multi-Prompts page
   useEffect(() => {
     if (location.state?.fromInspiration && location.state?.promptText) {
       console.log('🎨 Prompt from Inspiration page:', location.state.promptText.substring(0, 50) + '...');
@@ -381,7 +381,26 @@ function NonoBananaPage() {
       }
       
       // Clear the navigation state
-      window.history.replaceState({}, '', '/nono-banana');
+      window.history.replaceState({}, '', '/nono-banana-model');
+    }
+    
+    // Handle prompt from Multi-Prompts page
+    if (location.state?.prefillPrompt) {
+      console.log('🚀 Prompt from Multi-Prompts page:', location.state.prefillPrompt.substring(0, 50) + '...');
+      
+      // Check if we should add face instruction
+      if (images.length > 0 || (userSettings?.main_face_image_url && showMainFaceImage)) {
+        const faceInstruction = userGender === 'female' 
+          ? "Use my uploaded photo to maintain my exact facial features, skin tone, eye color, and hair as a woman. "
+          : "Use my uploaded photo to maintain my exact facial features, skin tone, eye color, and hair as a man. ";
+        
+        setPrompt(`${faceInstruction}${location.state.prefillPrompt}`);
+      } else {
+        setPrompt(location.state.prefillPrompt);
+      }
+      
+      // Clear the navigation state
+      window.history.replaceState({}, '', '/nono-banana-model');
     }
   }, [location.state, userSettings, images, userGender, showMainFaceImage]);
 

@@ -197,6 +197,16 @@ function NonoBananaPage() {
   const [templatesCollapsed, setTemplatesCollapsed] = useState(true)
   const [showPersonalization, setShowPersonalization] = useState(true)
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+  const [transferredFromPromptCreator, setTransferredFromPromptCreator] = useState(false)
+  const [expandedPrompts, setExpandedPrompts] = useState({})
+  
+  // Toggle function für Prompt-Details
+  const togglePrompt = (promptId) => {
+    setExpandedPrompts(prev => ({
+      ...prev,
+      [promptId]: !prev[promptId]
+    }))
+  }
   const [multiResults, setMultiResults] = useState([])
   const [multiLoading, setMultiLoading] = useState(false)
   const [hasCollabPartner, setHasCollabPartner] = useState(false)
@@ -220,8 +230,11 @@ function NonoBananaPage() {
         originalIdea, 
         userSettings: transferredUserSettings,
         userFaceImages: transferredFaceImages,
-        transferredFromPromptCreator
+        transferredFromPromptCreator: isFromPromptCreator
       } = location.state
+      
+      // Set transfer state
+      setTransferredFromPromptCreator(isFromPromptCreator || false)
       
       // Split prompts für Multi-Prompt setzen - mit richtiger Struktur
       setSplitPrompts(generatedPrompts.map((prompt, index) => ({
@@ -232,13 +245,10 @@ function NonoBananaPage() {
       })))
       setShowSplitPrompts(true)
       
-      // Original Idee in das Hauptprompt-Feld
-      if (originalIdea) {
-        setPrompt(`Generiert von AI Prompt Creator: "${originalIdea}"`)
-      }
+      // Prompt-Feld bleibt leer wenn vom Prompt Creator
       
       // User Settings übertragen wenn vorhanden
-      if (transferredUserSettings && transferredFromPromptCreator) {
+      if (transferredUserSettings && isFromPromptCreator) {
         console.log('📋 Transferring user settings:', transferredUserSettings)
         setUserSettings(transferredUserSettings)
         
@@ -2751,29 +2761,32 @@ function NonoBananaPage() {
           </div>
         )}
         
-        <textarea 
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Füge hier deine Prompts ein (Prompt 1, Prompt 2, Prompt 3, etc.)..."
-          className="mobile-prompt-textarea"
-        />
-        
-        {/* Let's Go Button for Multi-Prompt Splitting */}
-        <button 
-          onClick={splitMultiPrompts}
-          disabled={!prompt.trim()}
-          style={{
-            marginTop: '12px',
-            background: prompt.trim() ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#6b7280',
-            color: 'white',
-            border: 'none',
-            borderRadius: '12px',
-            padding: '12px 20px',
-            fontSize: '16px',
-            fontWeight: '600',
-            cursor: prompt.trim() ? 'pointer' : 'not-allowed',
-            transition: 'all 0.3s ease',
-            boxShadow: prompt.trim() ? '0 4px 12px rgba(16, 185, 129, 0.3)' : 'none',
+        {/* Prompt-Eingabe und Let's Go Button - nur wenn NICHT vom Prompt Creator */}
+        {!transferredFromPromptCreator && (
+          <>
+            <textarea 
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Füge hier deine Prompts ein (Prompt 1, Prompt 2, Prompt 3, etc.)..."
+              className="mobile-prompt-textarea"
+            />
+            
+            {/* Let's Go Button for Multi-Prompt Splitting */}
+            <button 
+              onClick={splitMultiPrompts}
+              disabled={!prompt.trim()}
+              style={{
+                marginTop: '12px',
+                background: prompt.trim() ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#6b7280',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '12px 20px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: prompt.trim() ? 'pointer' : 'not-allowed',
+                transition: 'all 0.3s ease',
+                boxShadow: prompt.trim() ? '0 4px 12px rgba(16, 185, 129, 0.3)' : 'none',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -2794,6 +2807,8 @@ function NonoBananaPage() {
         >
           ⚡ Let's Go
         </button>
+          </>
+        )}
       </div>
 
       {/* Split Prompts Display */}
@@ -2816,7 +2831,7 @@ function NonoBananaPage() {
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text'
             }}>
-              {splitPrompts.length} Prompts gefunden
+              {splitPrompts.length} Prompts
             </h3>
             <button
               onClick={() => {
@@ -2835,7 +2850,7 @@ function NonoBananaPage() {
                 transition: 'all 0.2s ease'
               }}
             >
-              ✕ Schließen
+              × Reset
             </button>
           </div>
           
@@ -2851,17 +2866,31 @@ function NonoBananaPage() {
                   position: 'relative'
                 }}
               >
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '8px'
-                }}>
+                <div 
+                  onClick={() => togglePrompt(promptObj.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: expandedPrompts[promptObj.id] ? '8px' : '0',
+                    cursor: 'pointer'
+                  }}
+                >
                   <span style={{
                     fontSize: '14px',
                     fontWeight: '600',
-                    color: '#059669'
+                    color: '#059669',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}>
+                    <span style={{
+                      transform: expandedPrompts[promptObj.id] ? 'rotate(90deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease',
+                      fontSize: '12px'
+                    }}>
+                      ▶
+                    </span>
                     Prompt {promptObj.number}
                   </span>
                   <span style={{
@@ -2874,16 +2903,83 @@ function NonoBananaPage() {
                     {(promptObj.prompt || promptObj.text || '').length} Zeichen
                   </span>
                 </div>
-                <div style={{
-                  fontSize: '13px',
-                  color: 'hsl(var(--foreground))',
-                  lineHeight: '1.4',
-                  maxHeight: '100px',
-                  overflow: 'auto',
-                  padding: '4px 0'
-                }}>
-                  {promptObj.prompt || promptObj.text || ''}
-                </div>
+                {expandedPrompts[promptObj.id] && (
+                  <div style={{
+                    borderTop: '1px solid rgba(34, 197, 94, 0.2)',
+                    paddingTop: '8px'
+                  }}>
+                    <div style={{
+                      fontSize: '13px',
+                      color: 'hsl(var(--foreground))',
+                      lineHeight: '1.4',
+                      maxHeight: '100px',
+                      overflow: 'auto',
+                      padding: '4px 0',
+                      marginBottom: '8px'
+                    }}>
+                      {promptObj.prompt || promptObj.text || ''}
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div style={{
+                      display: 'flex',
+                      gap: '8px',
+                      paddingTop: '8px'
+                    }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          navigator.clipboard.writeText(promptObj.prompt || promptObj.text || '')
+                        }}
+                        className="mobile-generate-button"
+                        style={{
+                          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          color: 'white',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          width: '50%'
+                        }}
+                        title="Prompt kopieren"
+                      >
+                        📋 Kopieren
+                      </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          navigate('/nono-banana-model', {
+                            state: {
+                              prefillPrompt: promptObj.prompt || promptObj.text || ''
+                            }
+                          })
+                        }}
+                        className="mobile-generate-button"
+                        style={{
+                          background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          color: 'white',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          width: '50%'
+                        }}
+                        title="Mit diesem Prompt zur Model-Seite"
+                      >
+                        🚀 Model-Seite
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -2895,8 +2991,8 @@ function NonoBananaPage() {
         {/* Single Generate Button */}
         <button 
           onClick={showSplitPrompts && splitPrompts.length > 0 ? generateMultiPrompts : generateImage}
-          disabled={!prompt.trim() || loading || multiLoading || multiLoading10}
-          className={`mobile-generate-button ${loading ? 'loading' : ''} ${!prompt.trim() ? 'disabled' : ''}`}
+          disabled={(transferredFromPromptCreator ? (splitPrompts.length === 0) : (!prompt.trim())) || loading || multiLoading || multiLoading10}
+          className={`mobile-generate-button ${loading ? 'loading' : ''} ${(transferredFromPromptCreator ? (splitPrompts.length === 0) : (!prompt.trim())) ? 'disabled' : ''}`}
           style={{ 
             background: loading ? 
               'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 

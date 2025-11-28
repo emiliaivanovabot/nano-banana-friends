@@ -1398,9 +1398,9 @@ function NonoBananaPage() {
           alignItems: 'center',
           width: '100%'
         }}>
-          {/* Left - Dashboard Link */}
+          {/* Left - Back to Generation Modes */}
           <Link 
-            to="/dashboard" 
+            to="/generation-modes" 
             style={{ 
               color: 'hsl(var(--muted-foreground))',
               textDecoration: 'none',
@@ -1408,7 +1408,7 @@ function NonoBananaPage() {
               fontWeight: '500'
             }}
           >
-            ← Dashboard
+            ← Zurück zur Auswahl
           </Link>
           
           {/* Right - Community Link */}

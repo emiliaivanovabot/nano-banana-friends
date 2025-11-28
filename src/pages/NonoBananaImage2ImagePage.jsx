@@ -1819,7 +1819,7 @@ function NonoBananaPage() {
               fontSize: '24px',
               color: '#9CA3AF'
             }}>
-              🤝
+              🖼️
               <div style={{ 
                 fontSize: '8px', 
                 marginTop: '2px', 
@@ -1841,7 +1841,7 @@ function NonoBananaPage() {
             borderRadius: '3px',
             fontWeight: '500'
           }}>
-            Collab
+            Vorlage
           </div>
         </div>
 

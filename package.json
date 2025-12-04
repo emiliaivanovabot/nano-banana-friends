@@ -20,8 +20,9 @@
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
+    "@sentry/react": "^10.27.0",
+    "@sentry/tracing": "^7.120.4",
     "@supabase/supabase-js": "^2.84.0",
-    "@tailwindcss/postcss": "^4.1.17",
     "basic-ftp": "^5.0.5",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.4.6",
@@ -36,14 +37,16 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.9.6",
-    "tailwind-merge": "^3.4.0"
+    "tailwind-merge": "^3.4.0",
+    "web-vitals": "^5.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.0.3",
     "autoprefixer": "^10.4.22",
     "postcss": "^8.5.6",
     "sqlite3": "^5.1.7",
-    "tailwindcss": "^4.1.17",
+    "tailwindcss": "^3.4.1",
+    "terser": "^5.44.1",
     "vite": "^4.4.5"
   }
 }

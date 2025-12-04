@@ -60,10 +60,10 @@ function GenerationModesPage() {
       id: 'prompt-creator',
       path: '/prompt-creator',
       title: 'AI Prompt Creator',
-      subtitle: 'Lass Grok deine Prompts erstellen',
-      description: 'Beschreibe deine Idee und lass AI professionelle Prompts generieren',
-      emoji: '🤖',
-      gradient: 'linear-gradient(135deg, #f59e0b, #d97706)',
+      subtitle: 'Powered by Grok AI',
+      description: 'Beschreibe deine Idee und lass Grok professionelle Prompts generieren',
+      emoji: '🔮',
+      gradient: 'linear-gradient(135deg, #1a1a1a, #2d2d2d)',
       available: true
     }
   ]

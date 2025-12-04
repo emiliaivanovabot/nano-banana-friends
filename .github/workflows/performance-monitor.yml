@@ -1,0 +1,296 @@
+name: 📊 Performance Monitoring
+
+on:
+  # Run after successful deployments
+  workflow_run:
+    workflows: ["🚀 Deploy to Vercel"]
+    types: [completed]
+    branches: [main]
+  
+  # Scheduled performance checks
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'URL to test (optional)'
+        required: false
+        type: string
+
+env:
+  PRODUCTION_URL: "https://${{ github.event.repository.name }}.vercel.app"
+  LIGHTHOUSE_CI_BUILD_ID: "${{ github.run_id }}"
+
+jobs:
+  # Bundle Size Analysis
+  bundle-analysis:
+    name: 📦 Bundle Size Analysis
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: 📦 Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: 📋 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: 🔧 Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+        
+      - name: 🏗️ Build for Analysis
+        run: npm run build
+        
+      - name: 📊 Analyze Bundle Size
+        run: |
+          echo "📊 Bundle Size Analysis Report"
+          echo "============================="
+          echo ""
+          
+          # Total bundle size
+          TOTAL_SIZE=$(du -sh dist | cut -f1)
+          echo "📦 Total bundle size: $TOTAL_SIZE"
+          
+          # JavaScript files analysis
+          echo ""
+          echo "📄 JavaScript files:"
+          find dist -name "*.js" -exec ls -lh {} \; | sort -k5 -hr | head -10 | awk '{print "  " $9 " - " $5}'
+          
+          # CSS files analysis
+          echo ""
+          echo "🎨 CSS files:"
+          find dist -name "*.css" -exec ls -lh {} \; | sort -k5 -hr | head -5 | awk '{print "  " $9 " - " $5}'
+          
+          # Asset files analysis
+          echo ""
+          echo "🖼️ Asset files (largest):"
+          find dist -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.svg" -o -name "*.ico" \) -exec ls -lh {} \; | sort -k5 -hr | head -5 | awk '{print "  " $9 " - " $5}'
+          
+          # Count files by type
+          echo ""
+          echo "📁 File count by type:"
+          echo "  JavaScript: $(find dist -name "*.js" | wc -l) files"
+          echo "  CSS: $(find dist -name "*.css" | wc -l) files"
+          echo "  Images: $(find dist \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.svg" \) | wc -l) files"
+          echo "  Other: $(find dist -type f ! \( -name "*.js" -o -name "*.css" -o -name "*.html" -o -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.svg" \) | wc -l) files"
+          
+          # Check against size limits
+          TOTAL_SIZE_KB=$(du -sk dist | cut -f1)
+          echo ""
+          echo "📏 Size Checks:"
+          
+          if [ $TOTAL_SIZE_KB -lt 1024 ]; then
+            echo "  ✅ Bundle size excellent: ${TOTAL_SIZE_KB}KB (< 1MB)"
+          elif [ $TOTAL_SIZE_KB -lt 5120 ]; then
+            echo "  ✅ Bundle size good: ${TOTAL_SIZE_KB}KB (< 5MB)"
+          elif [ $TOTAL_SIZE_KB -lt 10240 ]; then
+            echo "  ⚠️ Bundle size acceptable: ${TOTAL_SIZE_KB}KB (< 10MB)"
+          else
+            echo "  ❌ Bundle size too large: ${TOTAL_SIZE_KB}KB (> 10MB)"
+            exit 1
+          fi
+          
+      - name: 📊 Generate Bundle Report
+        run: |
+          cat > bundle-analysis.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "totalSizeKB": $(du -sk dist | cut -f1),
+            "jsFiles": $(find dist -name "*.js" | wc -l),
+            "cssFiles": $(find dist -name "*.css" | wc -l),
+            "imageFiles": $(find dist \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.svg" \) | wc -l),
+            "build": "${{ github.run_id }}"
+          }
+          EOF
+          
+      - name: 📊 Upload Bundle Analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-analysis-${{ github.sha }}
+          path: bundle-analysis.json
+          retention-days: 30
+
+  # Lighthouse Performance Audit
+  lighthouse-audit:
+    name: 🔍 Lighthouse Performance Audit
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: 📦 Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: 🔍 Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          urls: |
+            ${{ github.event.inputs.url || env.PRODUCTION_URL }}
+          configPath: './lighthouserc.json'
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          
+      - name: 📊 Performance Summary
+        run: |
+          echo "🔍 **Lighthouse Performance Audit Results**"
+          echo "==========================================="
+          echo ""
+          echo "**Audited URL:** ${{ github.event.inputs.url || env.PRODUCTION_URL }}"
+          echo "**Timestamp:** $(date)"
+          echo "**Commit:** ${{ github.sha }}"
+          echo ""
+          echo "📊 **Core Web Vitals:**"
+          echo "- First Contentful Paint (FCP)"
+          echo "- Largest Contentful Paint (LCP)"  
+          echo "- Cumulative Layout Shift (CLS)"
+          echo "- Speed Index"
+          echo ""
+          echo "ℹ️ **Detailed results available in Lighthouse report artifacts**"
+
+  # Application Health Check
+  health-monitoring:
+    name: 🏥 Application Health Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 🏥 Health Check
+        run: |
+          TARGET_URL="${{ github.event.inputs.url || env.PRODUCTION_URL }}"
+          echo "🏥 Performing health check on: $TARGET_URL"
+          
+          # Basic availability check
+          if curl -f "$TARGET_URL" > /dev/null 2>&1; then
+            echo "✅ Application is accessible"
+          else
+            echo "❌ Application is not accessible"
+            exit 1
+          fi
+          
+          # Response time check
+          RESPONSE_TIME=$(curl -o /dev/null -s -w "%{time_total}" "$TARGET_URL")
+          echo "⏱️ Response time: ${RESPONSE_TIME}s"
+          
+          # Check if response time is acceptable (< 3 seconds)
+          if (( $(echo "$RESPONSE_TIME < 3.0" | bc -l) )); then
+            echo "✅ Response time is acceptable"
+          else
+            echo "⚠️ Response time is slow (> 3s)"
+          fi
+          
+          # HTTP status check
+          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$TARGET_URL")
+          echo "📊 HTTP status: $HTTP_STATUS"
+          
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ HTTP status is healthy"
+          else
+            echo "❌ HTTP status indicates an issue"
+            exit 1
+          fi
+          
+      - name: 🔍 Advanced Health Checks
+        run: |
+          TARGET_URL="${{ github.event.inputs.url || env.PRODUCTION_URL }}"
+          
+          # Check for basic security headers
+          echo "🔒 Security headers check:"
+          SECURITY_HEADERS=$(curl -I "$TARGET_URL" 2>/dev/null)
+          
+          if echo "$SECURITY_HEADERS" | grep -i "x-frame-options" > /dev/null; then
+            echo "✅ X-Frame-Options header present"
+          else
+            echo "⚠️ X-Frame-Options header missing"
+          fi
+          
+          if echo "$SECURITY_HEADERS" | grep -i "x-content-type-options" > /dev/null; then
+            echo "✅ X-Content-Type-Options header present"
+          else
+            echo "⚠️ X-Content-Type-Options header missing"
+          fi
+          
+          # Check content type
+          CONTENT_TYPE=$(curl -I "$TARGET_URL" 2>/dev/null | grep -i "content-type" | head -1)
+          echo "📄 Content-Type: $CONTENT_TYPE"
+          
+          # Check if gzip compression is enabled
+          if curl -H "Accept-Encoding: gzip" -I "$TARGET_URL" 2>/dev/null | grep -i "content-encoding.*gzip" > /dev/null; then
+            echo "✅ Gzip compression is enabled"
+          else
+            echo "⚠️ Gzip compression not detected"
+          fi
+
+  # Performance Trend Analysis
+  performance-trends:
+    name: 📈 Performance Trend Analysis
+    runs-on: ubuntu-latest
+    needs: [bundle-analysis, lighthouse-audit, health-monitoring]
+    if: always()
+    
+    steps:
+      - name: 📈 Performance Trend Summary
+        run: |
+          echo "📈 **Performance Monitoring Summary**"
+          echo "===================================="
+          echo ""
+          echo "**Monitoring Date:** $(date)"
+          echo "**Repository:** ${{ github.repository }}"
+          echo "**Commit:** ${{ github.sha }}"
+          echo "**Branch:** ${{ github.ref_name }}"
+          echo ""
+          echo "**Completed Checks:**"
+          
+          if [ "${{ needs.bundle-analysis.result }}" == "success" ]; then
+            echo "✅ Bundle size analysis"
+          else
+            echo "❌ Bundle size analysis failed"
+          fi
+          
+          if [ "${{ needs.lighthouse-audit.result }}" == "success" ]; then
+            echo "✅ Lighthouse performance audit"
+          else
+            echo "❌ Lighthouse performance audit failed"
+          fi
+          
+          if [ "${{ needs.health-monitoring.result }}" == "success" ]; then
+            echo "✅ Application health check"
+          else
+            echo "❌ Application health check failed"
+          fi
+          
+          echo ""
+          echo "**Key Metrics Tracked:**"
+          echo "- Bundle size and composition"
+          echo "- Core Web Vitals (LCP, FCP, CLS)"
+          echo "- Application response time"
+          echo "- Security headers presence"
+          echo "- Compression efficiency"
+          echo ""
+          echo "**Next Steps:**"
+          echo "1. Review detailed reports in artifacts"
+          echo "2. Address any performance warnings"
+          echo "3. Monitor trends over time"
+          echo "4. Optimize based on recommendations"
+          
+      - name: 🚨 Performance Alert
+        if: needs.bundle-analysis.result == 'failure' || needs.lighthouse-audit.result == 'failure' || needs.health-monitoring.result == 'failure'
+        run: |
+          echo "🚨 **PERFORMANCE ALERT**"
+          echo "======================="
+          echo ""
+          echo "One or more performance checks failed!"
+          echo ""
+          echo "**Failed Checks:**"
+          [ "${{ needs.bundle-analysis.result }}" == "failure" ] && echo "- Bundle size analysis"
+          [ "${{ needs.lighthouse-audit.result }}" == "failure" ] && echo "- Lighthouse performance audit"  
+          [ "${{ needs.health-monitoring.result }}" == "failure" ] && echo "- Application health check"
+          echo ""
+          echo "**Immediate Actions Required:**"
+          echo "1. Review failed check details"
+          echo "2. Investigate performance regression"
+          echo "3. Consider rollback if critical"
+          echo "4. Optimize and re-deploy"

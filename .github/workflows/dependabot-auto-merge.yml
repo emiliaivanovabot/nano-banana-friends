@@ -1,0 +1,183 @@
+name: 🤖 Dependabot Auto-Merge
+
+on:
+  # Trigger on Dependabot PRs
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  contents: write
+  checks: read
+  statuses: read
+
+jobs:
+  # Auto-approve safe dependency updates
+  dependabot-auto-approve:
+    name: 🔍 Auto-Approve Safe Updates
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    
+    steps:
+      - name: 🔍 Dependabot Metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v1
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          
+      - name: ✅ Auto-approve patch updates
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        run: |
+          echo "🔧 Auto-approving patch update for ${{ steps.metadata.outputs.dependency-names }}"
+          gh pr review --approve "${{ github.event.pull_request.html_url }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: ✅ Auto-approve minor updates for dev dependencies
+        if: |
+          steps.metadata.outputs.update-type == 'version-update:semver-minor' &&
+          steps.metadata.outputs.dependency-type == 'direct:development'
+        run: |
+          echo "🔧 Auto-approving minor dev dependency update for ${{ steps.metadata.outputs.dependency-names }}"
+          gh pr review --approve "${{ github.event.pull_request.html_url }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: ✅ Auto-approve GitHub Actions updates
+        if: steps.metadata.outputs.package-ecosystem == 'github_actions'
+        run: |
+          echo "🔧 Auto-approving GitHub Actions update for ${{ steps.metadata.outputs.dependency-names }}"
+          gh pr review --approve "${{ github.event.pull_request.html_url }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Auto-merge after CI passes
+  dependabot-auto-merge:
+    name: 🚀 Auto-Merge Safe Updates
+    runs-on: ubuntu-latest
+    needs: [dependabot-auto-approve]
+    if: github.actor == 'dependabot[bot]'
+    
+    steps:
+      - name: 🔍 Dependabot Metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v1
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          
+      - name: ⏳ Wait for CI to Complete
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          check-name: '🔍 Quality Checks'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          
+      - name: ⏳ Wait for Build to Complete  
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          check-name: '🏗️ Build & Test (20)'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          
+      - name: ⏳ Wait for Security Scan
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          check-name: '🔍 Dependency Security Scan'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          
+      - name: 🚀 Auto-merge patch updates
+        if: |
+          steps.metadata.outputs.update-type == 'version-update:semver-patch' &&
+          github.event.pull_request.mergeable_state == 'clean'
+        run: |
+          echo "🚀 Auto-merging patch update for ${{ steps.metadata.outputs.dependency-names }}"
+          gh pr merge --auto --squash "${{ github.event.pull_request.html_url }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: 🚀 Auto-merge dev dependency minor updates
+        if: |
+          steps.metadata.outputs.update-type == 'version-update:semver-minor' &&
+          steps.metadata.outputs.dependency-type == 'direct:development' &&
+          github.event.pull_request.mergeable_state == 'clean'
+        run: |
+          echo "🚀 Auto-merging minor dev dependency update for ${{ steps.metadata.outputs.dependency-names }}"
+          gh pr merge --auto --squash "${{ github.event.pull_request.html_url }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: 🚀 Auto-merge GitHub Actions updates
+        if: |
+          steps.metadata.outputs.package-ecosystem == 'github_actions' &&
+          github.event.pull_request.mergeable_state == 'clean'
+        run: |
+          echo "🚀 Auto-merging GitHub Actions update for ${{ steps.metadata.outputs.dependency-names }}"
+          gh pr merge --auto --squash "${{ github.event.pull_request.html_url }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: 📝 Comment on Manual Review Required
+        if: |
+          steps.metadata.outputs.update-type == 'version-update:semver-major' ||
+          (steps.metadata.outputs.update-type == 'version-update:semver-minor' && 
+           steps.metadata.outputs.dependency-type == 'direct:production')
+        run: |
+          gh pr comment "${{ github.event.pull_request.html_url }}" --body "
+          🔍 **Manual Review Required**
+          
+          This ${{ steps.metadata.outputs.update-type }} update requires manual review:
+          - **Dependency:** ${{ steps.metadata.outputs.dependency-names }}
+          - **Update Type:** ${{ steps.metadata.outputs.update-type }}
+          - **Dependency Type:** ${{ steps.metadata.outputs.dependency-type }}
+          
+          **Before merging:**
+          ✅ Review changelog for breaking changes
+          ✅ Test the application thoroughly
+          ✅ Verify all functionality works as expected
+          
+          **Auto-merge criteria not met because:**
+          - Major version updates may contain breaking changes
+          - Production dependency minor updates need careful review
+          
+          Once reviewed and tested, merge manually if all tests pass.
+          "
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Notification for failed auto-merge
+  notify-failure:
+    name: 📢 Notify Auto-Merge Failure
+    runs-on: ubuntu-latest
+    needs: [dependabot-auto-merge]
+    if: failure() && github.actor == 'dependabot[bot]'
+    
+    steps:
+      - name: 📢 Failure Notification
+        run: |
+          gh pr comment "${{ github.event.pull_request.html_url }}" --body "
+          ⚠️ **Auto-Merge Failed**
+          
+          The automatic merge process failed for this Dependabot update.
+          
+          **Possible reasons:**
+          - CI checks failed
+          - Merge conflicts exist
+          - Branch protection rules blocked the merge
+          
+          **Manual action required:**
+          1. Review the failed CI checks
+          2. Resolve any conflicts if present
+          3. Ensure all required status checks pass
+          4. Merge manually once issues are resolved
+          
+          **Dependency Details:**
+          - **PR:** ${{ github.event.pull_request.title }}
+          - **Author:** ${{ github.actor }}
+          - **Branch:** ${{ github.event.pull_request.head.ref }}
+          "
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -4,6 +4,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { SessionManager, authenticateUser, logout as authLogout } from './auth-utils.js'
 import { SecureLogger } from '../utils/secure-logger.js'
+import { setMonitoringUser, clearMonitoringUser, trackUserJourney } from '../lib/monitoring/index.js'
 
 const AuthContext = createContext(null)
 
@@ -32,10 +33,20 @@ export function AuthProvider({ children }) {
           setUser(session.user)
           setIsAuthenticated(true)
           setRequiresOnboarding(session.requiresOnboarding || false)
+          
+          // Set user context in monitoring systems
+          setMonitoringUser(session.user)
+          trackUserJourney('session_restored', {
+            user_id: session.user.id,
+            subscription_type: session.user.subscription_type || 'free'
+          })
         } else {
           setUser(null)
           setIsAuthenticated(false)
           setRequiresOnboarding(false)
+          
+          // Clear user context from monitoring systems
+          clearMonitoringUser()
         }
       } catch (error) {
         SecureLogger.error('Error initializing auth', error)
@@ -72,6 +83,14 @@ export function AuthProvider({ children }) {
         // Store session
         SessionManager.setSession(result.user, result.requiresOnboarding)
 
+        // Set user context in monitoring systems
+        setMonitoringUser(result.user)
+        trackUserJourney('user_login', {
+          user_id: result.user.id,
+          subscription_type: result.user.subscription_type || 'free',
+          requires_onboarding: result.requiresOnboarding
+        })
+
         return {
           success: true,
           requiresOnboarding: result.requiresOnboarding,
@@ -103,11 +122,20 @@ export function AuthProvider({ children }) {
    */
   const logout = () => {
     try {
+      // Track logout before clearing user context
+      trackUserJourney('user_logout', {
+        user_id: user?.id
+      })
+      
       authLogout()
       setUser(null)
       setIsAuthenticated(false)
       setRequiresOnboarding(false)
       setError(null)
+      
+      // Clear user context from monitoring systems
+      clearMonitoringUser()
+      
       return true
     } catch (error) {
       SecureLogger.error('Logout error', error)
@@ -123,6 +151,13 @@ export function AuthProvider({ children }) {
     try {
       SessionManager.markOnboardingComplete()
       setRequiresOnboarding(false)
+      
+      // Track onboarding completion
+      trackUserJourney('onboarding_completed', {
+        user_id: user?.id,
+        subscription_type: user?.subscription_type || 'free'
+      })
+      
       return true
     } catch (error) {
       SecureLogger.error('Error completing onboarding', error)

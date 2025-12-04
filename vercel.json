@@ -1,0 +1,103 @@
+{
+  "version": 2,
+  "name": "nano-banana-friends",
+  "alias": ["nano-banana-friends"],
+  
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "devCommand": "npm run dev",
+  "installCommand": "npm ci",
+  
+  "framework": "vite",
+  
+  "env": {
+    "NODE_ENV": "production"
+  },
+  
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
+  
+  "functions": {
+    "app/api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    },
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control", 
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  
+  "rewrites": [
+    {
+      "source": "/((?!api/.*).*)",
+      "destination": "/index.html"
+    }
+  ],
+  
+  "redirects": [
+    {
+      "source": "/home",
+      "destination": "/",
+      "permanent": true
+    }
+  ],
+  
+  "crons": [
+    {
+      "path": "/api/cleanup",
+      "schedule": "0 2 * * *"
+    }
+  ],
+  
+  "regions": ["iad1"],
+  
+  "trailingSlash": false,
+  
+  "cleanUrls": true,
+  
+  "github": {
+    "enabled": true,
+    "autoAlias": true
+  }
+}

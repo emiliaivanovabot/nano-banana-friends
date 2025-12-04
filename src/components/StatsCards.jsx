@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
-import { BarChart3, Clock, Image, Zap, TrendingUp, Activity, Cpu } from 'lucide-react'
+// Optimized icon imports - only import used icons to reduce bundle size
+import { 
+  Zap, 
+  TrendingUp, 
+  Activity, 
+  Cpu 
+} from 'lucide-react'
 import { getDailyUsageHistory, getUnifiedGenerationStats } from '../utils/usageTracking'
 import { useAuth } from '../auth/AuthContext.jsx'
 

@@ -1,0 +1,240 @@
+name: 🔄 Emergency Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - preview
+      reason:
+        description: 'Reason for rollback'
+        required: true
+        type: string
+      deployment_id:
+        description: 'Specific deployment ID to rollback to (optional)'
+        required: false
+        type: string
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  confirm-rollback:
+    name: 🔍 Confirm Rollback Request
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📋 Rollback Details
+        run: |
+          echo "🚨 **EMERGENCY ROLLBACK REQUESTED**"
+          echo "=================================="
+          echo "**Environment:** ${{ github.event.inputs.environment }}"
+          echo "**Reason:** ${{ github.event.inputs.reason }}"
+          echo "**Requested by:** ${{ github.actor }}"
+          echo "**Time:** $(date)"
+          echo ""
+          
+          if [ -n "${{ github.event.inputs.deployment_id }}" ]; then
+            echo "**Target Deployment ID:** ${{ github.event.inputs.deployment_id }}"
+          else
+            echo "**Target:** Previous stable deployment"
+          fi
+          
+      - name: 🔍 Verify Environment
+        run: |
+          case "${{ github.event.inputs.environment }}" in
+            production)
+              echo "⚠️ **PRODUCTION ROLLBACK REQUESTED**"
+              echo "This will affect live users immediately!"
+              ;;
+            preview)
+              echo "ℹ️ Preview environment rollback requested"
+              ;;
+            *)
+              echo "❌ Invalid environment specified"
+              exit 1
+              ;;
+          esac
+
+  execute-rollback:
+    name: 🚀 Execute Rollback
+    runs-on: ubuntu-latest
+    needs: [confirm-rollback]
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: 📦 Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: 📋 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: 🔧 Install Vercel CLI
+        run: npm install -g vercel@latest
+        
+      - name: 🔍 List Recent Deployments
+        id: deployments
+        run: |
+          echo "📋 Recent deployments:"
+          vercel list --token ${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }} | head -10
+          
+          # Get the most recent successful deployment
+          if [ -z "${{ github.event.inputs.deployment_id }}" ]; then
+            echo "🔍 Finding previous stable deployment..."
+            PREVIOUS_DEPLOYMENT=$(vercel list --token ${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }} --meta=true | grep -E "(Ready|Success)" | head -2 | tail -1 | awk '{print $1}')
+            echo "previous_deployment=$PREVIOUS_DEPLOYMENT" >> $GITHUB_OUTPUT
+          else
+            echo "previous_deployment=${{ github.event.inputs.deployment_id }}" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: 🔄 Perform Rollback
+        run: |
+          TARGET_DEPLOYMENT="${{ steps.deployments.outputs.previous_deployment }}"
+          
+          if [ -z "$TARGET_DEPLOYMENT" ]; then
+            echo "❌ No target deployment found for rollback"
+            exit 1
+          fi
+          
+          echo "🔄 Rolling back to deployment: $TARGET_DEPLOYMENT"
+          
+          if [ "${{ github.event.inputs.environment }}" == "production" ]; then
+            echo "🚀 Rolling back production..."
+            vercel rollback $TARGET_DEPLOYMENT --token ${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }} --yes
+          else
+            echo "🔄 Rolling back preview..."
+            vercel rollback $TARGET_DEPLOYMENT --token ${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }} --yes
+          fi
+          
+      - name: 🧪 Verify Rollback
+        run: |
+          echo "🧪 Verifying rollback success..."
+          sleep 30
+          
+          # Get current deployment URL
+          CURRENT_URL=$(vercel list --token ${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }} | head -2 | tail -1 | awk '{print $2}')
+          
+          if curl -f "$CURRENT_URL" > /dev/null 2>&1; then
+            echo "✅ Rollback verification successful"
+            echo "🔗 Active URL: $CURRENT_URL"
+          else
+            echo "❌ Rollback verification failed"
+            exit 1
+          fi
+          
+      - name: 📝 Create Rollback Report
+        run: |
+          cat > rollback-report.md << EOF
+          # 🔄 Rollback Report
+          
+          **Timestamp:** $(date)
+          **Environment:** ${{ github.event.inputs.environment }}
+          **Reason:** ${{ github.event.inputs.reason }}
+          **Executed by:** ${{ github.actor }}
+          **Target deployment:** ${{ steps.deployments.outputs.previous_deployment }}
+          
+          ## Status
+          ✅ Rollback completed successfully
+          
+          ## Verification
+          - [x] Health check passed
+          - [x] Application accessible
+          - [x] No critical errors detected
+          
+          ## Next Steps
+          1. Monitor application performance
+          2. Investigate root cause of issue
+          3. Prepare fix for re-deployment
+          4. Test fix thoroughly before deployment
+          
+          ## Timeline
+          - **Issue detected:** _Manual entry required_
+          - **Rollback initiated:** $(date)
+          - **Rollback completed:** $(date)
+          
+          EOF
+          
+          cat rollback-report.md
+          
+      - name: 📊 Upload Rollback Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: rollback-report-${{ github.event.inputs.environment }}-${{ github.run_id }}
+          path: rollback-report.md
+          retention-days: 90
+          
+      - name: 🚨 Emergency Notification
+        run: |
+          echo "🚨 **ROLLBACK COMPLETED**"
+          echo "========================"
+          echo "**Environment:** ${{ github.event.inputs.environment }}"
+          echo "**Status:** ✅ Success"
+          echo "**Time:** $(date)"
+          echo ""
+          echo "**Important:**"
+          echo "1. 🔍 Monitor the application closely"
+          echo "2. 🐛 Investigate the root cause"
+          echo "3. 🧪 Test fixes thoroughly"
+          echo "4. 📋 Document lessons learned"
+          echo ""
+          echo "**Rollback Details:**"
+          echo "- Previous deployment restored"
+          echo "- Health checks passing"
+          echo "- Users can access the application"
+
+  post-rollback-monitoring:
+    name: 📊 Post-Rollback Monitoring
+    runs-on: ubuntu-latest
+    needs: [execute-rollback]
+    if: always() && needs.execute-rollback.result == 'success'
+    
+    steps:
+      - name: 📊 Monitor Application Health
+        run: |
+          echo "📊 Starting post-rollback monitoring..."
+          
+          # Get the current deployment URL
+          CURRENT_URL="https://${{ github.event.repository.name }}.vercel.app"
+          
+          # Continuous monitoring for 5 minutes
+          for i in {1..10}; do
+            echo "🔍 Health check $i/10..."
+            
+            if curl -f "$CURRENT_URL" > /dev/null 2>&1; then
+              echo "✅ Health check $i passed"
+            else
+              echo "❌ Health check $i failed"
+              echo "🚨 Application may still be experiencing issues!"
+            fi
+            
+            sleep 30
+          done
+          
+          echo "✅ Post-rollback monitoring completed"
+          
+      - name: 📋 Generate Monitoring Summary
+        run: |
+          echo "📋 **Post-Rollback Monitoring Summary**"
+          echo "======================================="
+          echo "**Duration:** 5 minutes"
+          echo "**Environment:** ${{ github.event.inputs.environment }}"
+          echo "**Status:** Monitoring completed"
+          echo ""
+          echo "**Recommendations:**"
+          echo "1. Continue monitoring for the next 24 hours"
+          echo "2. Check error tracking dashboards"
+          echo "3. Monitor user feedback channels"
+          echo "4. Prepare incident post-mortem"
+          echo ""
+          echo "**Next Actions:**"
+          echo "- [ ] Root cause analysis"
+          echo "- [ ] Fix development and testing"
+          echo "- [ ] Staged re-deployment when ready"

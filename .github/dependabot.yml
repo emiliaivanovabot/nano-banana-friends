@@ -1,0 +1,130 @@
+# Dependabot configuration for automated dependency updates
+# This ensures your project stays secure and up-to-date with minimal manual intervention
+
+version: 2
+
+updates:
+  # Main package.json dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    
+    # Security updates get immediate attention
+    open-pull-requests-limit: 10
+    
+    # Group related updates to reduce PR noise
+    groups:
+      # React ecosystem updates
+      react-updates:
+        patterns:
+          - "react*"
+          - "@vitejs/*"
+          - "vite"
+        
+      # UI/Styling dependencies  
+      ui-updates:
+        patterns:
+          - "@radix-ui/*"
+          - "tailwind*"
+          - "class-variance-authority"
+          - "clsx"
+          - "lucide-react"
+          
+      # Development tools
+      dev-tools:
+        patterns:
+          - "terser"
+          - "autoprefixer"
+          - "postcss"
+          
+      # Database and Auth
+      backend-updates:
+        patterns:
+          - "@supabase/*"
+          - "better-sqlite3"
+          - "sqlite3"
+          - "bcryptjs"
+          
+      # Utilities
+      utilities:
+        patterns:
+          - "dotenv"
+          - "node-fetch"
+          - "formidable"
+          - "canvas"
+          - "cheerio"
+          - "basic-ftp"
+    
+    # Auto-merge configuration for patch updates
+    reviewers:
+      - "bertanyalcintepe"  # Replace with actual GitHub username
+    
+    # Commit message configuration
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    
+    # Labels for easier PR management
+    labels:
+      - "dependencies"
+      - "auto-update"
+    
+    # Only update semver-compatible versions by default
+    versioning-strategy: increase
+    
+    # Custom branch naming
+    pull-request-branch-name:
+      separator: "/"
+    
+    # Allow Dependabot to update .github workflows too
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+
+  # API directory dependencies (if exists)
+  - package-ecosystem: "npm"
+    directory: "/api"
+    schedule:
+      interval: "weekly" 
+      day: "tuesday"
+      time: "09:00"
+      timezone: "UTC"
+    
+    open-pull-requests-limit: 5
+    
+    commit-message:
+      prefix: "api-deps"
+      include: "scope"
+      
+    labels:
+      - "dependencies"
+      - "api"
+      - "auto-update"
+
+  # GitHub Actions workflow dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/.github/workflows"
+    schedule:
+      interval: "monthly"
+      day: "first-monday"
+      time: "10:00"
+      timezone: "UTC"
+    
+    open-pull-requests-limit: 3
+    
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+      
+    labels:
+      - "github-actions"
+      - "ci/cd"
+      - "auto-update"
+    
+    # Auto-approve action updates (they're generally safe)
+    reviewers:
+      - "bertanyalcintepe"  # Replace with actual GitHub username

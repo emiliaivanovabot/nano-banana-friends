@@ -1,9 +1,10 @@
 import React from 'react';
+import { captureError, addNavigationBreadcrumb } from '../lib/monitoring/sentry.js';
 
 class MobileErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { hasError: false, error: null, errorInfo: null, eventId: null };
   }
 
   static getDerivedStateFromError(error) {
@@ -21,13 +22,38 @@ class MobileErrorBoundary extends React.Component {
       errorInfo: errorInfo
     });
 
-    // Report to crash analytics if available
+    // Enhanced error reporting with context
+    const errorContext = {
+      component: 'MobileErrorBoundary',
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      timestamp: new Date().toISOString(),
+      viewport: `${window.innerWidth}x${window.innerHeight}`,
+      connection: navigator.connection ? {
+        effectiveType: navigator.connection.effectiveType,
+        downlink: navigator.connection.downlink
+      } : null,
+      memory: performance.memory ? {
+        used: Math.round(performance.memory.usedJSHeapSize / 1048576),
+        total: Math.round(performance.memory.totalJSHeapSize / 1048576)
+      } : null,
+      componentStack: errorInfo.componentStack,
+      isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    };
+
+    // Capture error with enhanced context
+    captureError(error, errorContext);
+
+    // Report to Google Analytics if available
     if (window.gtag) {
       window.gtag('event', 'exception', {
         description: `Mobile Error: ${error.toString()}`,
         fatal: false
       });
     }
+
+    // Add breadcrumb for error recovery tracking
+    addNavigationBreadcrumb('error_boundary', 'error_state');
   }
 
   render() {

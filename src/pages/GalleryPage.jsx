@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { supabase } from '../lib/supabase';
 import SwipeHandler from '../utils/SwipeHandler.js';
+import LazyImage from '../components/ui/LazyImage.jsx';
 
 function GalleryPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -28,6 +29,8 @@ function GalleryPage() {
   const [isNavigating, setIsNavigating] = useState(false);
   const [visibleImages, setVisibleImages] = useState(new Set());
   const [scrolling, setScrolling] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [userImageCounts, setUserImageCounts] = useState({});
   
   // Refs for cleanup and performance
   const swipeHandlerRef = useRef(null);
@@ -36,6 +39,45 @@ function GalleryPage() {
   const componentMountedRef = useRef(true);
   const intersectionObserverRef = useRef(null);
   const galleryContainerRef = useRef(null);
+
+  // Fetch all unique users who have images (for admin mode)
+  const fetchAvailableUsers = useCallback(async () => {
+    if (!isAdminMode || authLoading || !user?.username) return;
+
+    try {
+      console.log('🔍 Fetching available users with accurate image counts...');
+      
+      // Get all usernames with their actual image counts from database
+      const { data, error } = await supabase
+        .from('generations')
+        .select('username')
+        .eq('status', 'completed')
+        .not('result_image_url', 'is', null)
+        .not('username', 'is', null);
+
+      if (error) throw error;
+
+      // Count images per user
+      const userCounts = {};
+      data.forEach(item => {
+        if (item.username) {
+          userCounts[item.username] = (userCounts[item.username] || 0) + 1;
+        }
+      });
+
+      // Extract usernames with counts and sort them
+      const uniqueUsers = Object.keys(userCounts).sort();
+      
+      console.log('✅ Found users with image counts:', userCounts);
+      setAvailableUsers(uniqueUsers);
+      setUserImageCounts(userCounts);
+      
+    } catch (error) {
+      console.error('❌ Error fetching available users:', error);
+      setAvailableUsers([]);
+      setUserImageCounts({});
+    }
+  }, [isAdminMode, authLoading, user?.username]);
 
   // Initialize image pool (load all images once)
   const initializeImagePool = useCallback(async () => {
@@ -138,7 +180,11 @@ function GalleryPage() {
     if (imagePool.length === 0) {
       initializeImagePool();
     }
-  }, [imagePool.length, initializeImagePool]);
+    // Also fetch available users for admin mode
+    if (isAdminMode && availableUsers.length === 0) {
+      fetchAvailableUsers();
+    }
+  }, [imagePool.length, initializeImagePool, isAdminMode, availableUsers.length, fetchAvailableUsers]);
 
   // Floating back button visibility
   useEffect(() => {
@@ -518,14 +564,13 @@ function GalleryPage() {
         }}>
           {(() => {
             if (isAdminMode) {
-              // Admin mode: fixed user filters based on known users
-              const knownUsers = ['jessy.germany', 'selina.luna', 'tyra.foxi', 'emilia.berlin'];
+              // Admin mode: dynamic user filters based on actual users in database
               return [
                 { key: 'all', label: 'Alle User', count: images.length },
-                ...knownUsers.map(username => ({
+                ...availableUsers.map(username => ({
                   key: username,
                   label: username,
-                  count: images.filter(img => img.username === username).length
+                  count: userImageCounts[username] || 0
                 }))
               ];
             } else {
@@ -673,7 +718,7 @@ function GalleryPage() {
                       📷<br/>Bild konnte<br/>nicht geladen<br/>werden
                     </div>
                   ) : (
-                    <img
+                    <LazyImage
                       src={image.result_image_url}
                       alt={`Generated ${image.generation_type}`}
                       style={{

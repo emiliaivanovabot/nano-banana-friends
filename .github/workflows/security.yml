@@ -1,0 +1,290 @@
+name: 🛡️ Security Scanning
+
+on:
+  # Run security scans on every push and PR
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  
+  # Scheduled security scans (daily)
+  schedule:
+    - cron: '0 8 * * *'
+  
+  # Manual trigger
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # Dependency Vulnerability Scanning
+  dependency-scan:
+    name: 🔍 Dependency Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: 📦 Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: 📋 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 🔧 Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+        
+      - name: 🛡️ NPM Audit
+        run: |
+          echo "🔍 Running npm audit for vulnerability detection..."
+          
+          # Create audit report
+          npm audit --json > audit-report.json || true
+          
+          # Check for high/critical vulnerabilities
+          CRITICAL=$(cat audit-report.json | jq '.metadata.vulnerabilities.critical // 0')
+          HIGH=$(cat audit-report.json | jq '.metadata.vulnerabilities.high // 0')
+          MODERATE=$(cat audit-report.json | jq '.metadata.vulnerabilities.moderate // 0')
+          
+          echo "🛡️ Vulnerability Summary:"
+          echo "Critical: $CRITICAL"
+          echo "High: $HIGH"  
+          echo "Moderate: $MODERATE"
+          
+          # Fail if critical vulnerabilities found
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "❌ Critical vulnerabilities found! Manual review required."
+            npm audit
+            exit 1
+          fi
+          
+          # Warn for high vulnerabilities
+          if [ "$HIGH" -gt 0 ]; then
+            echo "⚠️ High severity vulnerabilities found. Consider updating dependencies."
+            npm audit
+          fi
+          
+          echo "✅ Dependency scan completed"
+          
+      - name: 🔧 Audit Fix (Dry Run)
+        if: failure()
+        run: |
+          echo "🔧 Checking available fixes..."
+          npm audit fix --dry-run --json > audit-fix.json || true
+          
+          echo "Available fixes:"
+          cat audit-fix.json | jq '.actions[].resolves[].path' 2>/dev/null || echo "No automatic fixes available"
+          
+      - name: 📊 Upload Audit Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-${{ github.sha }}
+          path: |
+            audit-report.json
+            audit-fix.json
+          retention-days: 30
+
+  # Code Security Analysis
+  code-security-scan:
+    name: 🔒 Code Security Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: 📦 Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: 🔍 Secret Detection
+        run: |
+          echo "🔍 Scanning for potential secrets and sensitive data..."
+          
+          # Common patterns for secrets
+          SECRET_PATTERNS=(
+            "password\s*=\s*[\"'][^\"']+[\"']"
+            "secret\s*=\s*[\"'][^\"']+[\"']"
+            "api[_-]?key\s*=\s*[\"'][^\"']+[\"']"
+            "access[_-]?token\s*=\s*[\"'][^\"']+[\"']"
+            "private[_-]?key\s*=\s*[\"'][^\"']+[\"']"
+            "[A-Za-z0-9+/]{40,}"
+          )
+          
+          FOUND_SECRETS=false
+          for pattern in "${SECRET_PATTERNS[@]}"; do
+            if grep -r -i -E "$pattern" src/ --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" --exclude="*.test.*" --exclude="*.spec.*"; then
+              echo "⚠️ Potential secret found matching pattern: $pattern"
+              FOUND_SECRETS=true
+            fi
+          done
+          
+          if [ "$FOUND_SECRETS" = true ]; then
+            echo "❌ Potential secrets detected in code. Please review and move to environment variables."
+            echo "ℹ️ Use process.env.VARIABLE_NAME for secrets"
+            exit 1
+          fi
+          
+          echo "✅ No secrets detected in code"
+          
+      - name: 🔒 Security Headers Check
+        run: |
+          echo "🔒 Checking for security-related configurations..."
+          
+          # Check for security headers in HTML
+          if grep -r "Content-Security-Policy\|X-Frame-Options\|X-Content-Type-Options" public/ src/ 2>/dev/null; then
+            echo "✅ Found security headers configuration"
+          else
+            echo "ℹ️ Consider adding security headers for enhanced protection"
+            echo "Recommended headers:"
+            echo "- Content-Security-Policy"
+            echo "- X-Frame-Options"
+            echo "- X-Content-Type-Options"
+          fi
+          
+      - name: 🌐 HTTPS and Secure Practices Check
+        run: |
+          echo "🌐 Checking for secure communication practices..."
+          
+          # Check for http:// URLs (should prefer https://)
+          if grep -r "http://" src/ --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" | grep -v "localhost\|127.0.0.1\|example.com"; then
+            echo "⚠️ Found non-HTTPS URLs. Consider using HTTPS for security."
+          fi
+          
+          # Check for secure cookie practices
+          if grep -r "document.cookie" src/ --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx"; then
+            echo "ℹ️ Found cookie usage. Ensure secure cookie practices (HttpOnly, Secure, SameSite)"
+          fi
+          
+          echo "✅ Secure practices check completed"
+          
+      - name: 🔍 Dependency License Check
+        run: |
+          echo "🔍 Checking dependency licenses..."
+          
+          # Get list of production dependencies
+          npm list --prod --json > deps.json 2>/dev/null || true
+          
+          # Check for GPL or other restrictive licenses
+          if npm list --prod | grep -i "gpl\|agpl"; then
+            echo "⚠️ Found GPL licensed dependencies. Review license compatibility."
+          fi
+          
+          echo "✅ License check completed"
+          
+          # Cleanup
+          rm -f deps.json
+
+  # Container Security (if using Docker)
+  container-security:
+    name: 🐳 Container Security
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📦 Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: 🔍 Dockerfile Security Check
+        run: |
+          if [ -f "Dockerfile" ]; then
+            echo "🐳 Found Dockerfile, running security checks..."
+            
+            # Check for common security issues in Dockerfile
+            ISSUES=false
+            
+            # Check if running as root
+            if grep -q "USER root" Dockerfile || ! grep -q "USER" Dockerfile; then
+              echo "⚠️ Container may be running as root. Consider using non-root user."
+              ISSUES=true
+            fi
+            
+            # Check for COPY with wide permissions
+            if grep -q "COPY \. \." Dockerfile; then
+              echo "⚠️ Found 'COPY . .' which copies all files. Consider being more specific."
+              ISSUES=true
+            fi
+            
+            # Check for package updates
+            if grep -q "apt-get update" Dockerfile && ! grep -q "apt-get clean" Dockerfile; then
+              echo "ℹ️ Consider cleaning apt cache after updates to reduce image size."
+            fi
+            
+            if [ "$ISSUES" = false ]; then
+              echo "✅ Dockerfile security check passed"
+            fi
+          else
+            echo "ℹ️ No Dockerfile found, skipping container security check"
+          fi
+
+  # Security Report Generation
+  security-report:
+    name: 📋 Security Report
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, code-security-scan]
+    if: always()
+    timeout-minutes: 5
+    
+    steps:
+      - name: 📊 Generate Security Summary
+        run: |
+          echo "📋 **Security Scan Summary**" > security-summary.md
+          echo "=========================" >> security-summary.md
+          echo "" >> security-summary.md
+          echo "**Scan Date:** $(date)" >> security-summary.md
+          echo "**Repository:** ${{ github.repository }}" >> security-summary.md
+          echo "**Commit:** ${{ github.sha }}" >> security-summary.md
+          echo "**Branch:** ${{ github.ref_name }}" >> security-summary.md
+          echo "" >> security-summary.md
+          
+          # Check job results
+          if [ "${{ needs.dependency-scan.result }}" == "success" ]; then
+            echo "✅ **Dependency Scan:** PASSED" >> security-summary.md
+          else
+            echo "❌ **Dependency Scan:** FAILED" >> security-summary.md
+          fi
+          
+          if [ "${{ needs.code-security-scan.result }}" == "success" ]; then
+            echo "✅ **Code Security Scan:** PASSED" >> security-summary.md
+          else
+            echo "❌ **Code Security Scan:** FAILED" >> security-summary.md
+          fi
+          
+          echo "" >> security-summary.md
+          echo "**Recommendations:**" >> security-summary.md
+          echo "- Keep dependencies updated" >> security-summary.md
+          echo "- Use environment variables for secrets" >> security-summary.md
+          echo "- Implement security headers" >> security-summary.md
+          echo "- Regular security audits" >> security-summary.md
+          
+          # Display summary
+          cat security-summary.md
+          
+      - name: 📊 Upload Security Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report-${{ github.sha }}
+          path: security-summary.md
+          retention-days: 90
+          
+      - name: 🚨 Security Alert
+        if: needs.dependency-scan.result == 'failure' || needs.code-security-scan.result == 'failure'
+        run: |
+          echo "🚨 **SECURITY ALERT**"
+          echo "One or more security scans failed!"
+          echo ""
+          echo "**Failed Scans:**"
+          [ "${{ needs.dependency-scan.result }}" == "failure" ] && echo "- Dependency Security Scan"
+          [ "${{ needs.code-security-scan.result }}" == "failure" ] && echo "- Code Security Analysis"
+          echo ""
+          echo "**Action Required:**"
+          echo "1. Review failed scan details"
+          echo "2. Update vulnerable dependencies"  
+          echo "3. Remove any secrets from code"
+          echo "4. Re-run security scans"
+          echo ""
+          echo "**Resources:**"
+          echo "- GitHub Security Advisory: https://github.com/advisories"
+          echo "- npm audit docs: https://docs.npmjs.com/cli/v8/commands/npm-audit"

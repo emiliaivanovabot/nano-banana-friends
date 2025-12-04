@@ -235,6 +235,32 @@ function PromptCreatorPage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  // Load saved settings on component mount
+  useEffect(() => {
+    try {
+      const savedSettings = localStorage.getItem('promptCreator_lastSettings')
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings)
+        console.log('🔄 Loading saved user settings:', settings)
+        
+        // Nur laden wenn nicht älter als 24 Stunden
+        const isRecent = Date.now() - settings.timestamp < 24 * 60 * 60 * 1000
+        if (isRecent) {
+          setUserIdea(settings.userIdea || '')
+          setPromptCount(settings.promptCount || '')
+          setPhotoStyle(settings.photoStyle || '')
+          setConsistencyMode(settings.consistencyMode || '')
+          console.log('✅ Restored user settings from last session')
+        } else {
+          console.log('⏰ Saved settings too old, starting fresh')
+          localStorage.removeItem('promptCreator_lastSettings')
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading saved settings:', error)
+    }
+  }, [])
+
   // Test-Funktion - kopiert einfach das was an Grok gesendet würde
   const showGrokInput = async () => {
     if (!userIdea.trim()) {
@@ -310,6 +336,17 @@ USER INPUT:
         faceImages: faceImages?.length || 0
       })
 
+      // User-Einstellungen für Rückkehr speichern
+      const lastUserSettings = {
+        userIdea: userIdea.trim(),
+        promptCount,
+        photoStyle,
+        consistencyMode,
+        timestamp: Date.now()
+      }
+      localStorage.setItem('promptCreator_lastSettings', JSON.stringify(lastUserSettings))
+      console.log('💾 Saved user settings for return:', lastUserSettings)
+
       // Prompts und User-Daten an die Multi-Prompts Seite übergeben
       navigate('/nono-banana-multi-prompts', {
         state: {
@@ -325,6 +362,17 @@ USER INPUT:
       })
     } catch (error) {
       console.error('❌ Error loading user data:', error)
+      
+      // Auch im Fallback speichern
+      const lastUserSettings = {
+        userIdea: userIdea.trim(),
+        promptCount,
+        photoStyle,
+        consistencyMode,
+        timestamp: Date.now()
+      }
+      localStorage.setItem('promptCreator_lastSettings', JSON.stringify(lastUserSettings))
+      
       // Fallback: ohne User-Daten navigieren
       navigate('/nono-banana-multi-prompts', {
         state: {

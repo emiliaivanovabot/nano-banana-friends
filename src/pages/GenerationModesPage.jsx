@@ -149,7 +149,7 @@ function GenerationModesPage() {
           color: 'hsl(var(--foreground))',
           fontWeight: '500'
         }}>
-          Wähle deinen Generierungsmodus
+          Was willst du heute machen?
         </p>
       </div>
 
@@ -168,10 +168,12 @@ function GenerationModesPage() {
                 to={mode.path}
                 style={{
                   textDecoration: 'none',
-                  display: 'block',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                   background: mode.id === 'model-generation' ? '#a86d09' : mode.id === 'collab-generation' ? '#5a387d' : mode.id === 'image-to-image' ? '#992f63' : mode.id === 'multi-prompts' ? '#059669' : mode.id === 'prompt-creator' ? '#d97706' : 'hsl(var(--card))',
                   borderRadius: '25px',
-                  padding: '30px',
+                  padding: isMobile ? '15px 20px' : '25px',
                   boxShadow: '0 15px 35px hsl(var(--background) / 0.2)',
                   border: '1px solid hsl(var(--border))',
                   transition: 'all 0.4s ease',
@@ -187,31 +189,56 @@ function GenerationModesPage() {
                   e.target.style.boxShadow = '0 15px 35px rgba(0, 0, 0, 0.1)'
                 }}
               >
+                {/* Text Content */}
+                <div style={{ flex: 1 }}>
+                  <h3 style={{
+                    margin: '0 0 8px 0',
+                    fontSize: isMobile ? '20px' : '24px',
+                    fontWeight: '700',
+                    color: 'hsl(var(--foreground))'
+                  }}>
+                    {mode.title}
+                  </h3>
+                  <p style={{
+                    margin: 0,
+                    fontSize: isMobile ? '14px' : '16px',
+                    color: 'hsl(var(--primary))',
+                    fontWeight: '600'
+                  }}>
+                    {mode.subtitle}
+                  </p>
+                </div>
                 
-                <h3 style={{
-                  margin: '0 0 8px 0',
-                  fontSize: '24px',
-                  fontWeight: '700',
-                  color: 'hsl(var(--foreground))'
+                {/* Icon */}
+                <div style={{
+                  fontSize: isMobile ? '40px' : '50px',
+                  opacity: 0.7,
+                  marginLeft: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
-                  {mode.title}
-                </h3>
-                <p style={{
-                  margin: 0,
-                  fontSize: '16px',
-                  color: 'hsl(var(--primary))',
-                  fontWeight: '600'
-                }}>
-                  {mode.subtitle}
-                </p>
+                  {mode.id === 'model-generation' ? '🍌' : 
+                   mode.id === 'prompt-creator' ? 
+                   <img src="/Grok-feb-2025-logo.svg.png" alt="Grok" style={{height: isMobile ? '35px' : '45px', width: 'auto'}} /> : 
+                   mode.id === 'multi-prompts' ?
+                   <span style={{color: 'black', fontSize: isMobile ? '40px' : '50px'}}>≡</span> :
+                   mode.id === 'collab-generation' ?
+                   <span style={{color: 'black', fontSize: isMobile ? '40px' : '50px'}}>&</span> :
+                   mode.id === 'image-to-image' ?
+                   <span style={{color: 'black', fontSize: isMobile ? '40px' : '50px'}}>⇄</span> :
+                   mode.emoji}
+                </div>
               </Link>
             ) : (
               <div
                 style={{
-                  display: 'block',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                   background: 'hsl(var(--muted) / 0.5)',
                   borderRadius: '25px',
-                  padding: '30px',
+                  padding: isMobile ? '15px 20px' : '25px',
                   boxShadow: '0 15px 35px hsl(var(--background) / 0.1)',
                   border: '1px solid hsl(var(--border))',
                   cursor: 'not-allowed',
@@ -220,57 +247,52 @@ function GenerationModesPage() {
                   filter: 'grayscale(50%)'
                 }}
               >
+                {/* Text Content */}
+                <div style={{ flex: 1 }}>
+                  <h3 style={{
+                    margin: '0 0 8px 0',
+                    fontSize: isMobile ? '20px' : '24px',
+                    fontWeight: '700',
+                    color: 'hsl(var(--foreground))'
+                  }}>
+                    {mode.title}
+                  </h3>
+                  <p style={{
+                    margin: 0,
+                    fontSize: isMobile ? '14px' : '16px',
+                    color: 'hsl(var(--primary))',
+                    fontWeight: '600'
+                  }}>
+                    {mode.subtitle}
+                  </p>
+                </div>
                 
-                <h3 style={{
-                  margin: '0 0 8px 0',
-                  fontSize: '24px',
-                  fontWeight: '700',
-                  color: 'hsl(var(--foreground))'
+                {/* Icon */}
+                <div style={{
+                  fontSize: isMobile ? '40px' : '50px',
+                  opacity: 0.7,
+                  marginLeft: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
-                  {mode.title}
-                </h3>
-                <p style={{
-                  margin: 0,
-                  fontSize: '16px',
-                  color: 'hsl(var(--primary))',
-                  fontWeight: '600'
-                }}>
-                  {mode.subtitle}
-                </p>
+                  {mode.id === 'model-generation' ? '🍌' : 
+                   mode.id === 'prompt-creator' ? 
+                   <img src="/Grok-feb-2025-logo.svg.png" alt="Grok" style={{height: isMobile ? '35px' : '45px', width: 'auto'}} /> : 
+                   mode.id === 'multi-prompts' ?
+                   <span style={{color: 'black', fontSize: isMobile ? '40px' : '50px'}}>≡</span> :
+                   mode.id === 'collab-generation' ?
+                   <span style={{color: 'black', fontSize: isMobile ? '40px' : '50px'}}>&</span> :
+                   mode.id === 'image-to-image' ?
+                   <span style={{color: 'black', fontSize: isMobile ? '40px' : '50px'}}>⇄</span> :
+                   mode.emoji}
+                </div>
               </div>
             )}
           </div>
         ))}
       </div>
 
-      {/* Info Section */}
-      <div style={{
-        maxWidth: '800px',
-        margin: '50px auto 0',
-        background: 'hsl(var(--card) / 0.5)',
-        backdropFilter: 'blur(10px)',
-        padding: '25px',
-        borderRadius: '20px',
-        border: '1px solid hsl(var(--border) / 0.5)',
-        textAlign: 'center'
-      }}>
-        <h4 style={{
-          margin: '0 0 15px 0',
-          fontSize: '18px',
-          fontWeight: '600',
-          color: 'hsl(var(--foreground))'
-        }}>
-          Was willst du heute machen?
-        </h4>
-        <p style={{
-          margin: 0,
-          fontSize: '14px',
-          color: 'hsl(var(--muted-foreground))',
-          lineHeight: '1.5'
-        }}>
-          Du kennst das - manchmal brauchst du einfach was Neues. Nimm einen Modus, mach dein Ding und zeig Instagram, was du drauf hast!
-        </p>
-      </div>
     </div>
   )
 }

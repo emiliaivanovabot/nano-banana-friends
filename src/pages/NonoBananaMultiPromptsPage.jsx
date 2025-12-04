@@ -253,6 +253,7 @@ function NonoBananaPage() {
   const [hasCollabPartner, setHasCollabPartner] = useState(false)
   const [multiTimer, setMultiTimer] = useState(0)
   const [multiResults10, setMultiResults10] = useState([])
+  const [generationCompleted, setGenerationCompleted] = useState(false)
   const [multiLoading10, setMultiLoading10] = useState(false)
   const [multiTimer10, setMultiTimer10] = useState(0)
   const [personalAppearanceText, setPersonalAppearanceText] = useState('')
@@ -962,6 +963,7 @@ function NonoBananaPage() {
       alert('Fehler bei der Generierung: ' + error.message)
     } finally {
       setLoading(false)
+      setGenerationCompleted(true)
       setLiveTimer(0)
     }
   }
@@ -1353,6 +1355,7 @@ function NonoBananaPage() {
     } finally {
       clearInterval(timerInterval)
       setLoading(false)
+      setGenerationCompleted(true)
       
       // Release wake lock
       if (wakeLock) {
@@ -1619,6 +1622,7 @@ function NonoBananaPage() {
       alert('Fehler bei 4x Generierung: ' + error.message)
     } finally {
       setMultiLoading(false)
+      setGenerationCompleted(true)
       clearInterval(timerInterval)
       
       // Wake Lock freigeben
@@ -1885,6 +1889,7 @@ function NonoBananaPage() {
       alert('Fehler bei 10x Generierung: ' + error.message)
     } finally {
       setMultiLoading10(false)
+      setGenerationCompleted(true)
       clearInterval(timerInterval)
       
       // Wake Lock freigeben
@@ -2653,7 +2658,7 @@ function NonoBananaPage() {
                     border: '1px solid rgba(34, 197, 94, 0.3)',
                     borderRadius: '0 0 6px 6px',
                     fontSize: '12px',
-                    color: '#059669',
+                    color: '#a855f7',
                     fontWeight: '500'
                   }}>
                     <div style={{ marginBottom: '4px', fontWeight: '600' }}>Alles in diesem grünen Feld wird zusätzlich zum Prompt gesendet:</div>
@@ -2694,7 +2699,7 @@ function NonoBananaPage() {
                         })()}
                         {usePersonalization && personalAppearanceText.trim() && (
                           <span style={{
-                            color: '#059669',
+                            color: '#a855f7',
                             fontWeight: '500',
                             fontSize: '14px'
                           }}>
@@ -2903,8 +2908,8 @@ function NonoBananaPage() {
               <div
                 key={promptObj.id}
                 style={{
-                  background: 'rgba(34, 197, 94, 0.1)',
-                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  background: 'rgba(168, 85, 247, 0.1)',
+                  border: '1px solid rgba(168, 85, 247, 0.3)',
                   borderRadius: '8px',
                   padding: '12px',
                   position: 'relative'
@@ -2923,7 +2928,7 @@ function NonoBananaPage() {
                   <span style={{
                     fontSize: '14px',
                     fontWeight: '600',
-                    color: '#059669',
+                    color: '#a855f7',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px'
@@ -3058,6 +3063,47 @@ function NonoBananaPage() {
             }
           </span>
         </button>
+
+        {/* Back to Prompt Creator Button - nur nach Generierung */}
+        {transferredFromPromptCreator && generationCompleted && (
+          <Link
+            to="/prompt-creator"
+            style={{
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              background: 'rgba(168, 85, 247, 0.1)',
+              color: 'hsl(var(--foreground))',
+              padding: '12px 20px',
+              borderRadius: '12px',
+              border: '2px solid rgba(168, 85, 247, 0.3)',
+              fontWeight: '600',
+              fontSize: '14px',
+              marginTop: '10px',
+              boxShadow: '0 0 15px rgba(168, 85, 247, 0.6), 0 0 30px rgba(168, 85, 247, 0.3)',
+              animation: 'glow 1s ease-in, pulse 2s infinite ease-in-out 1s',
+              transition: 'all 0.3s ease',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(168, 85, 247, 0.2)'
+              e.target.style.transform = 'translateY(-2px)'
+              e.target.style.borderColor = 'rgba(168, 85, 247, 0.6)'
+              e.target.style.boxShadow = '0 0 25px rgba(168, 85, 247, 0.8), 0 0 40px rgba(168, 85, 247, 0.4)'
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'rgba(168, 85, 247, 0.1)'
+              e.target.style.transform = 'translateY(0)'
+              e.target.style.borderColor = 'rgba(168, 85, 247, 0.3)'
+              e.target.style.boxShadow = '0 0 15px rgba(168, 85, 247, 0.6), 0 0 30px rgba(168, 85, 247, 0.3)'
+            }}
+          >
+            🔮
+            <span>Zurück zum Prompt Creator</span>
+          </Link>
+        )}
       </div>
 
       {/* Loading State mit Live Timer */}

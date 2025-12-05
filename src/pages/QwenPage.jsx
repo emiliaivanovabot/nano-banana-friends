@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { uploadAndSaveImage } from '../utils/imageUpload.js'
+import { optimizePromptForQwen, optimizePromptSimple } from '../services/grokService.js'
 
 function QwenPage() {
   const { user } = useAuth()
@@ -17,6 +18,8 @@ function QwenPage() {
   const [savedImageUrl, setSavedImageUrl] = useState(null)
   const [saveProgress, setSaveProgress] = useState('')
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+  const [optimizingPrompt, setOptimizingPrompt] = useState(false)
+  const [optimizingSimple, setOptimizingSimple] = useState(false)
   
   const fileRef = useRef(null)
 
@@ -84,6 +87,68 @@ function QwenPage() {
       console.error('Upload error:', err)
       throw new Error('Failed to save image')
     }
+  }
+
+  const optimizePromptWithGrok = async () => {
+    if (!prompt.trim() || optimizingPrompt) {
+      setError('Bitte gib einen Prompt ein bevor du ihn optimierst.')
+      return
+    }
+
+    setOptimizingPrompt(true)
+    setError('')
+    
+    try {
+      console.log('🧠 GROK EXTREME OPTIMIZATION: Starting prompt optimization')
+      const result = await optimizePromptForQwen(prompt)
+      
+      if (result.success) {
+        console.log('✅ GROK EXTREME OPTIMIZATION SUCCESS:', result.optimizedPrompt)
+        setPrompt(result.optimizedPrompt)
+        setProgress('🔥 Extrem-Prompt wurde von Grok optimiert!')
+        setTimeout(() => setProgress(''), 3000)
+      } else {
+        console.error('❌ GROK EXTREME OPTIMIZATION FAILED:', result.error)
+        setError('Extrem-Optimierung fehlgeschlagen: ' + result.error)
+      }
+      
+    } catch (err) {
+      console.error('❌ GROK EXTREME OPTIMIZATION ERROR:', err)
+      setError('Verbindung zu Grok fehlgeschlagen. Versuche es später erneut.')
+    }
+    
+    setOptimizingPrompt(false)
+  }
+
+  const optimizePromptSimpleGrok = async () => {
+    if (!prompt.trim() || optimizingSimple) {
+      setError('Bitte gib einen Prompt ein bevor du ihn optimierst.')
+      return
+    }
+
+    setOptimizingSimple(true)
+    setError('')
+    
+    try {
+      console.log('🎨 GROK SIMPLE OPTIMIZATION: Starting simple optimization')
+      const result = await optimizePromptSimple(prompt)
+      
+      if (result.success) {
+        console.log('✅ GROK SIMPLE OPTIMIZATION SUCCESS:', result.optimizedPrompt)
+        setPrompt(result.optimizedPrompt)
+        setProgress('✅ Einfacher Prompt optimiert!')
+        setTimeout(() => setProgress(''), 2000)
+      } else {
+        console.error('❌ GROK SIMPLE OPTIMIZATION FAILED:', result.error)
+        setError('Einfache Optimierung fehlgeschlagen: ' + result.error)
+      }
+      
+    } catch (err) {
+      console.error('❌ GROK SIMPLE OPTIMIZATION ERROR:', err)
+      setError('Verbindung zu Grok fehlgeschlagen. Versuche es später erneut.')
+    }
+    
+    setOptimizingSimple(false)
   }
 
   const editImage = async () => {
@@ -638,6 +703,74 @@ function QwenPage() {
                     {quickPrompt}
                   </button>
                 ))}
+              </div>
+
+              {/* Grok Prompt Enhancement Buttons */}
+              <div style={{
+                display: 'flex',
+                gap: '10px',
+                marginTop: '20px',
+                flexWrap: 'wrap'
+              }}>
+                <button
+                  onClick={optimizePromptSimpleGrok}
+                  disabled={!prompt.trim() || optimizingSimple}
+                  style={{
+                    flex: '1',
+                    padding: '12px 16px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: optimizingSimple || !prompt.trim() ? 'hsl(var(--muted-foreground))' : 'white',
+                    background: optimizingSimple || !prompt.trim() ? 'hsl(var(--muted))' : 'linear-gradient(135deg, hsl(150 60% 50%), hsl(180 60% 50%))',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: optimizingSimple || !prompt.trim() ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s ease',
+                    minWidth: '140px'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!optimizingSimple && prompt.trim()) {
+                      e.target.style.transform = 'translateY(-1px)'
+                      e.target.style.boxShadow = '0 6px 20px rgba(34, 197, 94, 0.3)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)'
+                    e.target.style.boxShadow = 'none'
+                  }}
+                >
+                  {optimizingSimple ? '🎨 Optimiert...' : '✅ Einfach optimieren'}
+                </button>
+
+                <button
+                  onClick={optimizePromptWithGrok}
+                  disabled={!prompt.trim() || optimizingPrompt}
+                  style={{
+                    flex: '1',
+                    padding: '12px 16px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: optimizingPrompt || !prompt.trim() ? 'hsl(var(--muted-foreground))' : 'white',
+                    background: optimizingPrompt || !prompt.trim() ? 'hsl(var(--muted))' : 'linear-gradient(135deg, hsl(350 70% 60%), hsl(320 70% 60%))',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: optimizingPrompt || !prompt.trim() ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s ease',
+                    minWidth: '140px'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!optimizingPrompt && prompt.trim()) {
+                      e.target.style.transform = 'translateY(-1px)'
+                      e.target.style.boxShadow = '0 6px 20px rgba(239, 68, 68, 0.3)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)'
+                    e.target.style.boxShadow = 'none'
+                  }}
+                >
+                  {optimizingPrompt ? '🔥 Optimiert...' : '🔥 EXTREM optimieren'}
+                </button>
               </div>
             </div>
 

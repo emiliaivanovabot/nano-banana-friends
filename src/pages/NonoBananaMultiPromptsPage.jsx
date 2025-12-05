@@ -1934,48 +1934,68 @@ function NonoBananaPage() {
       padding: '20px'
     }}>
       
-      {/* Header with user info and navigation */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '30px',
-        flexWrap: 'wrap',
-        gap: '10px'
+      {/* Header */}
+      <div style={{
+        marginBottom: '24px'
       }}>
-        <div style={{ 
-          display: 'flex', 
+        <div style={{
+          display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          width: '100%'
+          background: 'hsl(var(--card))',
+          backdropFilter: 'blur(20px)',
+          padding: '12px 16px',
+          borderRadius: '16px',
+          border: '1px solid hsl(var(--border))',
         }}>
-          {/* Left - Dashboard Link */}
           <Link 
             to="/generation-modes" 
             style={{ 
-              color: 'hsl(var(--muted-foreground))',
+              color: 'hsl(var(--foreground))',
               textDecoration: 'none',
-              fontSize: '14px',
-              fontWeight: '500'
+              fontSize: '13px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.3s ease',
+              padding: '6px 10px',
+              borderRadius: '8px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'hsl(var(--muted) / 0.3)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent'
             }}
           >
             ← Zurück zur Auswahl
           </Link>
           
-          {/* Right - Community Link */}
           <Link 
-            to="/community-prompts" 
+            to="/community-prompts"
             style={{ 
-              color: 'hsl(var(--muted-foreground))',
+              color: 'hsl(var(--foreground))',
               textDecoration: 'none',
-              fontSize: '14px',
-              fontWeight: '500'
+              fontSize: '13px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.3s ease',
+              padding: '6px 10px',
+              borderRadius: '8px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'hsl(var(--muted) / 0.3)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent'
             }}
           >
             Community →
           </Link>
         </div>
-        
       </div>
       
       <h1 className="nano-banana-title">

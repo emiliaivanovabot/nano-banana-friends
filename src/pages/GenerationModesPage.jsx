@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../auth/AuthContext.jsx'
+import { ArrowLeft, Sparkles, Palette, Users, RefreshCw, Zap, Wand2 } from 'lucide-react'
 
 function GenerationModesPage() {
   const { user } = useAuth()
@@ -22,8 +23,8 @@ function GenerationModesPage() {
       title: 'Nano Banana Pro',
       subtitle: `Erstelle Bilder für ${user?.username || 'dich'}`,
       description: 'Erstelle Bilder aus Text-Beschreibungen',
-      emoji: '🎨',
-      gradient: 'linear-gradient(135deg, hsl(47 100% 65%), #f59e0b)',
+      icon: Palette,
+      color: '#a86d09',
       available: true
     },
     {
@@ -32,8 +33,8 @@ function GenerationModesPage() {
       title: 'Collab Generation',
       subtitle: 'Mache Collabs mit anderen',
       description: 'Gemeinsame Bildgenerierung mit anderen',
-      emoji: '🤝',
-      gradient: 'linear-gradient(135deg, #667eea, #764ba2)',
+      icon: Users,
+      color: '#5a387d',
       available: true
     },
     {
@@ -42,8 +43,8 @@ function GenerationModesPage() {
       title: 'Image2Image',
       subtitle: 'Higgsfield für Reiche',
       description: 'Bearbeite Bilder mit KI-Unterstützung',
-      emoji: '🔄',
-      gradient: 'linear-gradient(135deg, hsl(280 70% 60%), #a855f7)',
+      icon: RefreshCw,
+      color: '#992f63',
       available: true
     },
     {
@@ -52,8 +53,8 @@ function GenerationModesPage() {
       title: 'Multi Prompts Generation',
       subtitle: 'Mehrere Prompts gleichzeitig',
       description: 'Generiere Bilder aus mehreren Prompts parallel',
-      emoji: '⚡',
-      gradient: 'linear-gradient(135deg, #10b981, #059669)',
+      icon: Zap,
+      color: '#059669',
       available: true
     },
     {
@@ -62,8 +63,8 @@ function GenerationModesPage() {
       title: 'AI Prompt Creator',
       subtitle: 'Powered by Grok AI',
       description: 'Beschreibe deine Idee und lass Grok professionelle Prompts generieren',
-      emoji: '🔮',
-      gradient: 'linear-gradient(135deg, #1a1a1a, #2d2d2d)',
+      icon: Wand2,
+      color: '#d97706',
       available: true
     }
   ]
@@ -72,82 +73,110 @@ function GenerationModesPage() {
     <div style={{
       minHeight: '100vh',
       background: 'hsl(var(--background))',
-      padding: '20px',
+      padding: '16px',
       color: 'hsl(var(--foreground))'
     }}>
-      {/* Header - EXACT same style as original nano banana page */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '30px',
-        flexWrap: 'wrap',
-        gap: '10px'
+      {/* Header */}
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        marginBottom: '24px'
       }}>
-        <div style={{ 
-          display: 'flex', 
+        <div style={{
+          display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          width: '100%'
+          background: 'hsl(var(--card))',
+          backdropFilter: 'blur(20px)',
+          padding: '12px 16px',
+          borderRadius: '16px',
+          border: '1px solid hsl(var(--border))',
+          ...(!isMobile && { padding: '16px 20px' })
         }}>
-          {/* Left - Dashboard Link */}
           <Link 
             to="/dashboard" 
             style={{ 
-              color: 'hsl(var(--muted-foreground))',
+              color: 'hsl(var(--foreground))',
               textDecoration: 'none',
-              fontSize: '14px',
-              fontWeight: '500'
-            }}
-          >
-            ← Dashboard
-          </Link>
-          
-          {/* Right - Inspiration Link */}
-          <Link 
-            to="/inspiration"
-            style={{ 
-              color: 'hsl(var(--muted-foreground))',
-              textDecoration: 'none',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: '500',
               display: 'flex',
               alignItems: 'center',
-              gap: '5px'
+              gap: '6px',
+              transition: 'all 0.3s ease',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              ...(!isMobile && { fontSize: '14px', gap: '8px', padding: '6px 12px' })
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'hsl(var(--muted) / 0.3)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent'
             }}
           >
-            Inspiration ✨
+            <ArrowLeft size={14} />
+Dashboard
+          </Link>
+          
+          <Link 
+            to="/community-prompts"
+            style={{ 
+              color: 'hsl(var(--foreground))',
+              textDecoration: 'none',
+              fontSize: '13px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.3s ease',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              ...(!isMobile && { fontSize: '14px', gap: '8px', padding: '6px 12px' })
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'hsl(var(--muted) / 0.3)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent'
+            }}
+          >
+            <Sparkles size={14} />
+Community Prompts
           </Link>
         </div>
-        
       </div>
 
-      {/* Title - EXACT same as original */}
-      <h1 className="nano-banana-title" style={{
-        textAlign: 'center',
-        margin: '0 0 20px 0',
-        fontSize: '2.5rem',
-        fontWeight: '700',
-        color: 'hsl(47 100% 65%)',
-        background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
-        WebkitBackgroundClip: 'text',
-        backgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        fontFamily: "'Space Grotesk', sans-serif"
-      }}>
-        🍌 nano banana pro
-      </h1>
-
-      {/* Subtitle */}
+      {/* Title Section */}
       <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
         textAlign: 'center',
-        marginBottom: '40px'
+        marginBottom: '32px',
+        ...(!isMobile && { marginBottom: '40px' })
       }}>
-        <p style={{
+        <h1 style={{
           margin: '0 0 10px 0',
-          fontSize: isMobile ? '18px' : '22px',
-          color: 'hsl(var(--foreground))',
-          fontWeight: '500'
+          fontSize: '24px',
+          fontWeight: '700',
+          background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+          WebkitBackgroundClip: 'text',
+          backgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          fontFamily: "'Space Grotesk', sans-serif",
+          letterSpacing: '-0.5px',
+          ...(!isMobile && { fontSize: '36px', marginBottom: '12px' })
+        }}>
+          🍌 nano banana pro
+        </h1>
+        <p style={{
+          margin: 0,
+          fontSize: '14px',
+          color: 'hsl(var(--muted-foreground))',
+          fontWeight: '400',
+          fontFamily: 'Georgia, serif',
+          fontStyle: 'italic',
+          ...(!isMobile && { fontSize: '20px' })
         }}>
           Was willst du heute machen?
         </p>
@@ -158,139 +187,157 @@ function GenerationModesPage() {
         maxWidth: '1200px',
         margin: '0 auto',
         display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(350px, 1fr))',
-        gap: '30px'
+        gridTemplateColumns: '1fr',
+        gap: '16px',
+        ...(!isMobile && {
+          gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+          gap: '24px'
+        })
       }}>
-        {generationModes.map((mode) => (
-          <div key={mode.id} style={{ position: 'relative' }}>
-            {mode.available ? (
-              <Link
-                to={mode.path}
-                style={{
-                  textDecoration: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  background: mode.id === 'model-generation' ? '#a86d09' : mode.id === 'collab-generation' ? '#5a387d' : mode.id === 'image-to-image' ? '#992f63' : mode.id === 'multi-prompts' ? '#059669' : mode.id === 'prompt-creator' ? '#d97706' : 'hsl(var(--card))',
-                  borderRadius: '25px',
-                  padding: isMobile ? '15px 20px' : '25px',
-                  boxShadow: '0 15px 35px hsl(var(--background) / 0.2)',
-                  border: '1px solid hsl(var(--border))',
-                  transition: 'all 0.4s ease',
-                  cursor: 'pointer',
-                  overflow: 'hidden'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = 'translateY(-5px) scale(1.02)'
-                  e.target.style.boxShadow = '0 25px 50px rgba(0, 0, 0, 0.15)'
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'translateY(0) scale(1)'
-                  e.target.style.boxShadow = '0 15px 35px rgba(0, 0, 0, 0.1)'
-                }}
-              >
-                {/* Text Content */}
-                <div style={{ flex: 1 }}>
-                  <h3 style={{
-                    margin: '0 0 8px 0',
-                    fontSize: isMobile ? '20px' : '24px',
-                    fontWeight: '700',
-                    color: 'hsl(var(--foreground))'
+        {generationModes.map((mode) => {
+          const IconComponent = mode.icon
+          return (
+            <div key={mode.id} style={{ position: 'relative' }}>
+              {mode.available ? (
+                <Link
+                  to={mode.path}
+                  style={{
+                    textDecoration: 'none',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    background: mode.color + 'B3',
+                    borderRadius: '16px',
+                    padding: isMobile ? '14px 16px' : '18px 20px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    border: '1px solid hsl(var(--border) / 0.3)',
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    gap: '12px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.15)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)'
+                  }}
+                >
+                  {/* Icon */}
+                  <div style={{
+                    background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1))',
+                    backdropFilter: 'blur(15px)',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    borderRadius: '12px',
+                    width: isMobile ? '36px' : '44px',
+                    height: isMobile ? '36px' : '44px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 4px 8px rgba(0, 0, 0, 0.1)',
+                    position: 'relative',
+                    overflow: 'hidden'
                   }}>
-                    {mode.title}
-                  </h3>
-                  <p style={{
-                    margin: 0,
-                    fontSize: isMobile ? '14px' : '16px',
-                    color: 'hsl(var(--primary))',
-                    fontWeight: '600'
+                    {mode.id === 'prompt-creator' ? (
+                      <img src="/grok.svg" alt="Grok" style={{
+                        height: isMobile ? '20px' : '24px',
+                        width: 'auto',
+                        maxWidth: isMobile ? '28px' : '32px',
+                        objectFit: 'contain'
+                      }} />
+                    ) : (
+                      <IconComponent size={isMobile ? 20 : 24} color="black" strokeWidth={2} />
+                    )}
+                  </div>
+                  
+                  {/* Text Content */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3 style={{
+                      margin: '0 0 4px 0',
+                      fontSize: isMobile ? '16px' : '18px',
+                      fontWeight: '700',
+                      color: 'rgba(255, 255, 255, 0.85)',
+                      lineHeight: '1.2'
+                    }}>
+                      {mode.title}
+                    </h3>
+                    <p style={{
+                      margin: 0,
+                      fontSize: isMobile ? '12px' : '13px',
+                      color: 'rgba(255, 255, 255, 0.6)',
+                      fontWeight: '500',
+                      lineHeight: '1.3'
+                    }}>
+                      {mode.subtitle}
+                    </p>
+                  </div>
+                  
+                  {mode.id === 'model-generation' && (
+                    <span style={{ fontSize: isMobile ? '20px' : '24px', flexShrink: 0 }}>🍌</span>
+                  )}
+                </Link>
+              ) : (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    background: 'hsl(var(--muted) / 0.3)',
+                    borderRadius: '20px',
+                    padding: isMobile ? '20px' : '24px',
+                    boxShadow: '0 8px 24px hsl(var(--background) / 0.1)',
+                    border: '1px solid hsl(var(--border))',
+                    cursor: 'not-allowed',
+                    overflow: 'hidden',
+                    opacity: 0.6,
+                    filter: 'grayscale(50%)'
+                  }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '16px'
                   }}>
-                    {mode.subtitle}
-                  </p>
+                    <div style={{
+                      background: 'hsl(var(--muted) / 0.5)',
+                      borderRadius: '12px',
+                      padding: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <IconComponent size={isMobile ? 24 : 28} color="hsl(var(--muted-foreground))" strokeWidth={2} />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 style={{
+                      margin: '0 0 6px 0',
+                      fontSize: isMobile ? '20px' : '22px',
+                      fontWeight: '700',
+                      color: 'hsl(var(--foreground))',
+                      lineHeight: '1.2'
+                    }}>
+                      {mode.title}
+                    </h3>
+                    <p style={{
+                      margin: 0,
+                      fontSize: isMobile ? '13px' : '14px',
+                      color: 'hsl(var(--muted-foreground))',
+                      fontWeight: '500'
+                    }}>
+                      {mode.subtitle}
+                    </p>
+                  </div>
                 </div>
-                
-                {/* Icon */}
-                <div style={{
-                  fontSize: isMobile ? '40px' : '50px',
-                  opacity: 0.7,
-                  marginLeft: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  {mode.id === 'model-generation' ? '🍌' : 
-                   mode.id === 'prompt-creator' ? 
-                   <img src="/Grok-feb-2025-logo.svg.png" alt="Grok" style={{height: isMobile ? '35px' : '45px', width: 'auto'}} /> : 
-                   mode.id === 'multi-prompts' ?
-                   <span style={{color: 'black', fontSize: isMobile ? '40px' : '50px'}}>≡</span> :
-                   mode.id === 'collab-generation' ?
-                   <span style={{color: 'black', fontSize: isMobile ? '40px' : '50px'}}>&</span> :
-                   mode.id === 'image-to-image' ?
-                   <span style={{color: 'black', fontSize: isMobile ? '40px' : '50px'}}>⇄</span> :
-                   mode.emoji}
-                </div>
-              </Link>
-            ) : (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  background: 'hsl(var(--muted) / 0.5)',
-                  borderRadius: '25px',
-                  padding: isMobile ? '15px 20px' : '25px',
-                  boxShadow: '0 15px 35px hsl(var(--background) / 0.1)',
-                  border: '1px solid hsl(var(--border))',
-                  cursor: 'not-allowed',
-                  overflow: 'hidden',
-                  opacity: 0.7,
-                  filter: 'grayscale(50%)'
-                }}
-              >
-                {/* Text Content */}
-                <div style={{ flex: 1 }}>
-                  <h3 style={{
-                    margin: '0 0 8px 0',
-                    fontSize: isMobile ? '20px' : '24px',
-                    fontWeight: '700',
-                    color: 'hsl(var(--foreground))'
-                  }}>
-                    {mode.title}
-                  </h3>
-                  <p style={{
-                    margin: 0,
-                    fontSize: isMobile ? '14px' : '16px',
-                    color: 'hsl(var(--primary))',
-                    fontWeight: '600'
-                  }}>
-                    {mode.subtitle}
-                  </p>
-                </div>
-                
-                {/* Icon */}
-                <div style={{
-                  fontSize: isMobile ? '40px' : '50px',
-                  opacity: 0.7,
-                  marginLeft: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  {mode.id === 'model-generation' ? '🍌' : 
-                   mode.id === 'prompt-creator' ? 
-                   <img src="/Grok-feb-2025-logo.svg.png" alt="Grok" style={{height: isMobile ? '35px' : '45px', width: 'auto'}} /> : 
-                   mode.id === 'multi-prompts' ?
-                   <span style={{color: 'black', fontSize: isMobile ? '40px' : '50px'}}>≡</span> :
-                   mode.id === 'collab-generation' ?
-                   <span style={{color: 'black', fontSize: isMobile ? '40px' : '50px'}}>&</span> :
-                   mode.id === 'image-to-image' ?
-                   <span style={{color: 'black', fontSize: isMobile ? '40px' : '50px'}}>⇄</span> :
-                   mode.emoji}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          )
+        })}
       </div>
 
     </div>

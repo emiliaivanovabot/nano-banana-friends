@@ -493,25 +493,43 @@ function QwenPage() {
       color: 'hsl(var(--foreground))'
     }}>
       {/* Header */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '30px',
-        flexWrap: 'wrap',
-        gap: '10px'
+      <div style={{
+        marginBottom: '24px'
       }}>
-        <Link 
-          to="/dashboard" 
-          style={{ 
-            color: 'hsl(var(--muted-foreground))',
-            textDecoration: 'none',
-            fontSize: '14px',
-            fontWeight: '500'
-          }}
-        >
-          ← Dashboard
-        </Link>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          background: 'hsl(var(--card))',
+          backdropFilter: 'blur(20px)',
+          padding: '12px 16px',
+          borderRadius: '16px',
+          border: '1px solid hsl(var(--border))',
+        }}>
+          <Link 
+            to="/dashboard" 
+            style={{ 
+              color: 'hsl(var(--foreground))',
+              textDecoration: 'none',
+              fontSize: '13px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.3s ease',
+              padding: '6px 10px',
+              borderRadius: '8px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'hsl(var(--muted) / 0.3)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent'
+            }}
+          >
+            ← Dashboard
+          </Link>
+        </div>
       </div>
 
       {/* Title */}

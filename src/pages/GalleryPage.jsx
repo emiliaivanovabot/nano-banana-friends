@@ -498,6 +498,48 @@ function GalleryPage() {
       {/* Header */}
       <div style={{
         maxWidth: '1200px',
+        margin: '0 auto',
+        marginBottom: '24px'
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          background: 'hsl(var(--card))',
+          backdropFilter: 'blur(20px)',
+          padding: '12px 16px',
+          borderRadius: '16px',
+          border: '1px solid hsl(var(--border))',
+        }}>
+          <Link 
+            to="/dashboard"
+            style={{ 
+              color: 'hsl(var(--foreground))',
+              textDecoration: 'none',
+              fontSize: '13px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.3s ease',
+              padding: '6px 10px',
+              borderRadius: '8px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'hsl(var(--muted) / 0.3)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent'
+            }}
+          >
+            ← Zurück
+          </Link>
+        </div>
+      </div>
+
+      {/* Title Section */}
+      <div style={{
+        maxWidth: '1200px',
         margin: '0 auto 30px auto',
         background: 'hsl(var(--card))',
         backdropFilter: 'blur(20px)',
@@ -505,53 +547,26 @@ function GalleryPage() {
         padding: '25px',
         border: '1px solid hsl(var(--border))'
       }}>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'flex-start'
-        }}>
-          <div>
-            <h1 style={{ 
-              margin: '0 0 8px 0', 
-              fontSize: '36px', 
-              fontWeight: '700', 
-              color: 'hsl(47 100% 65%)',
-              background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}>
-              {isAdminMode ? 'User Galerie (Admin)' : 'Meine Bilder'}
-            </h1>
-            <p style={{ 
-              margin: 0, 
-              fontSize: '14px', 
-              color: 'hsl(var(--muted-foreground))' 
-            }}>
-              Alle deine generierten Bilder auf einen Blick
-            </p>
-          </div>
-          
-          <Link 
-            to="/dashboard"
-            style={{
-              background: 'hsl(var(--secondary) / 0.3)',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '12px',
-              padding: isMobile ? '12px 15px' : '12px 18px',
-              color: 'hsl(var(--foreground))',
-              textDecoration: 'none',
-              fontWeight: '600',
-              fontSize: '14px',
-              transition: 'all 0.3s ease',
-              minWidth: isMobile ? '100px' : 'auto',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            ← Zurück
-          </Link>
+        <div>
+          <h1 style={{ 
+            margin: '0 0 8px 0', 
+            fontSize: '36px', 
+            fontWeight: '700', 
+            color: 'hsl(47 100% 65%)',
+            background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+          }}>
+            {isAdminMode ? 'User Galerie (Admin)' : 'Meine Bilder'}
+          </h1>
+          <p style={{ 
+            margin: 0, 
+            fontSize: '14px', 
+            color: 'hsl(var(--muted-foreground))' 
+          }}>
+            Alle deine generierten Bilder auf einen Blick
+          </p>
         </div>
 
         {/* Filter Buttons */}

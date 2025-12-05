@@ -377,10 +377,19 @@ function DashboardPage() {
     }] : []),
     {
       id: 'wan-video',
-      title: 'WAN 2.2 Video',
+      title: 'WAN 2.5 Video',
       subtitle: 'Video Generation',
+      path: '/wan-video',
       gradient: 'linear-gradient(135deg, #f093fb, #f5576c)',
-      available: false
+      available: true
+    },
+    {
+      id: 'wan-video-origin',
+      title: 'WAN 2.5 Origin',
+      subtitle: 'Premium Video + Audio',
+      path: '/wan-video-public',
+      gradient: 'linear-gradient(135deg, #FFD700, #FFA500)',
+      available: true
     },
     {
       id: 'qwen',
@@ -749,9 +758,9 @@ function DashboardPage() {
                 style={{
                   textDecoration: 'none',
                   display: 'block',
-                  background: tool.id === 'nano-banana' ? '#a86d09' : tool.id === 'gallery' ? '#5a387d' : tool.id === 'user-gallery' ? '#c44c4c' : 'hsl(var(--card))',
+                  background: tool.id === 'nano-banana' ? '#a86d09' : tool.id === 'gallery' ? '#5a387d' : tool.id === 'user-gallery' ? '#c44c4c' : tool.id === 'wan-video-origin' ? '#404040' : 'hsl(var(--card))',
                   borderRadius: '25px',
-                  padding: '30px',
+                  padding: '20px 30px',
                   boxShadow: '0 15px 35px hsl(var(--background) / 0.2)',
                   border: '1px solid hsl(var(--border))',
                   transition: 'all 0.4s ease',
@@ -767,20 +776,67 @@ function DashboardPage() {
                   e.target.style.boxShadow = '0 15px 35px rgba(0, 0, 0, 0.1)'
                 }}
               >
+                {tool.id === 'wan-video-origin' && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: '30px',
+                    transform: 'translateY(-50%)',
+                    fontSize: '48px'
+                  }}>
+                    💸
+                  </div>
+                )}
+                
+                {tool.id === 'wan-video' && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: '30px',
+                    transform: 'translateY(-50%)',
+                    fontSize: '48px'
+                  }}>
+                    🚧
+                  </div>
+                )}
+                
+                {tool.id === 'nano-banana' && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: '30px',
+                    transform: 'translateY(-50%)',
+                    fontSize: '48px'
+                  }}>
+                    🍌
+                  </div>
+                )}
+                
+                {tool.id === 'gallery' && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: '30px',
+                    transform: 'translateY(-50%)',
+                    fontSize: '48px'
+                  }}>
+                    🖼️
+                  </div>
+                )}
                 
                 <h3 style={{
                   margin: '0 0 8px 0',
                   fontSize: '24px',
                   fontWeight: '700',
-                  color: 'hsl(var(--foreground))'
+                  color: 'hsl(var(--foreground))',
                 }}>
-                  {tool.title}
+                  {tool.id === 'wan-video-origin' ? 'WAN 2.5 Origin' : tool.title}
                 </h3>
                 <p style={{
                   margin: 0,
                   fontSize: '16px',
                   color: 'hsl(var(--primary))',
-                  fontWeight: '600'
+                  fontWeight: '600',
                 }}>
                   {tool.subtitle}
                 </p>
@@ -792,7 +848,7 @@ function DashboardPage() {
                   display: 'block',
                   background: 'hsl(var(--muted) / 0.5)',
                   borderRadius: '25px',
-                  padding: '30px',
+                  padding: '20px 30px',
                   boxShadow: '0 15px 35px hsl(var(--background) / 0.1)',
                   border: '1px solid hsl(var(--border))',
                   cursor: 'not-allowed',
@@ -806,7 +862,7 @@ function DashboardPage() {
                   margin: '0 0 8px 0',
                   fontSize: '24px',
                   fontWeight: '700',
-                  color: 'hsl(var(--foreground))'
+                  color: 'hsl(var(--foreground))',
                 }}>
                   {tool.title}
                 </h3>
@@ -814,7 +870,7 @@ function DashboardPage() {
                   margin: 0,
                   fontSize: '16px',
                   color: 'hsl(var(--primary))',
-                  fontWeight: '600'
+                  fontWeight: '600',
                 }}>
                   {tool.subtitle}
                 </p>

@@ -1,0 +1,297 @@
+          {showAdvanced && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+              gap: '20px'
+            }}>
+              {/* Negative Prompt */}
+              <div style={{ gridColumn: isMobile ? '1' : '1 / -1' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', fontSize: '14px', fontWeight: '500' }}>
+                  🚫 Negative Prompt
+                  <button
+                    onClick={() => setShowInfoPopup(showInfoPopup === 'negative' ? null : 'negative')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: 'hsl(var(--muted))',
+                      color: 'hsl(var(--muted-foreground))',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: '700'
+                    }}
+                  >
+                    ?
+                  </button>
+                </label>
+                {showInfoPopup === 'negative' && (
+                  <div style={{
+                    position: 'absolute',
+                    zIndex: 10,
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    marginTop: '5px',
+                    fontSize: '13px',
+                    lineHeight: '1.4',
+                    color: 'hsl(var(--foreground))',
+                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                    maxWidth: '280px'
+                  }}>
+                    <strong>Negative Prompt</strong><br/>
+                    Beschreibe was NICHT im Video sein soll. Z.B. "blurry, distorted, low quality"
+                  </div>
+                )}
+                <input 
+                  type="text"
+                  value={negativePrompt}
+                  onChange={(e) => setNegativePrompt(e.target.value)}
+                  placeholder="z.B. blurry, distorted, low quality"
+                  style={{ 
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: '1px solid hsl(var(--border))',
+                    background: 'hsl(var(--background))',
+                    color: 'hsl(var(--foreground))'
+                  }}
+                />
+              </div>
+              
+              {/* Video Size */}
+              <div style={{ position: 'relative' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', fontSize: '14px', fontWeight: '500' }}>
+                  📐 Auflösung ({size})
+                  <button
+                    onClick={() => setShowInfoPopup(showInfoPopup === 'size' ? null : 'size')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: 'hsl(var(--muted))',
+                      color: 'hsl(var(--muted-foreground))',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: '700'
+                    }}
+                  >
+                    ?
+                  </button>
+                </label>
+                {showInfoPopup === 'size' && (
+                  <div style={{
+                    position: 'absolute',
+                    zIndex: 10,
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    marginTop: '5px',
+                    fontSize: '13px',
+                    lineHeight: '1.4',
+                    color: 'hsl(var(--foreground))',
+                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                    maxWidth: '280px'
+                  }}>
+                    <strong>Video Auflösung</strong><br/>
+                    Wähle die Ausgabeauflösung: HD (1280×720), Square (1024×1024), Full HD (1920×1080)
+                  </div>
+                )}
+                <select
+                  value={size}
+                  onChange={(e) => setSize(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: '1px solid hsl(var(--border))',
+                    background: 'hsl(var(--background))',
+                    color: 'hsl(var(--foreground))'
+                  }}
+                >
+                  <option value="854x480">SD (854×480)</option>
+                  <option value="1280x720">HD (1280×720)</option>
+                  <option value="1920x1080">Full HD (1920×1080)</option>
+                </select>
+              </div>
+
+              {/* Seed */}
+              <div style={{ position: 'relative' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', fontSize: '14px', fontWeight: '500' }}>
+                  🎲 Seed ({seed === -1 ? 'Random' : seed})
+                  <button
+                    onClick={() => setShowInfoPopup(showInfoPopup === 'seed' ? null : 'seed')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: 'hsl(var(--muted))',
+                      color: 'hsl(var(--muted-foreground))',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: '700'
+                    }}
+                  >
+                    ?
+                  </button>
+                </label>
+                {showInfoPopup === 'seed' && (
+                  <div style={{
+                    position: 'absolute',
+                    zIndex: 10,
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    marginTop: '5px',
+                    fontSize: '13px',
+                    lineHeight: '1.4',
+                    color: 'hsl(var(--foreground))',
+                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                    maxWidth: '280px'
+                  }}>
+                    <strong>Seed</strong><br/>
+                    -1 für zufällige Ergebnisse, oder eine Zahl für reproduzierbare Ergebnisse
+                  </div>
+                )}
+                <input 
+                  type="number"
+                  value={seed}
+                  onChange={(e) => setSeed(parseInt(e.target.value))}
+                  placeholder="-1 für random"
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: '1px solid hsl(var(--border))',
+                    background: 'hsl(var(--background))',
+                    color: 'hsl(var(--foreground))'
+                  }}
+                />
+              </div>
+
+              {/* Prompt Expansion */}
+              <div style={{ position: 'relative' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '14px', fontWeight: '500' }}>
+                  ✨ Auto Prompt Enhancement
+                  <button
+                    onClick={() => setShowInfoPopup(showInfoPopup === 'expansion' ? null : 'expansion')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: 'hsl(var(--muted))',
+                      color: 'hsl(var(--muted-foreground))',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: '700'
+                    }}
+                  >
+                    ?
+                  </button>
+                </label>
+                {showInfoPopup === 'expansion' && (
+                  <div style={{
+                    position: 'absolute',
+                    zIndex: 10,
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    marginTop: '5px',
+                    fontSize: '13px',
+                    lineHeight: '1.4',
+                    color: 'hsl(var(--foreground))',
+                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                    maxWidth: '280px'
+                  }}>
+                    <strong>Auto Prompt Enhancement</strong><br/>
+                    Erweitert deine Prompts automatisch für bessere Ergebnisse
+                  </div>
+                )}
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                  <input 
+                    type="checkbox"
+                    checked={enablePromptExpansion}
+                    onChange={(e) => setEnablePromptExpansion(e.target.checked)}
+                  />
+                  <span>Prompt automatisch verbessern</span>
+                </label>
+              </div>
+              
+              {/* Safety Checker */}
+              <div style={{ position: 'relative' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '14px', fontWeight: '500' }}>
+                  🛡️ Safety Check
+                  <button
+                    onClick={() => setShowInfoPopup(showInfoPopup === 'safety' ? null : 'safety')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: 'hsl(var(--muted))',
+                      color: 'hsl(var(--muted-foreground))',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: '700'
+                    }}
+                  >
+                    ?
+                  </button>
+                </label>
+                {showInfoPopup === 'safety' && (
+                  <div style={{
+                    position: 'absolute',
+                    zIndex: 10,
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    marginTop: '5px',
+                    fontSize: '13px',
+                    lineHeight: '1.4',
+                    color: 'hsl(var(--foreground))',
+                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                    maxWidth: '280px'
+                  }}>
+                    <strong>Safety Checker</strong><br/>
+                    Filtert unangemessene Inhalte. Empfohlen: An lassen
+                  </div>
+                )}
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                  <input 
+                    type="checkbox"
+                    checked={enableSafetyChecker}
+                    onChange={(e) => setEnableSafetyChecker(e.target.checked)}
+                  />
+                  <span>Inhalts-Filter aktiviert</span>
+                </label>
+              </div>
+            </div>
+          )}

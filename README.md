@@ -4,6 +4,18 @@ Ein AI-basierter Multi-Projekt Hub mit drei verschiedenen Generierungstools und 
 
 > **📋 NEW AGENTS START HERE:** Read [`CURRENT-DATABASE-STATE.md`](./CURRENT-DATABASE-STATE.md) first - this is the definitive documentation of what's actually running.
 
+## 🚨 **CRITICAL DEVELOPMENT RULE**
+
+**NIEMALS CODE ÄNDERN OHNE EXPLIZITE BESTÄTIGUNG VOM USER!**
+
+- **KEIN CODE** schreiben während User am testen/generieren ist
+- **IMMER FRAGEN** bevor du Änderungen machst  
+- **WARTEN** bis User sagt "mach es"
+- **NICHT EINFACH ANFANGEN** zu coden während Unterhaltung
+- User arbeitet oft parallel mit der App - Code-Änderungen können aktive Prozesse zerstören
+
+**Diese Regel gilt für JEDEN neuen Chat/Agent!**
+
 ## 📚 **Essential Documentation**
 - **[`CURRENT-DATABASE-STATE.md`](./CURRENT-DATABASE-STATE.md)** - 🎯 **SINGLE SOURCE OF TRUTH** (Read this first!)
 - [`DATABASE-ARCHITECTURE-DOCUMENTATION.md`](./DATABASE-ARCHITECTURE-DOCUMENTATION.md) - Full technical details

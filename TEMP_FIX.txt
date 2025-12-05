@@ -1,0 +1,63 @@
+          {showAdvanced && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+              gap: '20px'
+            }}>
+              <div style={{ position: 'relative' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', fontSize: '14px', fontWeight: '500' }}>
+                  🎲 Seed ({seed === -1 ? 'Random' : seed})
+                </label>
+                <input 
+                  type="number"
+                  value={seed}
+                  onChange={(e) => setSeed(parseInt(e.target.value))}
+                  placeholder="-1 für random"
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: '1px solid hsl(var(--border))',
+                    background: 'hsl(var(--background))',
+                    color: 'hsl(var(--foreground))'
+                  }}
+                />
+              </div>
+              
+              <div style={{ position: 'relative' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', fontSize: '14px', fontWeight: '500' }}>
+                  📐 Auflösung ({size})
+                </label>
+                <select
+                  value={size}
+                  onChange={(e) => setSize(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: '1px solid hsl(var(--border))',
+                    background: 'hsl(var(--background))',
+                    color: 'hsl(var(--foreground))'
+                  }}
+                >
+                  <option value="854x480">SD (854×480)</option>
+                  <option value="1280x720">HD (1280×720)</option>
+                  <option value="1920x1080">Full HD (1920×1080)</option>
+                </select>
+              </div>
+              
+              <div style={{ position: 'relative' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '14px', fontWeight: '500' }}>
+                  🛡️ Safety Check
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                  <input 
+                    type="checkbox"
+                    checked={enableSafetyChecker}
+                    onChange={(e) => setEnableSafetyChecker(e.target.checked)}
+                  />
+                  <span>Inhalts-Filter aktiviert</span>
+                </label>
+              </div>
+            </div>
+          )}

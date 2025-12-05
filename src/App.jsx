@@ -14,6 +14,7 @@ const HomePage = lazy(() => import('./pages/HomePage.jsx'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'))
 const GenerationModesPage = lazy(() => import('./pages/GenerationModesPage.jsx'))
 const WanVideoPage = lazy(() => import('./pages/WanVideoPage.jsx'))
+const WanVideoPublicPage = lazy(() => import('./pages/WanVideoPublicPage.jsx'))
 const NonoBananaPage = lazy(() => import('./pages/NonoBananaPage.jsx'))
 const NonoBananaModelPage = lazy(() => import('./pages/NonoBananaModelPage.jsx'))
 const NonoBananaCollabPage = lazy(() => import('./pages/NonoBananaCollabPage.jsx'))
@@ -147,6 +148,13 @@ function App() {
             <ProtectedRoute requireCompleteProfile={true}>
               <Suspense fallback={<PageLoader />}>
                 <WanVideoPage />
+              </Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/wan-video-public" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <Suspense fallback={<PageLoader />}>
+                <WanVideoPublicPage />
               </Suspense>
             </ProtectedRoute>
           } />

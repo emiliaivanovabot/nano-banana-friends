@@ -404,9 +404,11 @@ function DashboardPage() {
     {
       id: 'comfyui',
       title: 'Comfyui',
-      subtitle: 'Real Pics',
+      subtitle: 'Real Pics', 
+      path: 'https://snapshot-theology-opened-inspiration.trycloudflare.com/',
       gradient: 'linear-gradient(135deg, #a8edea, #fed6e3)',
-      available: false
+      available: true,
+      external: true
     },
     {
       id: 'grok-playground',
@@ -766,15 +768,16 @@ function DashboardPage() {
           <div key={tool.id} style={{ position: 'relative' }}>
             {tool.available ? (
               <Link
-                to={tool.path}
+                to={tool.external ? '#' : tool.path}
+                onClick={tool.external ? (e) => { e.preventDefault(); window.open(tool.path, '_blank'); } : undefined}
                 style={{
                   textDecoration: 'none',
                   display: 'block',
-                  background: tool.id === 'nano-banana' ? '#a86d09' : tool.id === 'gallery' ? '#5a387d' : tool.id === 'user-gallery' ? '#c44c4c' : tool.id === 'wan-video-origin' ? '#404040' : tool.id === 'grok-playground' ? '#4c4f7d' : 'hsl(var(--card))',
+                  background: tool.id === 'nano-banana' ? '#a86d09' : tool.id === 'gallery' ? '#5a387d' : tool.id === 'user-gallery' ? '#c44c4c' : tool.id === 'wan-video-origin' ? '#404040' : tool.id === 'grok-playground' ? '#4c4f7d' : tool.id === 'comfyui' ? 'rgba(59, 130, 246, 0.25)' : 'hsl(var(--card))',
                   borderRadius: '25px',
                   padding: '20px 30px',
-                  boxShadow: '0 15px 35px hsl(var(--background) / 0.2)',
-                  border: '1px solid hsl(var(--border))',
+                  boxShadow: tool.id === 'comfyui' ? '0 0 20px rgba(59, 130, 246, 0.4), 0 0 40px rgba(59, 130, 246, 0.2)' : '0 15px 35px hsl(var(--background) / 0.2)',
+                  border: tool.id === 'comfyui' ? '2px solid rgba(59, 130, 246, 0.5)' : '1px solid hsl(var(--border))',
                   transition: 'all 0.4s ease',
                   cursor: 'pointer',
                   overflow: 'hidden'

@@ -381,7 +381,8 @@ function DashboardPage() {
       subtitle: 'Video Generation',
       path: '/wan-video',
       gradient: 'linear-gradient(135deg, #f093fb, #f5576c)',
-      available: true
+      available: false,
+      paused: true
     },
     {
       id: 'wan-video-origin',
@@ -389,14 +390,16 @@ function DashboardPage() {
       subtitle: 'Premium Video + Audio',
       path: '/wan-video-public',
       gradient: 'linear-gradient(135deg, #FFD700, #FFA500)',
-      available: true
+      available: false,
+      paused: true
     },
     {
       id: 'qwen',
       title: 'Qwen',
       subtitle: 'Image Editor',
+      path: '/qwen',
       gradient: 'linear-gradient(135deg, #4facfe, #00f2fe)',
-      available: false
+      available: true
     },
     {
       id: 'comfyui',
@@ -404,6 +407,15 @@ function DashboardPage() {
       subtitle: 'Real Pics',
       gradient: 'linear-gradient(135deg, #a8edea, #fed6e3)',
       available: false
+    },
+    {
+      id: 'grok-playground',
+      path: '/grok-playground',
+      title: 'Grok Playground',
+      subtitle: 'Image Analysis & AI Chat',
+      gradient: 'linear-gradient(135deg, #667eea, #764ba2)',
+      available: false,
+      paused: true
     }
   ]
 
@@ -758,7 +770,7 @@ function DashboardPage() {
                 style={{
                   textDecoration: 'none',
                   display: 'block',
-                  background: tool.id === 'nano-banana' ? '#a86d09' : tool.id === 'gallery' ? '#5a387d' : tool.id === 'user-gallery' ? '#c44c4c' : tool.id === 'wan-video-origin' ? '#404040' : 'hsl(var(--card))',
+                  background: tool.id === 'nano-banana' ? '#a86d09' : tool.id === 'gallery' ? '#5a387d' : tool.id === 'user-gallery' ? '#c44c4c' : tool.id === 'wan-video-origin' ? '#404040' : tool.id === 'grok-playground' ? '#4c4f7d' : 'hsl(var(--card))',
                   borderRadius: '25px',
                   padding: '20px 30px',
                   boxShadow: '0 15px 35px hsl(var(--background) / 0.2)',
@@ -836,6 +848,18 @@ function DashboardPage() {
                   </div>
                 )}
                 
+                {tool.id === 'grok-playground' && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: '30px',
+                    transform: 'translateY(-50%)',
+                    fontSize: '48px'
+                  }}>
+                    🧠
+                  </div>
+                )}
+                
                 <h3 style={{
                   margin: '0 0 8px 0',
                   fontSize: '24px',
@@ -855,36 +879,60 @@ function DashboardPage() {
               </Link>
             ) : (
               <div
-                onClick={() => handleDisabledToolClick(tool.title)}
+                onClick={() => tool.paused ? null : handleDisabledToolClick(tool.title)}
                 style={{
                   display: 'block',
-                  background: 'hsl(var(--muted) / 0.5)',
+                  background: tool.paused ? 
+                    (tool.id === 'wan-video' ? '#f093fb50' : 
+                     tool.id === 'wan-video-origin' ? '#FFD70050' : 
+                     tool.id === 'grok-playground' ? '#667eea50' : 'hsl(var(--muted) / 0.5)') 
+                    : 'hsl(var(--muted) / 0.5)',
                   borderRadius: '25px',
                   padding: '20px 30px',
-                  boxShadow: '0 15px 35px hsl(var(--background) / 0.1)',
+                  boxShadow: tool.paused ? '0 5px 15px hsl(var(--background) / 0.05)' : '0 15px 35px hsl(var(--background) / 0.1)',
                   border: '1px solid hsl(var(--border))',
                   cursor: 'not-allowed',
                   overflow: 'hidden',
-                  opacity: 0.7,
-                  filter: 'grayscale(50%)'
+                  opacity: tool.paused ? 0.7 : 0.7,
+                  filter: tool.paused ? 'grayscale(50%)' : 'grayscale(50%)',
+                  transition: 'all 0.3s ease'
                 }}
               >
                 
-                <h3 style={{
-                  margin: '0 0 8px 0',
-                  fontSize: '24px',
-                  fontWeight: '700',
-                  color: 'hsl(var(--foreground))',
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '8px'
                 }}>
-                  {tool.title}
-                </h3>
+                  <h3 style={{
+                    margin: 0,
+                    fontSize: '24px',
+                    fontWeight: '700',
+                    color: 'hsl(var(--foreground))',
+                  }}>
+                    {tool.title}
+                  </h3>
+                  {tool.paused && (
+                    <span style={{
+                      background: 'rgba(255,165,0,0.2)',
+                      color: '#ff8c00',
+                      padding: '4px 8px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: '600'
+                    }}>
+                      ⏸️ PAUSIERT
+                    </span>
+                  )}
+                </div>
                 <p style={{
                   margin: 0,
                   fontSize: '16px',
                   color: 'hsl(var(--primary))',
                   fontWeight: '600',
                 }}>
-                  {tool.subtitle}
+                  {tool.paused ? 'Projekt pausiert' : tool.subtitle}
                 </p>
               </div>
             )}

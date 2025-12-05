@@ -26,6 +26,7 @@ const CommunityPromptsPage = lazy(() => import('./pages/CommunityPromptsPage.jsx
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 const GalleryPage = lazy(() => import('./pages/GalleryPage.jsx'))
 const InspirationPage = lazy(() => import('./pages/InspirationPage.jsx'))
+const GrokPlaygroundPage = lazy(() => import('./pages/GrokPlaygroundPage.jsx'))
 
 // Lazy load error boundary component
 const MobileErrorBoundary = lazy(() => import('./components/MobileErrorBoundary.jsx'))
@@ -194,6 +195,13 @@ function App() {
                 <MobileErrorBoundary>
                   <InspirationPage />
                 </MobileErrorBoundary>
+              </Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/grok-playground" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <Suspense fallback={<PageLoader />}>
+                <GrokPlaygroundPage />
               </Suspense>
             </ProtectedRoute>
           } />

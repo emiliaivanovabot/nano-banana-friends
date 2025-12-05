@@ -12,7 +12,7 @@ import { alertingSystem } from './alerting.js';
  * Initialize all monitoring systems
  */
 export function initMonitoring() {
-  console.log('🚀 Initializing Nano Banana Friends Monitoring Suite');
+  // console.log('🚀 Initializing Nano Banana Friends Monitoring Suite');
 
   try {
     // Initialize error tracking
@@ -27,7 +27,7 @@ export function initMonitoring() {
     // Initialize alerting
     alertingSystem.init();
 
-    console.log('✅ All monitoring systems initialized successfully');
+    // console.log('✅ All monitoring systems initialized successfully');
 
     // Track initialization success
     trackEvent('monitoring_initialized', {
@@ -61,7 +61,7 @@ export function setMonitoringUser(user) {
       created_at: user.created_at
     });
 
-    console.log('👤 User context set in all monitoring systems');
+    // console.log('👤 User context set in all monitoring systems');
     
     trackEvent('user_context_set', {
       user_id: user.id,

@@ -20,7 +20,7 @@ class AlertingSystem {
   init() {
     if (this.initialized) return;
 
-    console.log('🚨 Initializing Alerting System');
+    // console.log('🚨 Initializing Alerting System');
 
     // Start monitoring loops
     this.startErrorRateMonitoring();

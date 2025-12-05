@@ -1060,18 +1060,120 @@ function WanVideoPage() {
               flexDirection: isMobile ? 'column' : 'row'
             }}>
               <button
-                onClick={() => {
-                  // iOS/Mobile: Open video in new tab for manual save
-                  if (/iPad|iPhone|iPod|Android/i.test(navigator.userAgent)) {
-                    window.open(video, '_blank')
+                onClick={async () => {
+                  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                  const isAndroid = /Android/.test(navigator.userAgent);
+                  
+                  if (isIOS) {
+                    // iOS: Try Safari's enhanced video saving
+                    try {
+                      // First try to fetch and create blob for iOS
+                      const response = await fetch(video);
+                      const blob = await response.blob();
+                      const url = URL.createObjectURL(blob);
+                      
+                      // Create a temporary video element for iOS
+                      const tempVideo = document.createElement('video');
+                      tempVideo.src = url;
+                      tempVideo.style.position = 'fixed';
+                      tempVideo.style.top = '50%';
+                      tempVideo.style.left = '50%';
+                      tempVideo.style.transform = 'translate(-50%, -50%)';
+                      tempVideo.style.width = '90vw';
+                      tempVideo.style.maxWidth = '400px';
+                      tempVideo.style.zIndex = '10000';
+                      tempVideo.style.border = '3px solid #8B5CF6';
+                      tempVideo.style.borderRadius = '15px';
+                      tempVideo.style.backgroundColor = 'black';
+                      tempVideo.controls = true;
+                      tempVideo.playsInline = true;
+                      
+                      // Add overlay instructions
+                      const overlay = document.createElement('div');
+                      overlay.style.position = 'fixed';
+                      overlay.style.top = '0';
+                      overlay.style.left = '0';
+                      overlay.style.width = '100%';
+                      overlay.style.height = '100%';
+                      overlay.style.backgroundColor = 'rgba(0,0,0,0.8)';
+                      overlay.style.zIndex = '9999';
+                      overlay.style.display = 'flex';
+                      overlay.style.flexDirection = 'column';
+                      overlay.style.justifyContent = 'center';
+                      overlay.style.alignItems = 'center';
+                      overlay.style.color = 'white';
+                      overlay.style.fontSize = '16px';
+                      overlay.style.textAlign = 'center';
+                      overlay.style.padding = '20px';
+                      
+                      overlay.innerHTML = `
+                        <div style="margin-bottom: 20px; font-size: 18px; font-weight: bold;">
+                          📱 iOS Video Speichern
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                          1. Halte das Video gedrückt<br/>
+                          2. Wähle "Video speichern"<br/>
+                          3. Video wird in Fotos-App gespeichert
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove(); document.body.removeChild(document.querySelector('video[style*=\"position: fixed\"]'))" 
+                                style="padding: 12px 24px; background: #8B5CF6; color: white; border: none; border-radius: 8px; font-size: 16px; margin-top: 10px; cursor: pointer;">
+                          ❌ Schließen
+                        </button>
+                      `;
+                      
+                      document.body.appendChild(overlay);
+                      document.body.appendChild(tempVideo);
+                      
+                      // Clean up blob URL after a while
+                      setTimeout(() => URL.revokeObjectURL(url), 300000); // 5 minutes
+                      
+                    } catch (error) {
+                      console.error('iOS video save error:', error);
+                      // Fallback: Open in new tab
+                      window.open(video, '_blank');
+                      alert('📱 Video öffnet sich in neuem Tab. Halte das Video gedrückt und wähle "Video speichern"');
+                    }
+                    
+                  } else if (isAndroid) {
+                    // Android: Try to trigger download
+                    try {
+                      const response = await fetch(video);
+                      const blob = await response.blob();
+                      const url = URL.createObjectURL(blob);
+                      
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = `wan-video-${Date.now()}.mp4`;
+                      
+                      // Android sometimes needs user interaction
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      
+                      // Show success message
+                      alert('📥 Video Download gestartet! Überprüfe deine Downloads oder Benachrichtigungen.');
+                      
+                      setTimeout(() => URL.revokeObjectURL(url), 10000);
+                      
+                    } catch (error) {
+                      console.error('Android download error:', error);
+                      // Fallback
+                      window.open(video, '_blank');
+                      alert('📱 Video öffnet sich in neuem Tab. Nutze den "Download" Button des Browsers.');
+                    }
+                    
                   } else {
                     // Desktop: Normal download
-                    const link = document.createElement('a')
-                    link.href = video
-                    link.download = `wan-video-${Date.now()}.mp4`
-                    document.body.appendChild(link)
-                    link.click()
-                    document.body.removeChild(link)
+                    try {
+                      const link = document.createElement('a');
+                      link.href = video;
+                      link.download = `wan-video-${Date.now()}.mp4`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    } catch (error) {
+                      window.open(video, '_blank');
+                    }
                   }
                 }}
                 style={{
@@ -1113,7 +1215,8 @@ function WanVideoPage() {
                 alignItems: 'center',
                 gap: '8px'
               }}>
-                💡 <span><strong>iPhone/Android:</strong> Video öffnet sich → Teilen Button → "Video sichern"</span>
+                💡 <span><strong>iPhone:</strong> Video-Overlay erscheint → Video gedrückt halten → "Video speichern"<br/>
+                <strong>Android:</strong> Download startet automatisch</span>
               </div>
             </div>
           </div>

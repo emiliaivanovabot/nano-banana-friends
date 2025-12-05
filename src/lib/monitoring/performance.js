@@ -16,7 +16,7 @@ class PerformanceMonitor {
   async init() {
     if (this.initialized) return;
     
-    console.log('🚀 Initializing Performance Monitor');
+    // console.log('🚀 Initializing Performance Monitor');
     
     // Initialize Web Vitals collection
     await this.initWebVitals();
@@ -86,7 +86,7 @@ class PerformanceMonitor {
     // Determine if the metric is good, needs improvement, or poor
     const rating = this.getVitalRating(name, metric.value);
     
-    console.log(`📊 Web Vital - ${name}: ${metric.value}ms (${rating})`);
+    // console.log(`📊 Web Vital - ${name}: ${metric.value}ms (${rating})`);
 
     // Send to Sentry as custom metric
     Sentry.addBreadcrumb({
@@ -157,6 +157,14 @@ class PerformanceMonitor {
   trackComponentMounts() {
     if (!window.performance || !window.performance.mark) return;
 
+    // Environment-based thresholds
+    const isDevelopment = import.meta.env.DEV;
+    const threshold = isDevelopment ? 1000 : 100; // 1s in dev, 100ms in prod
+    
+    // Rate limiting for console logs
+    let lastLogTime = 0;
+    const logCooldown = 5000; // 5 seconds between console logs
+
     // Create a global hook for React DevTools (if available)
     if (window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
       const hook = window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -166,10 +174,18 @@ class PerformanceMonitor {
       hook.onCommitFiberRoot = (id, root, ...args) => {
         const mountTime = performance.now();
         
-        // Log slow component mounts
-        if (mountTime > 16.67) { // Slower than 60fps
-          console.warn(`🐌 Slow component mount: ${mountTime.toFixed(2)}ms`);
+        // Only log truly slow mounts with rate limiting
+        if (mountTime > threshold) {
+          const now = Date.now();
+          
+          // Send to analytics regardless of console logging
           this.sendToAnalytics('slow_component_mount', mountTime);
+          
+          // Disable console logs in production and for development spam reduction
+          // if (now - lastLogTime > logCooldown) {
+          //   console.warn(`🐌 Slow component mount: ${mountTime.toFixed(2)}ms (threshold: ${threshold}ms)`);
+          //   lastLogTime = now;
+          // }
         }
         
         return originalOnCommitFiberRoot?.(id, root, ...args);
@@ -193,8 +209,10 @@ class PerformanceMonitor {
         const endTime = performance.now();
         const duration = endTime - startTime;
         
-        // Log API performance
-        console.log(`🌐 API ${response.status}: ${url} (${duration.toFixed(2)}ms)`);
+        // Log only slow API calls to reduce spam
+        if (duration > 2000) {
+          console.log(`🌐 Slow API ${response.status}: ${url} (${duration.toFixed(2)}ms)`);
+        }
         
         this.sendToAnalytics('api_response_time', duration, {
           url: this.cleanUrl(url),
@@ -238,7 +256,10 @@ class PerformanceMonitor {
         limit: Math.round(memory.jsHeapSizeLimit / 1048576)
       };
 
-      console.log(`💾 Memory: ${memoryMB.used}/${memoryMB.total}MB (limit: ${memoryMB.limit}MB)`);
+      // Only log memory when usage is high to reduce spam
+      if (memoryMB.used / memoryMB.limit > 0.5) {
+        console.log(`💾 Memory: ${memoryMB.used}/${memoryMB.total}MB (limit: ${memoryMB.limit}MB)`);
+      }
 
       this.sendToAnalytics('memory_usage', memoryMB.used, {
         total: memoryMB.total,
@@ -289,7 +310,10 @@ class PerformanceMonitor {
         css: Math.round(cssSize / 1024)
       };
 
-      console.log(`📦 Bundle Size: ${bundleMetrics.total}KB (JS: ${bundleMetrics.javascript}KB, CSS: ${bundleMetrics.css}KB)`);
+      // Only log bundle metrics in development
+      if (import.meta.env.DEV) {
+        console.log(`📦 Bundle Size: ${bundleMetrics.total}KB (JS: ${bundleMetrics.javascript}KB, CSS: ${bundleMetrics.css}KB)`);
+      }
 
       this.sendToAnalytics('bundle_size', bundleMetrics.total, bundleMetrics);
     });
@@ -310,7 +334,10 @@ class PerformanceMonitor {
           requestStart: Math.round(navigation.requestStart - navigation.navigationStart)
         };
 
-        console.log('⏱️ Navigation Timing:', metrics);
+        // Only log navigation timing in development
+        if (import.meta.env.DEV) {
+          console.log('⏱️ Navigation Timing:', metrics);
+        }
         
         Object.entries(metrics).forEach(([key, value]) => {
           this.sendToAnalytics(`navigation_${key}`, value);

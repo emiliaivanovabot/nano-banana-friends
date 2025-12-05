@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext.jsx'
 function WanVideoPublicPage() {
   const { user } = useAuth()
   const [image, setImage] = useState(null)
+  const [audio, setAudio] = useState(null)
   const [prompt, setPrompt] = useState('')
   const [negativePrompt, setNegativePrompt] = useState('blurry, low quality, distorted, pixelated, grainy, poor lighting, bad anatomy, deformed limbs, extra fingers, extra toes, missing fingers, unrealistic proportions, awkward poses, unnatural movements, choppy animation, robotic motion, lifeless expressions, dead eyes, bad facial features, asymmetrical face, clothing glitches, fabric clipping, texture artifacts, compression artifacts, watermark, logo, text overlay, amateur quality, static pose, frozen movement')
   const [video, setVideo] = useState(null)
@@ -18,15 +19,16 @@ function WanVideoPublicPage() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [seed, setSeed] = useState(-1)
   const [enablePromptExpansion, setEnablePromptExpansion] = useState(false)
-  const [enableSafetyChecker, setEnableSafetyChecker] = useState(true)
+  const [enableSafetyChecker, setEnableSafetyChecker] = useState(false)
   const [showInfoPopup, setShowInfoPopup] = useState(null)
-  const [size, setSize] = useState('854*480')
-  const [duration, setDuration] = useState(5)
+  const [size, setSize] = useState('1280x720')
+  const [seconds, setSeconds] = useState(5)
   
   // Wake Lock for mobile
   const wakeLockRef = useRef(null)
   
   const fileRef = useRef(null)
+  const audioRef = useRef(null)
 
   // Mobile detection
   useEffect(() => {
@@ -42,6 +44,15 @@ function WanVideoPublicPage() {
     if (file) {
       const reader = new FileReader()
       reader.onload = (e) => setImage(e.target.result)
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const uploadAudio = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => setAudio(e.target.result)
       reader.readAsDataURL(file)
     }
   }
@@ -94,7 +105,7 @@ function WanVideoPublicPage() {
           image: base64Data,
           negative_prompt: negativePrompt,
           size: size,
-          duration: duration,
+          duration: seconds,
           seed: seed,
           enable_prompt_expansion: enablePromptExpansion,
           enable_safety_checker: enableSafetyChecker
@@ -244,7 +255,7 @@ function WanVideoPublicPage() {
         fontSize: '2.5rem',
         fontWeight: '700',
         color: 'hsl(280 70% 60%)',
-        background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+        background: 'linear-gradient(135deg, hsl(280 70% 60%), hsl(47 100% 65%))',
         WebkitBackgroundClip: 'text',
         backgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
@@ -288,6 +299,14 @@ function WanVideoPublicPage() {
           style={{ display: 'none' }}
         />
         
+        <input 
+          ref={audioRef}
+          type="file" 
+          accept="audio/*" 
+          onChange={uploadAudio}
+          style={{ display: 'none' }}
+        />
+        
         <button 
           onClick={() => fileRef.current.click()}
           style={{
@@ -313,6 +332,33 @@ function WanVideoPublicPage() {
           }}
         >
           {image ? 'Bild ändern' : 'Bild hochladen'}
+        </button>
+
+        <button 
+          onClick={() => audioRef.current.click()}
+          style={{
+            width: '100%',
+            padding: '15px',
+            fontSize: '16px',
+            fontWeight: '600',
+            color: 'hsl(var(--secondary-foreground))',
+            background: audio ? 'hsl(280 70% 60%)' : 'hsl(var(--muted))',
+            border: 'none',
+            borderRadius: '15px',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            marginBottom: '20px'
+          }}
+          onMouseEnter={(e) => {
+            if (!audio) {
+              e.target.style.backgroundColor = 'hsl(280 70% 70%)'
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = audio ? 'hsl(280 70% 60%)' : 'hsl(var(--muted))'
+          }}
+        >
+          {audio ? '🔊 Audio ändern' : '🔊 Audio für Lip-Sync (optional)'}
         </button>
         
         {image && (
@@ -369,6 +415,151 @@ function WanVideoPublicPage() {
           />
         </div>
 
+        {/* Negative Prompt */}
+        <div style={{
+          background: 'hsla(0, 30%, 20%, 0.3)',
+          borderRadius: '15px',
+          padding: '20px',
+          marginBottom: '20px',
+          border: '1px solid hsla(0, 35%, 30%, 0.5)'
+        }}>
+          <h3 style={{
+            margin: '0 0 20px 0',
+            fontSize: '20px',
+            fontWeight: '600',
+            color: 'hsl(var(--foreground))'
+          }}>
+            🚫 Negative Prompt
+          </h3>
+          
+          <textarea 
+            value={negativePrompt}
+            onChange={(e) => setNegativePrompt(e.target.value)}
+            placeholder="Was NICHT im Video sein soll... z.B. 'blurry, distorted, low quality'"
+            style={{ 
+              width: '100%',
+              height: '80px',
+              padding: '15px',
+              fontSize: '16px',
+              background: 'hsl(var(--background))',
+              border: '2px solid hsl(var(--border))',
+              borderRadius: '15px',
+              color: 'hsl(var(--foreground))',
+              resize: 'vertical',
+              fontFamily: 'inherit'
+            }}
+          />
+        </div>
+
+        {/* Video Resolution */}
+        <div style={{
+          background: 'hsl(var(--card))',
+          borderRadius: '15px',
+          padding: '20px',
+          marginBottom: '20px',
+          border: '1px solid hsl(var(--border))'
+        }}>
+          <h3 style={{
+            margin: '0 0 15px 0',
+            fontSize: '16px',
+            fontWeight: '600',
+            color: 'hsl(var(--foreground))'
+          }}>
+            📐 Video Auflösung <span style={{fontSize: '14px', fontWeight: '500'}}>({size})</span>
+          </h3>
+          <select
+            value={size}
+            onChange={(e) => setSize(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '15px',
+              borderRadius: '12px',
+              border: '2px solid hsl(var(--border))',
+              background: 'hsl(var(--background))',
+              color: 'hsl(var(--foreground))',
+              fontSize: '16px',
+              fontWeight: '500'
+            }}
+          >
+            <option value="854x480">SD (854×480) - Schnell</option>
+            <option value="1280x720">HD (1280×720) - Standard</option>
+            <option value="1920x1080">Full HD (1920×1080) - Beste Qualität</option>
+          </select>
+        </div>
+
+        {/* Video Length Section */}
+        <div style={{
+          background: 'hsl(var(--card))',
+          borderRadius: '15px',
+          padding: '20px',
+          marginBottom: '20px',
+          border: '1px solid hsl(var(--border))'
+        }}>
+          <h3 style={{
+            margin: '0 0 15px 0',
+            fontSize: '16px',
+            fontWeight: '600',
+            color: 'hsl(var(--foreground))'
+          }}>
+            ⏱️ Video Länge <span style={{fontSize: '14px', fontWeight: '500'}}>({seconds} Sekunden)</span>
+          </h3>
+          <div style={{ position: 'relative', padding: '5px 0' }}>
+            {/* Markierungen */}
+            <div style={{ position: 'absolute', top: '0', left: '0', right: '0', height: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ width: '8px', height: '8px', backgroundColor: seconds === 3 ? 'hsl(280 70% 60%)' : 'hsl(var(--muted-foreground))', borderRadius: '50%' }}></div>
+                <span style={{ fontSize: '10px', color: 'hsl(var(--muted-foreground))', marginTop: '2px' }}>3s</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ width: '8px', height: '8px', backgroundColor: seconds === 5 ? 'hsl(280 70% 60%)' : 'hsl(var(--muted-foreground))', borderRadius: '50%' }}></div>
+                <span style={{ fontSize: '10px', color: 'hsl(var(--muted-foreground))', marginTop: '2px' }}>5s</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ width: '8px', height: '8px', backgroundColor: seconds === 10 ? 'hsl(280 70% 60%)' : 'hsl(var(--muted-foreground))', borderRadius: '50%' }}></div>
+                <span style={{ fontSize: '10px', color: 'hsl(var(--muted-foreground))', marginTop: '2px' }}>10s</span>
+              </div>
+            </div>
+            <input 
+              type="range" 
+              min="1" 
+              max="10" 
+              value={seconds} 
+              onChange={(e) => {
+                const value = parseInt(e.target.value);
+                setSeconds(value);
+              }}
+              onMouseUp={(e) => {
+                const value = parseInt(e.target.value);
+                const snapTargets = [3, 5, 10];
+                let closest = snapTargets[0];
+                let minDistance = Math.abs(value - closest);
+                
+                snapTargets.forEach(target => {
+                  const distance = Math.abs(value - target);
+                  if (distance < minDistance && distance <= 1) {
+                    closest = target;
+                    minDistance = distance;
+                  }
+                });
+                
+                if (minDistance <= 1) {
+                  setSeconds(closest);
+                }
+              }}
+              style={{ 
+                width: '100%',
+                marginTop: '25px',
+                appearance: 'none',
+                height: '6px',
+                background: 'linear-gradient(to right, hsl(47 100% 65%) 0%, hsl(280 70% 60%) 100%)',
+                borderRadius: '3px',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            />
+          </div>
+        </div>
+
         {/* Advanced Settings */}
         <div style={{
           background: 'hsl(var(--card))',
@@ -401,77 +592,51 @@ function WanVideoPublicPage() {
               gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
               gap: '20px'
             }}>
-              {/* Negative Prompt */}
-              <div style={{ gridColumn: isMobile ? '1' : '1 / -1' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', fontSize: '14px', fontWeight: '500' }}>
-                  🚫 Negative Prompt
-                </label>
-                <input 
-                  type="text"
-                  value={negativePrompt}
-                  onChange={(e) => setNegativePrompt(e.target.value)}
-                  placeholder="z.B. blurry, distorted, low quality"
-                  style={{ 
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: '8px',
-                    border: '1px solid hsl(var(--border))',
-                    background: 'hsl(var(--background))',
-                    color: 'hsl(var(--foreground))'
-                  }}
-                />
-              </div>
-              
-              {/* Video Size */}
-              <div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', fontSize: '14px', fontWeight: '500' }}>
-                  📐 Auflösung ({size})
-                </label>
-                <select
-                  value={size}
-                  onChange={(e) => setSize(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: '8px',
-                    border: '1px solid hsl(var(--border))',
-                    background: 'hsl(var(--background))',
-                    color: 'hsl(var(--foreground))'
-                  }}
-                >
-                  <option value="854*480">SD (854×480)</option>
-                  <option value="1280*720">HD (1280×720)</option>
-                  <option value="1920*1080">Full HD (1920×1080)</option>
-                </select>
-              </div>
-
-              {/* Duration */}
-              <div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', fontSize: '14px', fontWeight: '500' }}>
-                  ⏱️ Dauer ({duration} Sek.)
-                </label>
-                <input 
-                  type="number"
-                  min="3"
-                  max="10"
-                  value={duration}
-                  onChange={(e) => setDuration(parseInt(e.target.value))}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: '8px',
-                    border: '1px solid hsl(var(--border))',
-                    background: 'hsl(var(--background))',
-                    color: 'hsl(var(--foreground))'
-                  }}
-                />
-              </div>
 
               {/* Seed */}
-              <div>
+              <div style={{ position: 'relative' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', fontSize: '14px', fontWeight: '500' }}>
                   🎲 Seed ({seed === -1 ? 'Random' : seed})
+                  <button
+                    onClick={() => setShowInfoPopup(showInfoPopup === 'seed' ? null : 'seed')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: 'hsl(var(--muted))',
+                      color: 'hsl(var(--muted-foreground))',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: '700'
+                    }}
+                  >
+                    ?
+                  </button>
                 </label>
+                {showInfoPopup === 'seed' && (
+                  <div style={{
+                    position: 'absolute',
+                    zIndex: 10,
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    marginTop: '5px',
+                    fontSize: '13px',
+                    lineHeight: '1.4',
+                    color: 'hsl(var(--foreground))',
+                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                    maxWidth: '280px'
+                  }}>
+                    <strong>Seed</strong><br/>
+                    -1 für zufällige Ergebnisse, oder eine Zahl für reproduzierbare Ergebnisse
+                  </div>
+                )}
                 <input 
                   type="number"
                   value={seed}
@@ -489,26 +654,110 @@ function WanVideoPublicPage() {
               </div>
 
               {/* Prompt Expansion */}
-              <div>
+              <div style={{ position: 'relative' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '14px', fontWeight: '500' }}>
+                  ✨ Auto Prompt Enhancement
+                  <button
+                    onClick={() => setShowInfoPopup(showInfoPopup === 'expansion' ? null : 'expansion')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: 'hsl(var(--muted))',
+                      color: 'hsl(var(--muted-foreground))',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: '700'
+                    }}
+                  >
+                    ?
+                  </button>
+                </label>
+                {showInfoPopup === 'expansion' && (
+                  <div style={{
+                    position: 'absolute',
+                    zIndex: 10,
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    marginTop: '5px',
+                    fontSize: '13px',
+                    lineHeight: '1.4',
+                    color: 'hsl(var(--foreground))',
+                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                    maxWidth: '280px'
+                  }}>
+                    <strong>Auto Prompt Enhancement</strong><br/>
+                    Erweitert deine Prompts automatisch für bessere Ergebnisse
+                  </div>
+                )}
                 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
                   <input 
                     type="checkbox"
                     checked={enablePromptExpansion}
                     onChange={(e) => setEnablePromptExpansion(e.target.checked)}
                   />
-                  <span>✨ Auto Prompt Enhancement</span>
+                  <span>Prompt automatisch verbessern</span>
                 </label>
               </div>
               
               {/* Safety Checker */}
-              <div>
+              <div style={{ position: 'relative' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '14px', fontWeight: '500' }}>
+                  🛡️ Safety Check
+                  <button
+                    onClick={() => setShowInfoPopup(showInfoPopup === 'safety' ? null : 'safety')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: 'hsl(var(--muted))',
+                      color: 'hsl(var(--muted-foreground))',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: '700'
+                    }}
+                  >
+                    ?
+                  </button>
+                </label>
+                {showInfoPopup === 'safety' && (
+                  <div style={{
+                    position: 'absolute',
+                    zIndex: 10,
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    marginTop: '5px',
+                    fontSize: '13px',
+                    lineHeight: '1.4',
+                    color: 'hsl(var(--foreground))',
+                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                    maxWidth: '280px'
+                  }}>
+                    <strong>Safety Checker</strong><br/>
+                    Filtert unangemessene Inhalte. Empfohlen: An lassen
+                  </div>
+                )}
                 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
                   <input 
                     type="checkbox"
                     checked={enableSafetyChecker}
                     onChange={(e) => setEnableSafetyChecker(e.target.checked)}
                   />
-                  <span>🛡️ Safety Check</span>
+                  <span>Inhalts-Filter aktiviert</span>
                 </label>
               </div>
             </div>
@@ -525,15 +774,25 @@ function WanVideoPublicPage() {
             fontSize: '18px',
             fontWeight: '700',
             color: loading ? 'hsl(var(--muted-foreground))' : 'hsl(var(--secondary-foreground))',
-            background: loading ? 'hsl(var(--muted))' : 'hsl(47 100% 65%)',
+            background: loading ? 'hsl(var(--muted))' : 'hsl(280 70% 60%)',
             border: 'none',
             borderRadius: '20px',
             cursor: loading ? 'not-allowed' : 'pointer',
             transition: 'all 0.3s ease',
             marginBottom: '30px'
           }}
+          onMouseEnter={(e) => {
+            if (!loading && image && prompt) {
+              e.target.style.transform = 'translateY(-3px)'
+              e.target.style.boxShadow = '0 15px 35px rgba(168, 85, 247, 0.4)'
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.transform = 'translateY(0)'
+            e.target.style.boxShadow = 'none'
+          }}
         >
-          {loading ? 'Generiere mit öffentlichem WAN 2.5...' : 'Video mit öffentlichem WAN 2.5 generieren'}
+          {loading ? 'Generiere Video...' : 'Video generieren'}
         </button>
       
         {loading && (
@@ -542,8 +801,8 @@ function WanVideoPublicPage() {
             borderRadius: '20px',
             padding: '30px',
             marginBottom: '30px',
-            border: '2px solid hsl(47 100% 65%)',
-            boxShadow: '0 10px 25px rgba(245, 158, 11, 0.2)'
+            border: '2px solid hsl(280 70% 60%)',
+            boxShadow: '0 10px 25px rgba(168, 85, 247, 0.2)'
           }}>
             <div style={{ 
               display: 'flex', 
@@ -557,10 +816,12 @@ function WanVideoPublicPage() {
                 width: '24px',
                 height: '24px',
                 border: '3px solid hsl(var(--muted))',
-                borderTop: '3px solid hsl(47 100% 65%)',
+                borderTop: '3px solid hsl(280 70% 60%)',
                 borderRadius: '50%',
                 animation: 'spin 1s linear infinite',
-                marginRight: '12px'
+                marginRight: '12px',
+                willChange: 'transform',
+                backfaceVisibility: 'hidden'
               }}></div>
               <strong>{progress}</strong>
             </div>
@@ -568,21 +829,90 @@ function WanVideoPublicPage() {
             <div style={{
               background: 'hsl(var(--background))',
               borderRadius: '10px',
-              padding: '15px 20px'
+              padding: '15px 20px',
+              marginBottom: '15px'
             }}>
               <div style={{ 
                 fontSize: '16px', 
                 color: 'hsl(var(--foreground))',
-                marginBottom: '8px'
+                marginBottom: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
               }}>
-                ⏱️ <strong>Vergangene Zeit: {formatTime(elapsedTime)}</strong>
+                <span>⏱️</span>
+                <strong>Vergangene Zeit: {formatTime(elapsedTime)}</strong>
               </div>
+              
+              <div style={{ 
+                fontSize: '14px', 
+                color: 'hsl(var(--muted-foreground))',
+                lineHeight: '1.5'
+              }}>
+                {elapsedTime < 60 
+                  ? "Kalte GPU-Initialisierung kann 1-2 Minuten dauern"
+                  : elapsedTime < 120
+                  ? "GPU erwärmt sich... Worker startet ComfyUI"
+                  : elapsedTime < 180
+                  ? "Lade ComfyUI Registry... Registriere Custom Nodes"
+                  : elapsedTime < 300
+                  ? "Initialisiere WAN 2.5 Komponenten... Lade Model Registry"
+                  : elapsedTime < 480
+                  ? "Lade Transformer Parameter... 1095 Komponenten"
+                  : "Generiere Video Frames... 162 Frames = 10 Sekunden"
+                }
+              </div>
+            </div>
+            
+            {/* Progress Bar */}
+            <div style={{
+              background: 'hsl(var(--background))',
+              borderRadius: '10px',
+              padding: '5px',
+              marginBottom: '10px'
+            }}>
+              <div style={{
+                height: '8px',
+                background: 'linear-gradient(135deg, hsl(280 70% 60%), hsl(47 100% 65%))',
+                borderRadius: '5px',
+                width: elapsedTime < 60 ? '15%' 
+                     : elapsedTime < 120 ? '25%'
+                     : elapsedTime < 180 ? '40%'
+                     : elapsedTime < 300 ? '60%'
+                     : elapsedTime < 480 ? '80%'
+                     : elapsedTime < 540 ? '95%'
+                     : '100%',
+                transition: 'width 1s ease',
+                animation: 'pulse 2s infinite'
+              }}></div>
             </div>
             
             <style>{`
               @keyframes spin {
                 from { transform: rotate(0deg); }
                 to { transform: rotate(360deg); }
+              }
+              @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.7; }
+              }
+              input[type="range"]::-webkit-slider-thumb {
+                appearance: none;
+                width: 20px;
+                height: 20px;
+                background: hsl(280 70% 60%);
+                border-radius: 50%;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+              }
+              input[type="range"]::-moz-range-thumb {
+                width: 20px;
+                height: 20px;
+                background: hsl(280 70% 60%);
+                border-radius: 50%;
+                border: none;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.4);
               }
             `}</style>
           </div>
@@ -594,8 +924,8 @@ function WanVideoPublicPage() {
             borderRadius: '20px',
             padding: '30px',
             marginBottom: '30px',
-            border: '2px solid hsl(47 100% 65%)',
-            boxShadow: '0 10px 25px rgba(245, 158, 11, 0.2)'
+            border: '2px solid hsl(280 70% 60%)',
+            boxShadow: '0 10px 25px rgba(168, 85, 247, 0.2)'
           }}>
             <h3 style={{
               margin: '0 0 20px 0',
@@ -606,7 +936,7 @@ function WanVideoPublicPage() {
               alignItems: 'center',
               gap: '10px'
             }}>
-              🎉 Dein öffentliches WAN 2.5 Video ist fertig!
+              🎉 Dein Video ist fertig!
             </h3>
             
             <video 
@@ -628,18 +958,120 @@ function WanVideoPublicPage() {
               flexDirection: isMobile ? 'column' : 'row'
             }}>
               <button
-                onClick={() => {
-                  // iOS/Mobile: Open video in new tab for manual save
-                  if (/iPad|iPhone|iPod|Android/i.test(navigator.userAgent)) {
-                    window.open(video, '_blank')
+                onClick={async () => {
+                  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                  const isAndroid = /Android/.test(navigator.userAgent);
+                  
+                  if (isIOS) {
+                    // iOS: Try Safari's enhanced video saving
+                    try {
+                      // First try to fetch and create blob for iOS
+                      const response = await fetch(video);
+                      const blob = await response.blob();
+                      const url = URL.createObjectURL(blob);
+                      
+                      // Create a temporary video element for iOS
+                      const tempVideo = document.createElement('video');
+                      tempVideo.src = url;
+                      tempVideo.style.position = 'fixed';
+                      tempVideo.style.top = '50%';
+                      tempVideo.style.left = '50%';
+                      tempVideo.style.transform = 'translate(-50%, -50%)';
+                      tempVideo.style.width = '90vw';
+                      tempVideo.style.maxWidth = '400px';
+                      tempVideo.style.zIndex = '10000';
+                      tempVideo.style.border = '3px solid #8B5CF6';
+                      tempVideo.style.borderRadius = '15px';
+                      tempVideo.style.backgroundColor = 'black';
+                      tempVideo.controls = true;
+                      tempVideo.playsInline = true;
+                      
+                      // Add overlay instructions
+                      const overlay = document.createElement('div');
+                      overlay.style.position = 'fixed';
+                      overlay.style.top = '0';
+                      overlay.style.left = '0';
+                      overlay.style.width = '100%';
+                      overlay.style.height = '100%';
+                      overlay.style.backgroundColor = 'rgba(0,0,0,0.8)';
+                      overlay.style.zIndex = '9999';
+                      overlay.style.display = 'flex';
+                      overlay.style.flexDirection = 'column';
+                      overlay.style.justifyContent = 'center';
+                      overlay.style.alignItems = 'center';
+                      overlay.style.color = 'white';
+                      overlay.style.fontSize = '16px';
+                      overlay.style.textAlign = 'center';
+                      overlay.style.padding = '20px';
+                      
+                      overlay.innerHTML = `
+                        <div style="margin-bottom: 20px; font-size: 18px; font-weight: bold;">
+                          📱 iOS Video Speichern
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                          1. Halte das Video gedrückt<br/>
+                          2. Wähle "Video speichern"<br/>
+                          3. Video wird in Fotos-App gespeichert
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove(); document.body.removeChild(document.querySelector('video[style*=\"position: fixed\"]'))" 
+                                style="padding: 12px 24px; background: #8B5CF6; color: white; border: none; border-radius: 8px; font-size: 16px; margin-top: 10px; cursor: pointer;">
+                          ❌ Schließen
+                        </button>
+                      `;
+                      
+                      document.body.appendChild(overlay);
+                      document.body.appendChild(tempVideo);
+                      
+                      // Clean up blob URL after a while
+                      setTimeout(() => URL.revokeObjectURL(url), 300000); // 5 minutes
+                      
+                    } catch (error) {
+                      console.error('iOS video save error:', error);
+                      // Fallback: Open in new tab
+                      window.open(video, '_blank');
+                      alert('📱 Video öffnet sich in neuem Tab. Halte das Video gedrückt und wähle "Video speichern"');
+                    }
+                    
+                  } else if (isAndroid) {
+                    // Android: Try to trigger download
+                    try {
+                      const response = await fetch(video);
+                      const blob = await response.blob();
+                      const url = URL.createObjectURL(blob);
+                      
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = `wan-video-${Date.now()}.mp4`;
+                      
+                      // Android sometimes needs user interaction
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      
+                      // Show success message
+                      alert('📥 Video Download gestartet! Überprüfe deine Downloads oder Benachrichtigungen.');
+                      
+                      setTimeout(() => URL.revokeObjectURL(url), 10000);
+                      
+                    } catch (error) {
+                      console.error('Android download error:', error);
+                      // Fallback
+                      window.open(video, '_blank');
+                      alert('📱 Video öffnet sich in neuem Tab. Nutze den "Download" Button des Browsers.');
+                    }
+                    
                   } else {
                     // Desktop: Normal download
-                    const link = document.createElement('a')
-                    link.href = video
-                    link.download = `wan-video-origin-${Date.now()}.mp4`
-                    document.body.appendChild(link)
-                    link.click()
-                    document.body.removeChild(link)
+                    try {
+                      const link = document.createElement('a');
+                      link.href = video;
+                      link.download = `wan-video-public-${Date.now()}.mp4`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    } catch (error) {
+                      window.open(video, '_blank');
+                    }
                   }
                 }}
                 style={{
@@ -681,7 +1113,8 @@ function WanVideoPublicPage() {
                 alignItems: 'center',
                 gap: '8px'
               }}>
-                💡 <span><strong>iPhone/Android:</strong> Video öffnet sich → Teilen Button → "Video sichern" (mit Audio!)</span>
+                💡 <span><strong>iPhone:</strong> Video-Overlay erscheint → Video gedrückt halten → "Video speichern"<br/>
+                <strong>Android:</strong> Download startet automatisch</span>
               </div>
             </div>
           </div>

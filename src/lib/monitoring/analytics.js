@@ -18,7 +18,7 @@ class AnalyticsManager {
   init() {
     if (this.initialized) return;
 
-    console.log('📊 Initializing Analytics Manager');
+    // console.log('📊 Initializing Analytics Manager');
 
     // Initialize Google Analytics 4
     this.initGA4();
@@ -42,7 +42,7 @@ class AnalyticsManager {
     const gaId = import.meta.env.VITE_GA4_MEASUREMENT_ID;
     
     if (!gaId) {
-      console.warn('⚠️ Google Analytics ID not found in environment variables');
+      // console.warn('⚠️ Google Analytics ID not found in environment variables');
       return;
     }
 
@@ -74,7 +74,7 @@ class AnalyticsManager {
       allow_ad_personalization_signals: false
     });
 
-    console.log('✅ Google Analytics 4 initialized');
+    // console.log('✅ Google Analytics 4 initialized');
   }
 
   /**
@@ -84,7 +84,7 @@ class AnalyticsManager {
     const endpoint = import.meta.env.VITE_ANALYTICS_ENDPOINT;
     
     if (endpoint) {
-      console.log('✅ Custom analytics endpoint configured');
+      // console.log('✅ Custom analytics endpoint configured');
     }
   }
 
@@ -369,10 +369,10 @@ class AnalyticsManager {
     // Send to custom endpoint
     this.sendToCustomEndpoint(eventData);
 
-    // Console log in development
-    if (import.meta.env.DEV) {
-      console.log('📊 Analytics Event:', eventName, eventData.properties);
-    }
+    // Disable console log spam
+    // if (import.meta.env.DEV) {
+    //   console.log('📊 Analytics Event:', eventName, eventData.properties);
+    // }
   }
 
   /**

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext.jsx'
-import { generatePromptsFromIdea, testGrokService } from '../services/grokService.js'
+import { generatePromptsFromIdea } from '../services/grokService.js'
 import { createClient } from '@supabase/supabase-js'
 
 // Kopie der createSystemPrompt Funktion für Debug

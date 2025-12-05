@@ -1061,12 +1061,18 @@ function WanVideoPage() {
             }}>
               <button
                 onClick={() => {
-                  const link = document.createElement('a')
-                  link.href = video
-                  link.download = `wan-video-${Date.now()}.mp4`
-                  document.body.appendChild(link)
-                  link.click()
-                  document.body.removeChild(link)
+                  // iOS/Mobile: Open video in new tab for manual save
+                  if (/iPad|iPhone|iPod|Android/i.test(navigator.userAgent)) {
+                    window.open(video, '_blank')
+                  } else {
+                    // Desktop: Normal download
+                    const link = document.createElement('a')
+                    link.href = video
+                    link.download = `wan-video-${Date.now()}.mp4`
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
+                  }
                 }}
                 style={{
                   flex: 1,
@@ -1093,7 +1099,7 @@ function WanVideoPage() {
                   e.target.style.boxShadow = 'none'
                 }}
               >
-                📥 Video herunterladen
+                📥 Video speichern
               </button>
               
               <div style={{
@@ -1107,7 +1113,7 @@ function WanVideoPage() {
                 alignItems: 'center',
                 gap: '8px'
               }}>
-                💡 <span><strong>Tipp:</strong> Auch per Rechtsklick → "Speichern unter"</span>
+                💡 <span><strong>iPhone/Android:</strong> Video öffnet sich → Teilen Button → "Video sichern"</span>
               </div>
             </div>
           </div>

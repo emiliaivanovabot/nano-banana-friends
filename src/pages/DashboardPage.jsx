@@ -824,6 +824,18 @@ function DashboardPage() {
                   </div>
                 )}
                 
+                {tool.id === 'user-gallery' && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: '30px',
+                    transform: 'translateY(-50%)',
+                    fontSize: '48px'
+                  }}>
+                    💋
+                  </div>
+                )}
+                
                 <h3 style={{
                   margin: '0 0 8px 0',
                   fontSize: '24px',

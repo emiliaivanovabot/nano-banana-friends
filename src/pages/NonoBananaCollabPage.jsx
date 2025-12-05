@@ -2528,11 +2528,9 @@ function NonoBananaPage() {
         />
       </div>
 
-
-
       {/* Generate Buttons Container */}
-      <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
-        {/* Single Generate Button */}
+      <div style={{ display: 'flex', gap: '6px', flexDirection: 'column', marginTop: '12px' }}>
+        {/* Single Generate Button - Full Width */}
         <button 
           onClick={generateImage}
           disabled={!prompt.trim() || loading || multiLoading || multiLoading10}
@@ -2540,7 +2538,8 @@ function NonoBananaPage() {
           style={{ 
             background: loading ? 
               'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 
-              'linear-gradient(135deg, hsl(47 100% 65%) 0%, #f59e0b 100%)'
+              'linear-gradient(135deg, hsl(47 100% 65%) 0%, #f59e0b 100%)',
+            width: '100%'
           }}
         >
           <span className="generate-icon">🍌</span>
@@ -2549,39 +2548,42 @@ function NonoBananaPage() {
           </span>
         </button>
 
-        {/* 4x Generate Button */}
-        <button 
-          onClick={generate4Images}
-          disabled={!prompt.trim() || loading || multiLoading || multiLoading10}
-          className={`mobile-generate-button ${multiLoading ? 'loading' : ''} ${!prompt.trim() ? 'disabled' : ''}`}
-          style={{ 
-            background: multiLoading ? 
-              'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 
-              'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)'
-          }}
-        >
-          <span className="generate-icon">🍌🍌🍌🍌</span>
-          <span className="generate-text">
-            {multiLoading ? '4x Generiere...' : '4x Generierung'}
-          </span>
-        </button>
+        {/* Multi Generate Buttons - Side by Side */}
+        <div style={{ display: 'flex', gap: '6px' }}>
+          {/* 4x Generate Button */}
+          <button 
+            onClick={generate4Images}
+            disabled={!prompt.trim() || loading || multiLoading || multiLoading10}
+            className={`mobile-generate-button ${multiLoading ? 'loading' : ''} ${!prompt.trim() ? 'disabled' : ''}`}
+            style={{ 
+              background: multiLoading ? 
+                'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 
+                'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+              flex: '1'
+            }}
+          >
+            <span className="generate-text">
+              {multiLoading ? '4x Generiere...' : '4x Generierung'}
+            </span>
+          </button>
 
-        {/* 10x Generate Button */}
-        <button 
-          onClick={generate10Images}
-          disabled={!prompt.trim() || loading || multiLoading || multiLoading10}
-          className={`mobile-generate-button ${multiLoading10 ? 'loading' : ''} ${!prompt.trim() ? 'disabled' : ''}`}
-          style={{ 
-            background: multiLoading10 ? 
-              'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 
-              'linear-gradient(135deg, hsl(280 70% 60%) 0%, #7c3aed 100%)'
-          }}
-        >
-          <span className="generate-icon">🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌</span>
-          <span className="generate-text">
-            {multiLoading10 ? '10x Generiere...' : '10x Generierung'}
-          </span>
-        </button>
+          {/* 10x Generate Button */}
+          <button 
+            onClick={generate10Images}
+            disabled={!prompt.trim() || loading || multiLoading || multiLoading10}
+            className={`mobile-generate-button ${multiLoading10 ? 'loading' : ''} ${!prompt.trim() ? 'disabled' : ''}`}
+            style={{ 
+              background: multiLoading10 ? 
+                'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 
+                'linear-gradient(135deg, hsl(280 70% 60%) 0%, #7c3aed 100%)',
+              flex: '1'
+            }}
+          >
+            <span className="generate-text">
+              {multiLoading10 ? '10x Generiere...' : '10x Generierung'}
+            </span>
+          </button>
+        </div>
       </div>
 
 

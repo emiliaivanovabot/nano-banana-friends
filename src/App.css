@@ -1563,7 +1563,7 @@ html, body {
     0 8px 24px rgba(251, 113, 133, 0.3),
     0 4px 12px rgba(251, 191, 36, 0.2);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  margin: 24px 0 40px 0; /* Extra bottom margin for mobile access */
+  margin: 5px 0 5px 0; /* Reduced margin for compact layout */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   position: relative;

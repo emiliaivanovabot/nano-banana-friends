@@ -39,14 +39,14 @@ $$ LANGUAGE plpgsql;
 SELECT create_alpha_user('emilia.berlin', '1611');
 SELECT create_alpha_user('jessy.germany', '2018'); 
 SELECT create_alpha_user('tyra.foxi', '2018');
-SELECT create_alpha_user('selina.luna', '2025');
+SELECT create_alpha_user('selena.luna', '2025');
 ```
 
 **✅ Verification:**
 ```sql
 -- Prüfen ob Accounts erfolgreich angelegt wurden
 SELECT username, created_at FROM users 
-WHERE username IN ('emilia.berlin', 'jessy.germany', 'tyra.foxi', 'selina.luna');
+WHERE username IN ('emilia.berlin', 'jessy.germany', 'tyra.foxi', 'selena.luna');
 ```
 
 ---
@@ -68,7 +68,7 @@ Das System erstellt automatisch die benötigte Ordnerstruktur für jedes Model:
 ├── tyra.foxi/
 │   └── 2025/
 │       └── 11/
-└── selina.luna/
+└── selena.luna/
     └── 2025/
         └── 11/
 ```
@@ -98,7 +98,7 @@ VITE_LOGIN_USERS='[
   {"username": "emilia.berlin", "modelId": "emilia.berlin"}, 
   {"username": "jessy.germany", "modelId": "jessy.germany"},
   {"username": "tyra.foxi", "modelId": "tyra.foxi"},
-  {"username": "selina.luna", "modelId": "selina.luna"}
+  {"username": "selena.luna", "modelId": "selena.luna"}
 ]'
 ```
 

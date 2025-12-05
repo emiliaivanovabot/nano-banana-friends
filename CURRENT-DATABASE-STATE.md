@@ -224,11 +224,11 @@ $$ LANGUAGE plpgsql;
 SELECT create_alpha_user('emilia.berlin', '1611');
 SELECT create_alpha_user('jessy.germany', '2018'); 
 SELECT create_alpha_user('tyra.foxi', '2018');
-SELECT create_alpha_user('selina.luna', '2025');
+SELECT create_alpha_user('selena.luna', '2025');
 
 -- Verify successful creation:
 SELECT username, created_at FROM users 
-WHERE username IN ('emilia.berlin', 'jessy.germany', 'tyra.foxi', 'selina.luna');
+WHERE username IN ('emilia.berlin', 'jessy.germany', 'tyra.foxi', 'selena.luna');
 ```
 
 ### 📁 **Step 2: Create FTP Directory Structure**

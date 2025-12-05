@@ -70,10 +70,40 @@ export async function authenticateUser(username, password) {
       }
     }
 
-    // Get user from database
-    const { user, error } = await getUserByUsername(username)
+    // Try database first, fallback to local users if DB fails
+    let user = null
+    let dbError = null
     
-    if (error || !user) {
+    try {
+      const result = await getUserByUsername(username)
+      user = result.user
+      dbError = result.error
+    } catch (err) {
+      dbError = err
+      console.warn('Database unavailable, using local fallback:', err.message)
+    }
+    
+    // Fallback to local users if database fails
+    if (dbError || !user) {
+      console.log('Using local user fallback for:', username)
+      const localUsers = JSON.parse(import.meta.env.VITE_LOGIN_USERS || '[]')
+      const localUser = localUsers.find(u => u.username === username && u.password === password)
+      
+      if (localUser) {
+        return {
+          success: true,
+          user: {
+            id: localUser.username,
+            username: localUser.username,
+            model_id: localUser.modelId,
+            subscription_type: 'free',
+            is_active: true
+          },
+          error: null,
+          requiresOnboarding: false
+        }
+      }
+      
       return {
         success: false,
         user: null,

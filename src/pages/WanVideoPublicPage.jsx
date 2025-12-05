@@ -620,6 +620,64 @@ function WanVideoPublicPage() {
               <source src={video} type="video/mp4" />
               Dein Browser unterstützt keine Video-Wiedergabe.
             </video>
+            
+            <div style={{
+              marginTop: '20px',
+              display: 'flex',
+              gap: '15px',
+              flexDirection: isMobile ? 'column' : 'row'
+            }}>
+              <button
+                onClick={() => {
+                  const link = document.createElement('a')
+                  link.href = video
+                  link.download = `wan-video-origin-${Date.now()}.mp4`
+                  document.body.appendChild(link)
+                  link.click()
+                  document.body.removeChild(link)
+                }}
+                style={{
+                  flex: 1,
+                  padding: '15px 20px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  color: 'white',
+                  background: 'linear-gradient(135deg, hsl(280 70% 60%), hsl(280 70% 70%))',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-2px)'
+                  e.target.style.boxShadow = '0 8px 20px rgba(168, 85, 247, 0.4)'
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0)'
+                  e.target.style.boxShadow = 'none'
+                }}
+              >
+                📥 Video herunterladen
+              </button>
+              
+              <div style={{
+                flex: 1,
+                padding: '15px',
+                background: 'hsl(var(--background))',
+                borderRadius: '10px',
+                fontSize: '14px',
+                color: 'hsl(var(--muted-foreground))',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                💡 <span><strong>Mit Audio!</strong> Direkt speichern auf iPhone/Android</span>
+              </div>
+            </div>
           </div>
         )}
         

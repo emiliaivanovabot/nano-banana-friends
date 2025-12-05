@@ -2,6 +2,31 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { useState, useEffect } from 'react'
 import { getDailyUsageHistory, getUnifiedGenerationStats, getTopAspectRatios } from '../utils/usageTracking'
+import { Settings, LogOut, ChevronDown } from 'lucide-react'
+
+// Add ComfyUI glowing animation and fadeIn animation
+const glowingStyle = `
+  @keyframes blueGlow {
+    0% { box-shadow: 0 0 5px #3b82f6; }
+    50% { box-shadow: 0 0 20px #3b82f6, 0 0 30px #1d4ed8; }
+    100% { box-shadow: 0 0 5px #3b82f6; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .comfyui-glow {
+    animation: blueGlow 2s ease-in-out infinite;
+  }
+`
+
+// Inject the styles
+if (typeof document !== 'undefined' && !document.getElementById('comfyui-glow-styles')) {
+  const styleSheet = document.createElement('style')
+  styleSheet.id = 'comfyui-glow-styles'
+  styleSheet.textContent = glowingStyle
+  document.head.appendChild(styleSheet)
+}
 
 function DashboardPage() {
   const { user, logout } = useAuth()
@@ -19,6 +44,7 @@ function DashboardPage() {
     week: []
   })
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isStatsExpanded, setIsStatsExpanded] = useState(false)
 
   // Mobile detection
   useEffect(() => {
@@ -168,6 +194,12 @@ function DashboardPage() {
     if (!username) return 'User'
     const firstName = username.split('.')[0] || username
     return firstName.charAt(0).toUpperCase() + firstName.slice(1)
+  }
+
+  const getMonthName = () => {
+    const months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 
+                    'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
+    return months[new Date().getMonth()]
   }
 
   const ImageDetailsSection = ({ stats, aspectRatios, period }) => {
@@ -354,49 +386,14 @@ function DashboardPage() {
       id: 'nano-banana',
       path: '/generation-modes',
       title: 'Nano Banana Pro',
-      subtitle: 'Image Generation',
+      subtitle: 'AI Image Generator',
       gradient: 'linear-gradient(135deg, hsl(47 100% 65%), #f59e0b)',
       available: true
     },
     {
-      id: 'gallery',
-      path: '/gallery', 
-      title: 'Bilder Galerie',
-      subtitle: 'Deine Bilder',
-      gradient: 'linear-gradient(135deg, #667eea, #764ba2)',
-      available: true
-    },
-    // Admin-only tool for emilia.ivanova
-    ...(user?.username === 'emilia.ivanova' ? [{
-      id: 'user-gallery',
-      path: '/gallery?admin=true',
-      title: 'User Galerie',
-      subtitle: 'Admin: User Bilder',
-      gradient: 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
-      available: true
-    }] : []),
-    {
-      id: 'wan-video',
-      title: 'WAN 2.5 Video',
-      subtitle: 'Video Generation',
-      path: '/wan-video',
-      gradient: 'linear-gradient(135deg, #f093fb, #f5576c)',
-      available: false,
-      paused: true
-    },
-    {
-      id: 'wan-video-origin',
-      title: 'WAN 2.5 Origin',
-      subtitle: 'Premium Video + Audio',
-      path: '/wan-video-public',
-      gradient: 'linear-gradient(135deg, #FFD700, #FFA500)',
-      available: false,
-      paused: true
-    },
-    {
       id: 'qwen',
       title: 'Qwen',
-      subtitle: 'Image Editor',
+      subtitle: 'AI Image Editor',
       path: '/qwen',
       gradient: 'linear-gradient(135deg, #4facfe, #00f2fe)',
       available: true
@@ -404,7 +401,7 @@ function DashboardPage() {
     {
       id: 'comfyui',
       title: 'Comfyui',
-      subtitle: 'Real Pics', 
+      subtitle: 'Realistic Photos', 
       path: 'https://snapshot-theology-opened-inspiration.trycloudflare.com/',
       gradient: 'linear-gradient(135deg, #a8edea, #fed6e3)',
       available: true,
@@ -414,11 +411,46 @@ function DashboardPage() {
       id: 'grok-playground',
       path: '/grok-playground',
       title: 'Grok Playground',
-      subtitle: 'Image Analysis & AI Chat',
+      subtitle: 'AI Chat & Analysis',
       gradient: 'linear-gradient(135deg, #667eea, #764ba2)',
       available: false,
       paused: true
-    }
+    },
+    {
+      id: 'wan-video',
+      title: 'WAN 2.5 Video',
+      subtitle: 'AI Video Creator',
+      path: '/wan-video',
+      gradient: 'linear-gradient(135deg, #f093fb, #f5576c)',
+      available: false,
+      paused: true
+    },
+    {
+      id: 'wan-video-origin',
+      title: 'WAN 2.5 Origin',
+      subtitle: 'Premium Video Suite',
+      path: '/wan-video-public',
+      gradient: 'linear-gradient(135deg, #FFD700, #FFA500)',
+      available: false,
+      paused: true
+    },
+    {
+      id: 'gallery',
+      path: '/gallery', 
+      title: 'Bilder Galerie',
+      subtitle: 'Your Creations',
+      gradient: 'linear-gradient(135deg, #667eea, #764ba2)',
+      available: true
+    },
+    // Admin-only tool for emilia.ivanova
+    ...(user?.username === 'emilia.ivanova' ? [{
+      id: 'user-gallery',
+      path: '/gallery?admin=true',
+      title: 'User Galerie',
+      subtitle: 'Admin Gallery',
+      gradient: 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
+      available: true
+    }] : [])
   ]
 
   return (
@@ -441,38 +473,42 @@ function DashboardPage() {
           marginBottom: '25px',
           background: 'hsl(var(--card))',
           backdropFilter: 'blur(20px)',
-          padding: isMobile ? '15px 20px' : '20px 25px',
+          padding: isMobile ? '12px 16px' : '20px 25px',
           borderRadius: '20px',
           border: '1px solid hsl(var(--border))'
         }}>
           <div>
             <h1 style={{
-              margin: '0 0 8px 0',
-              fontSize: isMobile ? '28px' : '36px',
-              fontWeight: '700',
-              color: 'hsl(47 100% 65%)',
-              background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              fontFamily: "'Space Grotesk', sans-serif"
+              margin: '0 0 12px 0',
+              fontSize: isMobile ? '18px' : '22px',
+              fontWeight: '600',
+              color: 'hsl(0 0% 50%)',
+              fontFamily: "'Space Grotesk', sans-serif",
+              letterSpacing: '0.5px'
             }}>
               neuronalworks
             </h1>
             <p style={{
-              margin: 0,
-              fontSize: isMobile ? '16px' : '18px',
+              margin: '0 0 4px 0',
+              fontSize: isMobile ? '20px' : '28px',
               color: 'hsl(var(--foreground))',
-              fontWeight: '500'
+              fontWeight: '700',
+              fontFamily: "'Space Grotesk', sans-serif",
+              background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              lineHeight: '1.2'
             }}>
-              🍌 Hallo {getFirstName(user?.username)}!
+              Hallo {getFirstName(user?.username)}! 🍌
             </p>
             <p style={{
-              margin: '5px 0 0 0',
-              fontSize: '14px',
+              margin: 0,
+              fontSize: isMobile ? '12px' : '14px',
               color: 'hsl(var(--muted-foreground))',
-              fontWeight: '300',
-              fontFamily: 'Georgia, serif'
+              fontWeight: '400',
+              fontFamily: 'Georgia, serif',
+              fontStyle: 'italic'
             }}>
               Wähle dein AI Tool und ab gehts
             </p>
@@ -480,230 +516,303 @@ function DashboardPage() {
           
           <div style={{ 
             display: 'flex', 
-            gap: '12px',
+            gap: isMobile ? '8px' : '12px',
             alignItems: 'center'
           }}>
-            <button
-              onClick={handleRefreshData}
-              disabled={isRefreshing}
-              style={{
-                background: isRefreshing ? 'hsl(var(--muted) / 0.5)' : 'hsl(280 70% 60% / 0.2)',
-                border: `1px solid ${isRefreshing ? 'hsl(var(--border))' : 'hsl(280 70% 60%)'}`,
-                borderRadius: '12px',
-                padding: '12px',
-                color: isRefreshing ? 'hsl(var(--muted-foreground))' : 'hsl(280 70% 60%)',
-                fontSize: '18px',
-                transition: 'all 0.3s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '48px',
-                height: '48px',
-                cursor: isRefreshing ? 'not-allowed' : 'pointer'
-              }}
-              onMouseEnter={(e) => {
-                if (!isRefreshing) {
-                  e.target.style.background = 'hsl(280 70% 60% / 0.3)'
-                  e.target.style.transform = 'scale(1.05)'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isRefreshing) {
-                  e.target.style.background = 'hsl(280 70% 60% / 0.2)'
-                  e.target.style.transform = 'scale(1)'
-                }
-              }}
-              title={isRefreshing ? 'Daten werden aktualisiert...' : 'Token-Daten aktualisieren'}
-            >
-              {isRefreshing ? '🔄' : '🔄'}
-            </button>
             <Link 
               to="/settings"
               style={{
-                background: 'hsl(var(--secondary) / 0.3)',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '12px',
-                padding: '12px',
+                background: 'hsl(220 70% 60% / 0.15)',
+                border: '1px solid hsl(220 70% 60% / 0.3)',
+                borderRadius: isMobile ? '12px' : '14px',
+                padding: isMobile ? '10px 14px' : '12px 18px',
                 textDecoration: 'none',
                 color: 'hsl(var(--foreground))',
-                fontSize: '20px',
                 transition: 'all 0.3s ease',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                width: '48px',
-                height: '48px'
+                gap: '8px',
+                cursor: 'pointer',
+                fontWeight: '500',
+                fontSize: isMobile ? '13px' : '14px'
               }}
               onMouseEnter={(e) => {
-                e.target.style.background = 'hsl(var(--secondary) / 0.5)'
-                e.target.style.transform = 'scale(1.1)'
+                e.currentTarget.style.background = 'hsl(220 70% 60% / 0.25)'
+                e.currentTarget.style.borderColor = 'hsl(220 70% 60% / 0.5)'
+                e.currentTarget.style.transform = 'translateY(-2px)'
               }}
               onMouseLeave={(e) => {
-                e.target.style.background = 'hsl(var(--secondary) / 0.3)'
-                e.target.style.transform = 'scale(1)'
+                e.currentTarget.style.background = 'hsl(220 70% 60% / 0.15)'
+                e.currentTarget.style.borderColor = 'hsl(220 70% 60% / 0.3)'
+                e.currentTarget.style.transform = 'translateY(0)'
               }}
             >
-              ⚙️
+              <Settings size={isMobile ? 16 : 18} strokeWidth={2} />
+              {!isMobile && <span>Einstellungen</span>}
             </Link>
             
             <button 
               onClick={handleLogout}
               disabled={isLoggingOut}
               style={{
-                background: 'hsl(var(--destructive) / 0.3)',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '12px',
-                padding: '12px',
+                background: 'hsl(var(--destructive) / 0.1)',
+                border: '1px solid hsl(var(--destructive) / 0.3)',
+                borderRadius: isMobile ? '12px' : '14px',
+                padding: isMobile ? '10px 14px' : '12px 18px',
                 cursor: isLoggingOut ? 'not-allowed' : 'pointer',
                 opacity: isLoggingOut ? 0.6 : 1,
-                color: 'hsl(var(--foreground))',
-                fontSize: '20px',
+                color: 'hsl(var(--destructive))',
                 transition: 'all 0.3s ease',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                width: '48px',
-                height: '48px'
+                gap: '8px',
+                fontWeight: '500',
+                fontSize: isMobile ? '13px' : '14px'
               }}
               onMouseEnter={(e) => {
                 if (!isLoggingOut) {
-                  e.target.style.background = 'hsl(var(--destructive) / 0.5)'
-                  e.target.style.transform = 'scale(1.1)'
+                  e.currentTarget.style.background = 'hsl(var(--destructive) / 0.2)'
+                  e.currentTarget.style.borderColor = 'hsl(var(--destructive) / 0.5)'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isLoggingOut) {
-                  e.target.style.background = 'hsl(var(--destructive) / 0.3)'
-                  e.target.style.transform = 'scale(1)'
+                  e.currentTarget.style.background = 'hsl(var(--destructive) / 0.1)'
+                  e.currentTarget.style.borderColor = 'hsl(var(--destructive) / 0.3)'
+                  e.currentTarget.style.transform = 'translateY(0)'
                 }
               }}
             >
-              {isLoggingOut ? '⏳' : '⏻'}
+              <LogOut size={isMobile ? 16 : 18} strokeWidth={2} />
+              {!isMobile && <span>Abmelden</span>}
             </button>
           </div>
         </div>
 
-        {/* Stats - Mobile Layout */}
+        {/* Stats Layout - Grouped Design */}
         <div style={{ marginBottom: '30px' }}>
-          {/* Today and Week Stats - Mobile: Side by side, Desktop: All three */}
+          {/* Main Stats Container */}
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3, 1fr)',
-            gap: '15px',
-            marginBottom: isMobile ? '15px' : '30px'
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: '20px',
+            marginBottom: '20px'
           }}>
-            {/* Heute */}
-          <div style={{
-            background: 'hsl(var(--card))',
-            borderRadius: '20px',
-            padding: '25px',
-            boxShadow: '0 10px 30px hsl(var(--background) / 0.3)',
-            border: '1px solid hsl(var(--border))'
-          }}>
-            <h3 style={{
-              margin: '0 0 15px 0',
-              fontSize: '16px',
-              fontWeight: '600',
-              color: 'hsl(var(--primary))',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}>
-              Heute
-            </h3>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Bilder:</span>
-              <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--primary))' }}>{stats.today.images}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Zeit:</span>
-              <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--secondary))' }}>{stats.today.time} min</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Tokens:</span>
-              <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--accent))' }}>{stats.today.tokens}K</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Kosten:</span>
-              <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--destructive))' }}>€{(stats.today.cost || 0).toFixed(2)}</span>
-            </div>
-            
-            
-            {/* Enhanced Image Details Section */}
-            <ImageDetailsSection 
-              stats={stats.today} 
-              aspectRatios={aspectRatios.today}
-              period="today"
-            />
-          </div>
-
-            {/* Diese Woche */}
+            {/* Heute & Diese Woche Group */}
             <div style={{
               background: 'hsl(var(--card))',
-              borderRadius: '20px',
-              padding: '25px',
-              boxShadow: '0 10px 30px hsl(var(--background) / 0.3)',
-              border: '1px solid hsl(var(--border))'
+              borderRadius: '24px',
+              padding: '20px',
+              border: '2px solid hsl(var(--primary) / 0.2)',
+              boxShadow: '0 12px 40px hsl(var(--primary) / 0.1)',
+              flex: isMobile ? '1' : '2',
+              transition: 'all 0.3s ease',
+              position: 'relative'
             }}>
-              <h3 style={{
-                margin: '0 0 15px 0',
-                fontSize: '16px',
-                fontWeight: '600',
-                color: 'hsl(var(--primary))',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px'
-              }}>
-                Diese Woche
-              </h3>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Bilder:</span>
-                <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--primary))' }}>{stats.week.images}</span>
+              {/* Group Header */}
+              <div 
+                onClick={() => setIsStatsExpanded(!isStatsExpanded)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  marginBottom: isStatsExpanded ? '20px' : '0',
+                  paddingBottom: isStatsExpanded ? '12px' : '0',
+                  borderBottom: isStatsExpanded ? '1px solid hsl(var(--border) / 0.5)' : 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = '0.8'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = '1'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '16px' }}>📊</span>
+                  <h3 style={{
+                    margin: 0,
+                    fontSize: '18px',
+                    fontWeight: '700',
+                    color: 'hsl(0 0% 65%)',
+                    letterSpacing: '0.5px'
+                  }}>
+                    AKTUELLE STATISTIKEN
+                  </h3>
+                </div>
+                <ChevronDown 
+                  size={20}
+                  style={{
+                    transform: isStatsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.3s ease',
+                    color: 'hsl(var(--muted-foreground))',
+                    flexShrink: 0
+                  }}
+                />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Zeit:</span>
-                <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--secondary))' }}>{stats.week.time} min</span>
+
+              {/* Heute & Diese Woche Side by Side */}
+              {isStatsExpanded && (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: isMobile ? '12px' : '20px',
+                  animation: 'fadeIn 0.3s ease'
+                }}>
+                {/* Heute */}
+                <div style={{
+                  background: 'hsl(var(--muted) / 0.3)',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  border: '1px solid hsl(var(--border) / 0.5)'
+                }}>
+                  <h4 style={{
+                    margin: '0 0 15px 0',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: 'hsl(var(--primary))',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    Heute
+                  </h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>Bilder:</span>
+                    <span style={{ fontSize: '16px', fontWeight: '700', color: 'hsl(var(--primary))' }}>{stats.today.images}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>Zeit:</span>
+                    <span style={{ fontSize: '16px', fontWeight: '700', color: 'hsl(var(--secondary))' }}>{stats.today.time} min</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>Tokens:</span>
+                    <span style={{ fontSize: '16px', fontWeight: '700', color: 'hsl(var(--accent))' }}>{stats.today.tokens}K</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>Kosten:</span>
+                    <span style={{ fontSize: '16px', fontWeight: '700', color: 'hsl(var(--destructive))' }}>€{(stats.today.cost || 0).toFixed(2)}</span>
+                  </div>
+                  
+                  <ImageDetailsSection 
+                    stats={stats.today} 
+                    aspectRatios={aspectRatios.today}
+                    period="today"
+                  />
+                </div>
+
+                {/* Diese Woche */}
+                <div style={{
+                  background: 'hsl(var(--muted) / 0.3)',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  border: '1px solid hsl(var(--border) / 0.5)'
+                }}>
+                  <h4 style={{
+                    margin: '0 0 15px 0',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: 'hsl(var(--primary))',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    Diese Woche
+                  </h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>Bilder:</span>
+                    <span style={{ fontSize: '16px', fontWeight: '700', color: 'hsl(var(--primary))' }}>{stats.week.images}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>Zeit:</span>
+                    <span style={{ fontSize: '16px', fontWeight: '700', color: 'hsl(var(--secondary))' }}>{stats.week.time} min</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>Tokens:</span>
+                    <span style={{ fontSize: '16px', fontWeight: '700', color: 'hsl(var(--accent))' }}>{stats.week.tokens}K</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>Kosten:</span>
+                    <span style={{ fontSize: '16px', fontWeight: '700', color: 'hsl(var(--destructive))' }}>€{(stats.week.cost || 0).toFixed(2)}</span>
+                  </div>
+                  
+                  <ImageDetailsSection 
+                    stats={stats.week} 
+                    aspectRatios={aspectRatios.week}
+                    period="week"
+                  />
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Tokens:</span>
-                <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--accent))' }}>{stats.week.tokens}K</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Kosten:</span>
-                <span style={{ fontSize: '18px', fontWeight: '700', color: 'hsl(var(--destructive))' }}>€{(stats.week.cost || 0).toFixed(2)}</span>
-              </div>
-              
-              
-              {/* Enhanced Image Details Section */}
-              <ImageDetailsSection 
-                stats={stats.week} 
-                aspectRatios={aspectRatios.week}
-                period="week"
-              />
+              )}
             </div>
 
-            {/* Monat - Desktop: Third column, Mobile: Hidden here */}
-            {!isMobile && (
+            {/* Monat - Separate Container */}
+            <div style={{
+              background: 'hsl(var(--card))',
+              borderRadius: '24px',
+              padding: isMobile ? '14px' : '16px',
+              border: '2px solid hsl(47 100% 65% / 0.3)',
+              boxShadow: '0 12px 40px hsl(47 100% 65% / 0.15)',
+              flex: isMobile ? '1' : '1',
+              transition: 'all 0.3s ease',
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              {/* Month Header */}
               <div style={{
-                background: 'hsl(var(--card))',
-                borderRadius: '20px',
-                padding: '25px',
-                boxShadow: '0 10px 30px hsl(var(--background) / 0.3)',
-                border: '1px solid hsl(var(--border))',
-                textAlign: 'center'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '6px',
+                marginBottom: '12px',
+                paddingBottom: '8px',
+                borderBottom: '1px solid hsl(var(--border) / 0.5)'
               }}>
-                <h3 style={{
-                  margin: '0 0 15px 0',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: 'hsl(var(--primary))',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '14px' }}>💰</span>
+                  <h3 style={{
+                    margin: 0,
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    color: 'hsl(0 0% 65%)',
+                    letterSpacing: '0.5px'
+                  }}>
+                    Dieser Monat
+                  </h3>
+                </div>
+                <span style={{
+                  fontSize: isMobile ? '16px' : '18px',
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  fontWeight: '700',
+                  color: 'hsl(var(--foreground))',
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase'
                 }}>
-                  Monat
-                </h3>
-                <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Deine Ausgaben</p>
+                  {getMonthName()}
+                </span>
+              </div>
+              
+              {/* Deine Ausgaben und Summe nebeneinander */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <p style={{ 
+                  margin: 0, 
+                  fontSize: isMobile ? '12px' : '13px', 
+                  color: 'hsl(var(--muted-foreground))',
+                  fontWeight: '500'
+                }}>
+                  Deine Ausgaben
+                </p>
                 <p style={{
                   margin: 0,
-                  fontSize: '32px',
+                  fontSize: isMobile ? '22px' : '26px',
                   fontWeight: '700',
                   color: 'hsl(47 100% 65%)',
                   background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
@@ -714,45 +823,8 @@ function DashboardPage() {
                   €{stats.month.cost.toFixed(2)}
                 </p>
               </div>
-            )}
-          </div>
-
-          {/* Month Stats - Mobile: Full width below */}
-          {isMobile && (
-            <div style={{
-              background: 'hsl(var(--card))',
-              borderRadius: '20px',
-              padding: '25px',
-              boxShadow: '0 10px 30px hsl(var(--background) / 0.3)',
-              border: '1px solid hsl(var(--border))',
-              textAlign: 'center',
-              width: '100%'
-            }}>
-              <h3 style={{
-                margin: '0 0 15px 0',
-                fontSize: '16px',
-                fontWeight: '600',
-                color: 'hsl(var(--primary))',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px'
-              }}>
-                Monat
-              </h3>
-              <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>Deine Ausgaben</p>
-              <p style={{
-                margin: 0,
-                fontSize: '32px',
-                fontWeight: '700',
-                color: 'hsl(47 100% 65%)',
-                background: 'linear-gradient(135deg, hsl(47 100% 65%), hsl(280 70% 60%))',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>
-                €{stats.month.cost.toFixed(2)}
-              </p>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -761,8 +833,8 @@ function DashboardPage() {
         maxWidth: '1200px',
         margin: '0 auto',
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-        gap: '25px'
+        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(350px, 1fr))',
+        gap: isMobile ? '15px' : '25px'
       }}>
         {tools.map((tool) => (
           <div key={tool.id} style={{ position: 'relative' }}>
@@ -770,12 +842,13 @@ function DashboardPage() {
               <Link
                 to={tool.external ? '#' : tool.path}
                 onClick={tool.external ? (e) => { e.preventDefault(); window.open(tool.path, '_blank'); } : undefined}
+                className={tool.id === 'comfyui' ? 'comfyui-glow' : ''}
                 style={{
                   textDecoration: 'none',
                   display: 'block',
-                  background: tool.id === 'nano-banana' ? '#a86d09' : tool.id === 'gallery' ? '#5a387d' : tool.id === 'user-gallery' ? '#c44c4c' : tool.id === 'wan-video-origin' ? '#404040' : tool.id === 'grok-playground' ? '#4c4f7d' : tool.id === 'comfyui' ? 'rgba(59, 130, 246, 0.25)' : 'hsl(var(--card))',
-                  borderRadius: '25px',
-                  padding: '20px 30px',
+                  background: tool.id === 'nano-banana' ? '#a86d09' : tool.id === 'gallery' ? '#5a387d' : tool.id === 'user-gallery' ? '#c44c4c' : tool.id === 'qwen' ? '#2563eb' : tool.id === 'comfyui' ? 'rgba(59, 130, 246, 0.25)' : 'hsl(var(--card))',
+                  borderRadius: isMobile ? '16px' : '25px',
+                  padding: isMobile ? '16px 20px' : '20px 30px',
                   boxShadow: tool.id === 'comfyui' ? '0 0 20px rgba(59, 130, 246, 0.4), 0 0 40px rgba(59, 130, 246, 0.2)' : '0 15px 35px hsl(var(--background) / 0.2)',
                   border: tool.id === 'comfyui' ? '2px solid rgba(59, 130, 246, 0.5)' : '1px solid hsl(var(--border))',
                   transition: 'all 0.4s ease',
@@ -864,8 +937,8 @@ function DashboardPage() {
                 )}
                 
                 <h3 style={{
-                  margin: '0 0 8px 0',
-                  fontSize: '24px',
+                  margin: '0 0 6px 0',
+                  fontSize: isMobile ? '18px' : '24px',
                   fontWeight: '700',
                   color: 'hsl(var(--foreground))',
                 }}>
@@ -873,7 +946,7 @@ function DashboardPage() {
                 </h3>
                 <p style={{
                   margin: 0,
-                  fontSize: '16px',
+                  fontSize: isMobile ? '13px' : '16px',
                   color: 'hsl(var(--primary))',
                   fontWeight: '600',
                 }}>
@@ -890,8 +963,8 @@ function DashboardPage() {
                      tool.id === 'wan-video-origin' ? '#FFD70050' : 
                      tool.id === 'grok-playground' ? '#667eea50' : 'hsl(var(--muted) / 0.5)') 
                     : 'hsl(var(--muted) / 0.5)',
-                  borderRadius: '25px',
-                  padding: '20px 30px',
+                  borderRadius: isMobile ? '16px' : '25px',
+                  padding: isMobile ? '16px 20px' : '20px 30px',
                   boxShadow: tool.paused ? '0 5px 15px hsl(var(--background) / 0.05)' : '0 15px 35px hsl(var(--background) / 0.1)',
                   border: '1px solid hsl(var(--border))',
                   cursor: 'not-allowed',
@@ -910,7 +983,7 @@ function DashboardPage() {
                 }}>
                   <h3 style={{
                     margin: 0,
-                    fontSize: '24px',
+                    fontSize: isMobile ? '18px' : '24px',
                     fontWeight: '700',
                     color: 'hsl(var(--foreground))',
                   }}>
@@ -931,7 +1004,7 @@ function DashboardPage() {
                 </div>
                 <p style={{
                   margin: 0,
-                  fontSize: '16px',
+                  fontSize: isMobile ? '13px' : '16px',
                   color: 'hsl(var(--primary))',
                   fontWeight: '600',
                 }}>

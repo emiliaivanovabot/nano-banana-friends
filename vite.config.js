@@ -45,7 +45,7 @@ export default defineConfig({
         drop_debugger: true
       }
     },
-cssMinify: false
+    cssMinify: false
   },
   // Enable modern JS features for smaller bundles (ES2020+)
   esbuild: {

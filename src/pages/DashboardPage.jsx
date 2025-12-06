@@ -408,6 +408,22 @@ function DashboardPage() {
       external: true
     },
     {
+      id: 'kling-avatar',
+      title: 'Kling Avatar 2.0',
+      subtitle: 'AI Talking Avatars',
+      path: '/kling-avatar',
+      gradient: 'linear-gradient(135deg, #ff6b6b, #ffa726)',
+      available: true
+    },
+    {
+      id: 'seedream',
+      title: 'Seedream 4.5 Pro',
+      subtitle: 'High-Fidelity Images',
+      path: '/seedream',
+      gradient: 'linear-gradient(135deg, #667eea, #764ba2)',
+      available: true
+    },
+    {
       id: 'grok-playground',
       path: '/grok-playground',
       title: 'Grok Playground',
@@ -422,8 +438,8 @@ function DashboardPage() {
       subtitle: 'AI Video Creator',
       path: '/wan-video',
       gradient: 'linear-gradient(135deg, #f093fb, #f5576c)',
-      available: false,
-      paused: true
+      available: true,
+      paused: false
     },
     {
       id: 'wan-video-origin',
@@ -431,8 +447,8 @@ function DashboardPage() {
       subtitle: 'Premium Video Suite',
       path: '/wan-video-public',
       gradient: 'linear-gradient(135deg, #FFD700, #FFA500)',
-      available: false,
-      paused: true
+      available: true,
+      paused: false
     },
     {
       id: 'gallery',

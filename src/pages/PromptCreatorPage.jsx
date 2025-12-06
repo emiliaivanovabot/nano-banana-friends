@@ -1,75 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext.jsx'
-// import { generatePromptsFromIdea } from '../services/grokService.js' // Function doesn't exist
+import { generatePromptsFromIdea } from '../services/grokService.js'
 import { createClient } from '@supabase/supabase-js'
 
-// Kopie der createSystemPrompt Funktion für Debug
-function createSystemPrompt(count, photoStyle, consistencyMode) {
-  let styleInstructions = ''
-  
-  switch (photoStyle) {
-    case 'fashion-editorial':
-      styleInstructions = 'Verwende High-Fashion Editorial Style: dramatic lighting, Vogue-ähnlich, künstlerische Posen, professionelle Studio-Ästhetik.'
-      break
-    case 'natural-light':
-      styleInstructions = 'Verwende natürliches Tageslicht: soft natural lighting, authentische Stimmung, organic feels, minimale Schatten.'
-      break
-    case 'studio-professional':
-      styleInstructions = 'Verwende Studio-Professional Style: controlled lighting, clean backgrounds, commercial quality, perfekte Beleuchtung.'
-      break
-    case 'cinematic':
-      styleInstructions = 'Verwende Cinematic Style: dramatic shadows, moody lighting, film-like quality, emotionale Stimmung.'
-      break
-    case 'clean-beauty':
-      styleInstructions = 'Verwende Clean Beauty Style: soft lighting, natural beauty, commercial appeal, fresh und clean.'
-      break
-    case 'instagram-casual':
-      styleInstructions = 'Verwende Instagram Casual Style: lifestyle photography, relatable poses, social media optimiert.'
-      break
-    default:
-      styleInstructions = 'Sei flexibel mit dem Fotografie-Stil - wähle was am besten zur Idee passt.'
-  }
-
-  let consistencyInstructions = ''
-  
-  switch (consistencyMode) {
-    case 'same-shooting':
-      consistencyInstructions = 'WICHTIG: Alle Prompts sollen aus demselben Shooting sein - gleiche Person, gleiche Kleidung, gleiche Location, gleiche Beleuchtung. Ändere NUR Posen, Gesichtsausdrücke und Kamerawinkel (Vogelperspektive, Nahaufnahme, etc.).'
-      break
-    case 'same-person':
-      consistencyInstructions = 'WICHTIG: Gleiche Person und ähnliche Kleidung, aber Location und Setup können variieren. Halte den Look konsistent.'
-      break
-    default:
-      consistencyInstructions = 'Sei kreativ mit verschiedenen Locations, Outfits und Setups.'
-  }
-
-  return `Du bist ein Weltklasse Model-Fotograf und Experte für professionelle Bildprompts.
-
-AUFGABE: Erstelle basierend auf der User-Eingabe genau ${count} verschiedene, detaillierte und professionelle Bildprompts.
-
-STIL-VORGABEN:
-${styleInstructions}
-
-KONSISTENZ-VORGABEN:
-${consistencyInstructions}
-
-ALLGEMEINE REGELN:
-- Jeder Prompt soll 30-60 Wörter haben für maximale Details
-- Verwende spezifische Fotografie-Begriffe (camera angles, lighting terms, etc.)
-- Beschreibe konkrete Posen und Gesichtsausdrücke
-- Erwähne immer Kamerawinkel/Perspektive (close-up, wide shot, bird's eye view, etc.)
-- Mache jeden Prompt einzigartig aber thematisch passend
-- Sei so detailliert wie möglich bei Aussehen, Kleidung und Location
-- Verwende keine expliziten oder unpassenden Inhalte
-
-FORMAT: Antworte NUR mit einem JSON-Array im folgenden Format:
-[
-${Array.from({length: count}, (_, i) => `  {"prompt": "Prompt ${i + 1} hier"}`).join(',\n')}
-]
-
-WICHTIG: Keine zusätzlichen Texte, Erklärungen oder Formatierungen - nur das JSON-Array!`
-}
 
 // 🤖 Mechanischer Progress Indicator mit leuchtenden lila Zahlen
 function ProgressIndicator({ totalPrompts, isLoading, completed, onComplete }) {

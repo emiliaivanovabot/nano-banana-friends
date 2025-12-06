@@ -26,6 +26,8 @@ const CommunityPromptsPage = lazy(() => import('./pages/CommunityPromptsPage.jsx
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 const GalleryPage = lazy(() => import('./pages/GalleryPage.jsx'))
 const InspirationPage = lazy(() => import('./pages/InspirationPage.jsx'))
+const KlingAvatarPage = lazy(() => import('./pages/KlingAvatarPage.jsx'))
+const SeedreamPage = lazy(() => import('./pages/SeedreamPage.jsx'))
 const GrokPlaygroundPage = lazy(() => import('./pages/GrokPlaygroundPage.jsx'))
 
 // Lazy load error boundary component
@@ -142,6 +144,20 @@ function App() {
             <ProtectedRoute requireCompleteProfile={true}>
               <Suspense fallback={<PageLoader />}>
                 <PromptCreatorPage />
+              </Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/kling-avatar" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <Suspense fallback={<PageLoader />}>
+                <KlingAvatarPage />
+              </Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/seedream" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <Suspense fallback={<PageLoader />}>
+                <SeedreamPage />
               </Suspense>
             </ProtectedRoute>
           } />

@@ -11,7 +11,7 @@ import fetch from 'node-fetch'
 import dotenv from 'dotenv'
 
 // Load environment variables
-dotenv.config()
+dotenv.config({ path: './.env.local' })
 
 const app = express()
 const port = process.env.PORT || 3001
@@ -580,6 +580,156 @@ app.post('/api/generations/:id/retry', async (req, res) => {
 })
 
 // ==============================================
+// KLING AI AVATAR ENDPOINTS (LOCAL DEVELOPMENT)
+// ==============================================
+
+// JWT Token creation for KlingAI
+async function createKlingJWTToken() {
+  const KLING_ACCESS_KEY = process.env.VITE_KLING_AI_ACCESS_KEY
+  const KLING_SECRET_KEY = process.env.VITE_KLING_AI_SECRET_KEY
+  
+  if (!KLING_ACCESS_KEY || !KLING_SECRET_KEY) {
+    throw new Error('Kling AI Access Key und Secret Key sind erforderlich')
+  }
+
+  // JWT Header
+  const header = {
+    "alg": "HS256",
+    "typ": "JWT"
+  }
+
+  // JWT Payload
+  const payload = {
+    "iss": KLING_ACCESS_KEY,
+    "exp": Math.floor(Date.now() / 1000) + (30 * 60), // 30 minutes expiry
+    "nbf": Math.floor(Date.now() / 1000)
+  }
+
+  // Base64 URL encode
+  const base64UrlEncode = (obj) => {
+    return Buffer.from(JSON.stringify(obj))
+      .toString('base64')
+      .replace(/=/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+  }
+
+  const encodedHeader = base64UrlEncode(header)
+  const encodedPayload = base64UrlEncode(payload)
+  
+  // Create signature
+  const signatureBase = `${encodedHeader}.${encodedPayload}`
+  const crypto = await import('crypto')
+  const signature = crypto.createHmac('sha256', KLING_SECRET_KEY)
+    .update(signatureBase)
+    .digest('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+  
+  return `${encodedHeader}.${encodedPayload}.${signature}`
+}
+
+// KlingAI Generate Avatar
+app.post('/api/kling-proxy/generate', async (req, res) => {
+  try {
+    console.log('🎬 KlingAI Generate called')
+    
+    const jwtToken = await createKlingJWTToken()
+    
+    const response = await fetch('https://api-singapore.klingai.com/v1/videos/image2video', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body)
+    })
+
+    const data = await response.json()
+    
+    if (!response.ok) {
+      console.error('❌ KlingAI API Error:', response.status, data)
+      return res.status(response.status).json(data)
+    }
+
+    console.log('✅ KlingAI Generate Success')
+    res.json(data)
+
+  } catch (error) {
+    console.error('❌ KlingAI Generate Error:', error)
+    res.status(500).json({ 
+      error: 'KlingAI Generate Error', 
+      message: error.message 
+    })
+  }
+})
+
+// KlingAI Check Status
+app.get('/api/kling-proxy/status/:taskId', async (req, res) => {
+  try {
+    console.log('🔍 KlingAI Status check:', req.params.taskId)
+    
+    const jwtToken = await createKlingJWTToken()
+    
+    const response = await fetch(`https://api-singapore.klingai.com/v1/videos/image2video/${req.params.taskId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    const data = await response.json()
+    
+    if (!response.ok) {
+      return res.status(response.status).json(data)
+    }
+
+    res.json(data)
+
+  } catch (error) {
+    console.error('❌ KlingAI Status Error:', error)
+    res.status(500).json({ 
+      error: 'KlingAI Status Error', 
+      message: error.message 
+    })
+  }
+})
+
+// KlingAI Check Credits
+app.get('/api/kling-proxy/credits', async (req, res) => {
+  try {
+    console.log('💰 KlingAI Credits check')
+    
+    const jwtToken = await createKlingJWTToken()
+    
+    const response = await fetch('https://api-singapore.klingai.com/v1/user/profile', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    const data = await response.json()
+    
+    if (!response.ok) {
+      return res.status(response.status).json(data)
+    }
+
+    res.json(data)
+
+  } catch (error) {
+    console.error('❌ KlingAI Credits Error:', error)
+    res.status(500).json({ 
+      error: 'KlingAI Credits Error', 
+      message: error.message 
+    })
+  }
+})
+
+// ==============================================
 // ERROR HANDLING & SERVER STARTUP
 // ==============================================
 
@@ -593,7 +743,7 @@ app.use((error, req, res, next) => {
 })
 
 // 404 handler
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({
     error: 'Endpoint not found',
     available_endpoints: [

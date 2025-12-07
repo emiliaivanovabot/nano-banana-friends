@@ -15,10 +15,14 @@ function SeedreamPage() {
   const [prompt, setPrompt] = useState('black bikini and an other camera angle, from above')
   const [size, setSize] = useState('1K')
   const [aspectRatio, setAspectRatio] = useState('9:16')
-  const [style, setStyle] = useState('auto')
+  const [style, setStyle] = useState('photographic')
   const [numImages, setNumImages] = useState(1)
   const [watermark, setWatermark] = useState(false)
-  const [promptOptimization, setPromptOptimization] = useState('standard') // 'standard' or 'fast'
+  const [promptOptimization, setPromptOptimization] = useState('fast') // 'standard' or 'fast'
+  const [showOptimizationInfo, setShowOptimizationInfo] = useState(false)
+  const [showStyleInfo, setShowStyleInfo] = useState(false)
+  const [showSequentialInfo, setShowSequentialInfo] = useState(false)
+  const [optionsExpanded, setOptionsExpanded] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedImages, setGeneratedImages] = useState([])
   const [error, setError] = useState('')
@@ -457,7 +461,7 @@ function SeedreamPage() {
                   alignItems: 'center',
                   gap: '6px'
                 }}>
-                  📸 Referenz-Bilder
+                  📸 Bilder hochladen
                   <span style={{
                     fontSize: '12px',
                     color: 'hsl(var(--muted-foreground))',
@@ -565,7 +569,7 @@ function SeedreamPage() {
                       color: 'hsl(var(--foreground))',
                       textAlign: 'center'
                     }}>
-                      Referenzbilder hinzufügen
+                      Bilder hinzufügen
                     </h3>
                     <p style={{
                       margin: '0 0 20px 0',
@@ -888,7 +892,7 @@ function SeedreamPage() {
           }}>
             
             {/* Image Quality Settings */}
-            <div style={{ marginBottom: '30px' }}>
+            <div style={{ marginBottom: '0px' }}>
               
               <div style={{ 
                 display: 'grid',
@@ -1064,81 +1068,195 @@ function SeedreamPage() {
 
 
 
-            {/* Number of Images */}
-            <div style={{ marginTop: isMobile ? '20px' : '0' }}>
+            {/* Sequential Generation Toggle - Above the slider */}
+            <div style={{ 
+              marginTop: isMobile ? '15px' : '0',
+              marginBottom: '15px'
+            }}>
               <label style={{
-                display: 'block',
-                marginBottom: '12px',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: 'hsl(var(--foreground))'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '8px 12px',
+                background: 'hsl(var(--muted) / 0.1)',
+                borderRadius: '8px',
+                border: '1px solid hsl(var(--border))',
+                cursor: 'pointer',
+                opacity: uploadedImages.length === 0 ? 0.5 : 1
               }}>
-                📷 Anzahl Bilder
-                <span style={{
-                  fontSize: '12px',
-                  color: 'hsl(var(--muted-foreground))',
-                  marginLeft: '6px'
-                }}>
-                  {numImages === 1 ? 'Einzelbild' : `${numImages}x Batch`}
-                </span>
-              </label>
-              <div style={{ position: 'relative' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: 'hsl(var(--foreground))'
+                  }}>
+                    ⚡ Sequential Generation
+                  </span>
+                  <div 
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      border: '1px solid hsl(var(--muted-foreground))',
+                      color: 'hsl(var(--muted-foreground))',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setShowSequentialInfo(true)
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'hsl(var(--muted))'
+                      e.currentTarget.style.borderColor = 'hsl(var(--primary))'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent'
+                      e.currentTarget.style.borderColor = 'hsl(var(--muted-foreground))'
+                    }}
+                  >
+                    ?
+                  </div>
+                </div>
                 <input
-                  type="range"
-                  min="1"
-                  max="4"
-                  step="1"
-                  value={numImages}
-                  onChange={(e) => setNumImages(Number(e.target.value))}
+                  type="checkbox"
+                  checked={sequentialGeneration}
+                  onChange={(e) => setSequentialGeneration(e.target.checked)}
+                  disabled={uploadedImages.length === 0}
                   style={{
-                    width: '100%',
-                    height: '6px',
-                    borderRadius: '3px',
-                    background: `linear-gradient(to right, #667eea 0%, #667eea ${((numImages - 1) / 3) * 100}%, hsl(var(--border)) ${((numImages - 1) / 3) * 100}%, hsl(var(--border)) 100%)`,
-                    outline: 'none',
-                    appearance: 'none',
-                    cursor: 'pointer'
+                    transform: 'scale(1.3)',
+                    accentColor: '#667eea'
                   }}
                 />
+              </label>
+              {uploadedImages.length === 0 && (
                 <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginTop: '8px',
                   fontSize: '12px',
-                  color: 'hsl(var(--muted-foreground))'
+                  color: 'hsl(var(--muted-foreground))',
+                  marginTop: '6px',
+                  textAlign: 'center'
                 }}>
-                  <span>1</span>
-                  <span>2</span>
-                  <span>3</span>
-                  <span>4</span>
+                  📸 Lade erst Bilder hoch
+                </div>
+              )}
+            </div>
+
+            {/* Number of Images - Only show when Sequential is disabled */}
+            {!sequentialGeneration && (
+              <div style={{ marginTop: '0px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '12px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: 'hsl(var(--foreground))'
+                }}>
+                  📷 Anzahl Bilder
+                  <span style={{
+                    fontSize: '12px',
+                    color: 'hsl(var(--muted-foreground))',
+                    marginLeft: '6px'
+                  }}>
+                    {numImages === 1 ? 'Einzelbild' : `${numImages}x Batch`}
+                  </span>
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="range"
+                    min="1"
+                    max="4"
+                    step="1"
+                    value={numImages}
+                    onChange={(e) => setNumImages(Number(e.target.value))}
+                    style={{
+                      width: '100%',
+                      height: '6px',
+                      borderRadius: '3px',
+                      background: `linear-gradient(to right, #667eea 0%, #667eea ${((numImages - 1) / 3) * 100}%, hsl(var(--border)) ${((numImages - 1) / 3) * 100}%, hsl(var(--border)) 100%)`,
+                      outline: 'none',
+                      appearance: 'none',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    marginTop: '8px',
+                    fontSize: '12px',
+                    color: 'hsl(var(--muted-foreground))'
+                  }}>
+                    <span>1</span>
+                    <span>2</span>
+                    <span>3</span>
+                    <span>4</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
           </div>
 
-          {/* Options Container - Outside Settings Grid */}
+          {/* Options Container - Collapsible */}
           <div style={{ marginTop: '25px' }}>
             <div style={{
               background: 'hsl(var(--muted) / 0.1)',
               borderRadius: '12px',
               border: '1px solid hsl(var(--border))',
-              padding: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px'
+              overflow: 'hidden'
             }}>
               
-              <h4 style={{
-                margin: '0 0 8px 0',
-                fontSize: '16px',
-                fontWeight: '600',
-                color: 'hsl(var(--foreground))'
-              }}>
-                ⚙️ Optionen
-              </h4>
-              
-              {/* Wasserzeichen */}
+              {/* Options Header - Clickable */}
+              <div 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '16px',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s ease'
+                }}
+                onClick={() => setOptionsExpanded(!optionsExpanded)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'hsl(var(--muted) / 0.2)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent'
+                }}
+              >
+                <h4 style={{
+                  margin: 0,
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  color: 'hsl(var(--foreground))'
+                }}>
+                  ⚙️ Optionen
+                </h4>
+                
+                {/* Expand/Collapse Icon */}
+                <div style={{
+                  transform: optionsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease',
+                  color: 'hsl(var(--muted-foreground))',
+                  fontSize: '18px'
+                }}>
+                  ▼
+                </div>
+              </div>
+
+              {/* Options Content - Collapsible */}
+              {optionsExpanded && (
+                <div style={{
+                  padding: '0 16px 16px 16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}>
+                
+                {/* Wasserzeichen */}
               <label style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1194,14 +1312,44 @@ function SeedreamPage() {
                 border: '1px solid hsl(var(--border))'
               }}>
                 <div>
-                  <span style={{
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: 'hsl(var(--foreground))',
-                    display: 'block'
-                  }}>
-                    Prompt Optimierung
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: 'hsl(var(--foreground))',
+                    }}>
+                      Prompt Optimierung
+                    </span>
+                    <div 
+                      style={{
+                        width: '16px',
+                        height: '16px',
+                        borderRadius: '50%',
+                        border: '1px solid hsl(var(--muted-foreground))',
+                        color: 'hsl(var(--muted-foreground))',
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowOptimizationInfo(!showOptimizationInfo)
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'hsl(var(--muted) / 0.2)'
+                        e.currentTarget.style.borderColor = 'hsl(var(--foreground))'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent'
+                        e.currentTarget.style.borderColor = 'hsl(var(--muted-foreground))'
+                      }}
+                    >
+                      ?
+                    </div>
+                  </div>
                   <span style={{
                     fontSize: '12px',
                     color: 'hsl(var(--muted-foreground))'
@@ -1240,14 +1388,44 @@ function SeedreamPage() {
                 border: '1px solid hsl(var(--border))'
               }}>
                 <div>
-                  <span style={{
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: 'hsl(var(--foreground))',
-                    display: 'block'
-                  }}>
-                    🎨 Stil
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: 'hsl(var(--foreground))',
+                    }}>
+                      🎨 Stil
+                    </span>
+                    <div 
+                      style={{
+                        width: '16px',
+                        height: '16px',
+                        borderRadius: '50%',
+                        border: '1px solid hsl(var(--muted-foreground))',
+                        color: 'hsl(var(--muted-foreground))',
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setShowStyleInfo(true)
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'hsl(var(--muted))'
+                        e.currentTarget.style.borderColor = 'hsl(var(--primary))'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent'
+                        e.currentTarget.style.borderColor = 'hsl(var(--muted-foreground))'
+                      }}
+                    >
+                      ?
+                    </div>
+                  </div>
                   <span style={{
                     fontSize: '12px',
                     color: 'hsl(var(--muted-foreground))'
@@ -1277,12 +1455,398 @@ function SeedreamPage() {
                   ))}
                 </select>
               </div>
-              
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Sequential Generation Options */}
-          {uploadedImages.length > 0 && (
+          {/* Optimization Info Modal */}
+          {showOptimizationInfo && (
+            <div 
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000
+              }}
+              onClick={() => setShowOptimizationInfo(false)}
+            >
+              <div 
+                style={{
+                  background: 'hsl(var(--background))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  maxWidth: '500px',
+                  margin: '20px',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 style={{
+                  margin: '0 0 16px 0',
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: 'hsl(var(--foreground))'
+                }}>
+                  💡 Prompt Optimierung
+                </h3>
+                
+                <div style={{ 
+                  marginBottom: '16px',
+                  lineHeight: '1.6',
+                  color: 'hsl(var(--foreground))',
+                  fontSize: '14px'
+                }}>
+                  <p style={{ margin: '0 0 12px 0' }}>
+                    Seedream erweitert automatisch deinen Prompt für bessere Ergebnisse:
+                  </p>
+                  
+                  <div style={{
+                    background: 'hsl(var(--muted) / 0.2)',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    marginBottom: '12px',
+                    border: '1px solid hsl(var(--border))'
+                  }}>
+                    <p style={{ margin: '0 0 8px 0', fontWeight: '500' }}>
+                      <span style={{ color: '#667eea' }}>Beispiel:</span> "Frau mit Sonnenschirm"
+                    </p>
+                    <p style={{ margin: '0 0 8px 0', fontSize: '12px' }}>
+                      <strong>Standard:</strong> "A beautiful woman holding a colorful umbrella, standing in a sunny garden, natural lighting, high quality photography, detailed skin texture, vibrant colors, professional portrait"
+                    </p>
+                    <p style={{ margin: '0', fontSize: '12px' }}>
+                      <strong>Schnell:</strong> Weniger Erweiterung, schnellere Generation
+                    </p>
+                  </div>
+
+                  <div style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
+                    ✅ Bessere Bildqualität durch technische Keywords<br/>
+                    ✅ Konsistentere Ergebnisse<br/>
+                    ⚡ <strong>Schnell:</strong> Weniger Details, schnelle Generation<br/>
+                    🎯 <strong>Standard:</strong> Maximale Qualität, längere Wartezeit
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => setShowOptimizationInfo(false)}
+                  style={{
+                    background: 'hsl(var(--primary))',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  Verstanden
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Style Info Modal */}
+          {showStyleInfo && (
+            <div 
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000
+              }}
+              onClick={() => setShowStyleInfo(false)}
+            >
+              <div 
+                style={{
+                  background: 'hsl(var(--background))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  maxWidth: '600px',
+                  margin: '20px',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+                  maxHeight: '80vh',
+                  overflowY: 'auto'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 style={{
+                  margin: '0 0 16px 0',
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: 'hsl(var(--foreground))'
+                }}>
+                  🎨 Bildstile Erklärt
+                </h3>
+                
+                <div style={{ 
+                  lineHeight: '1.6',
+                  color: 'hsl(var(--foreground))',
+                  fontSize: '14px'
+                }}>
+                  <div style={{
+                    display: 'grid',
+                    gap: '12px'
+                  }}>
+                    <div style={{
+                      background: 'hsl(var(--muted) / 0.2)',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '2px solid #667eea'
+                    }}>
+                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>📸 Fotorealistisch (Standard)</p>
+                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
+                        Extrem realistische Fotos mit natürlicher Beleuchtung und Texturen
+                      </p>
+                    </div>
+
+                    <div style={{
+                      background: 'hsl(var(--muted) / 0.2)',
+                      padding: '12px',
+                      borderRadius: '8px'
+                    }}>
+                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>🤖 Automatisch</p>
+                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
+                        KI wählt den besten Stil basierend auf deinem Prompt
+                      </p>
+                    </div>
+
+                    <div style={{
+                      background: 'hsl(var(--muted) / 0.2)',
+                      padding: '12px',
+                      borderRadius: '8px'
+                    }}>
+                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>💻 Digital Art</p>
+                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
+                        Moderne digitale Kunst mit lebendigen Farben und sauberen Linien
+                      </p>
+                    </div>
+
+                    <div style={{
+                      background: 'hsl(var(--muted) / 0.2)',
+                      padding: '12px',
+                      borderRadius: '8px'
+                    }}>
+                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>📚 Comic Style</p>
+                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
+                        Comic-/Manga-Stil mit kräftigen Konturen und expressiven Farben
+                      </p>
+                    </div>
+
+                    <div style={{
+                      background: 'hsl(var(--muted) / 0.2)',
+                      padding: '12px',
+                      borderRadius: '8px'
+                    }}>
+                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>🧙‍♂️ Fantasy Art</p>
+                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
+                        Magische, mystische Kunstwerke mit dramatischen Effekten
+                      </p>
+                    </div>
+
+                    <div style={{
+                      background: 'hsl(var(--muted) / 0.2)',
+                      padding: '12px',
+                      borderRadius: '8px'
+                    }}>
+                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>📝 Line Art</p>
+                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
+                        Minimalistische Strichzeichnungen und Skizzen
+                      </p>
+                    </div>
+
+                    <div style={{
+                      background: 'hsl(var(--muted) / 0.2)',
+                      padding: '12px',
+                      borderRadius: '8px'
+                    }}>
+                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>🎌 Anime Style</p>
+                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
+                        Japanischer Anime-/Manga-Stil mit großen Augen und expressiven Gesichtern
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{
+                    marginTop: '16px',
+                    padding: '12px',
+                    background: 'hsl(var(--primary) / 0.1)',
+                    borderRadius: '8px',
+                    border: '1px solid hsl(var(--primary) / 0.2)'
+                  }}>
+                    <p style={{ margin: '0', fontSize: '12px', color: 'hsl(var(--primary))', fontWeight: '500' }}>
+                      💡 Tipp: "Fotorealistisch" ist ideal für Produktfotos, Porträts und realistische Szenen. 
+                      Für kreative Projekte probiere "Digital Art" oder "Fantasy Art" aus!
+                    </p>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => setShowStyleInfo(false)}
+                  style={{
+                    background: 'hsl(var(--primary))',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    marginTop: '16px'
+                  }}
+                >
+                  Verstanden
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Sequential Generation Info Modal */}
+          {showSequentialInfo && (
+            <div 
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000
+              }}
+              onClick={() => setShowSequentialInfo(false)}
+            >
+              <div 
+                style={{
+                  background: 'hsl(var(--background))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  maxWidth: '550px',
+                  margin: '20px',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 style={{
+                  margin: '0 0 16px 0',
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: 'hsl(var(--foreground))'
+                }}>
+                  ⚡ Sequential Generation
+                </h3>
+                
+                <div style={{ 
+                  lineHeight: '1.6',
+                  color: 'hsl(var(--foreground))',
+                  fontSize: '14px'
+                }}>
+                  <p style={{ margin: '0 0 16px 0' }}>
+                    Sequential Generation erstellt automatisch mehrere thematisch verwandte Bilder in einer Serie:
+                  </p>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gap: '12px',
+                    marginBottom: '16px'
+                  }}>
+                    <div style={{
+                      background: 'hsl(var(--muted) / 0.2)',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '2px solid #667eea'
+                    }}>
+                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>🎯 Normal (Deaktiviert)</p>
+                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
+                        DU entscheidest: 1-4 Bilder mit dem Regler
+                      </p>
+                    </div>
+
+                    <div style={{
+                      background: 'hsl(var(--muted) / 0.2)',
+                      padding: '12px',
+                      borderRadius: '8px'
+                    }}>
+                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>🚀 Sequential (Aktiviert)</p>
+                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
+                        KI entscheidet: Automatisch 1-15 Bilder je nach Kreativität
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{
+                    background: 'hsl(var(--muted) / 0.1)',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid hsl(var(--border))',
+                    marginBottom: '16px'
+                  }}>
+                    <p style={{ margin: '0 0 8px 0', fontWeight: '600', fontSize: '13px' }}>
+                      📝 Beispiel:
+                    </p>
+                    <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
+                      <strong>Prompt:</strong> "Katze im Garten"
+                    </p>
+                    <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
+                      <strong>Normal:</strong> Du stellst "3 Bilder" ein → genau 3 ähnliche Katzen
+                    </p>
+                    <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
+                      <strong>Sequential:</strong> Du stellst "max 8" ein → KI macht 5-8 verschiedene Katzen-Variationen
+                    </p>
+                  </div>
+
+                  <div style={{
+                    padding: '12px',
+                    background: 'hsl(var(--primary) / 0.1)',
+                    borderRadius: '8px',
+                    border: '1px solid hsl(var(--primary) / 0.2)'
+                  }}>
+                    <p style={{ margin: '0', fontSize: '12px', color: 'hsl(var(--primary))', fontWeight: '500' }}>
+                      💡 Tipp: Perfekt für kreative Exploration und um verschiedene Varianten deines Konzepts zu entdecken! 
+                      Die KI variiert automatisch Details wie Perspektive, Beleuchtung und Komposition.
+                    </p>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => setShowSequentialInfo(false)}
+                  style={{
+                    background: 'hsl(var(--primary))',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    marginTop: '16px'
+                  }}
+                >
+                  Verstanden
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* OLD SECTION REMOVED - Now handled above */}
+          {false && uploadedImages.length > 0 && (
             <div style={{
               background: 'hsl(var(--muted) / 0.2)',
               borderRadius: '12px',
@@ -1296,14 +1860,45 @@ function SeedreamPage() {
                 alignItems: 'center',
                 marginBottom: '15px'
               }}>
-                <h4 style={{
-                  margin: 0,
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: 'hsl(var(--foreground))'
-                }}>
-                  ⚡ Sequential Generation
-                </h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h4 style={{
+                    margin: 0,
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: 'hsl(var(--foreground))'
+                  }}>
+                    ⚡ Sequential Generation
+                  </h4>
+                  <div 
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      border: '1px solid hsl(var(--muted-foreground))',
+                      color: 'hsl(var(--muted-foreground))',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setShowSequentialInfo(true)
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'hsl(var(--muted))'
+                      e.currentTarget.style.borderColor = 'hsl(var(--primary))'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent'
+                      e.currentTarget.style.borderColor = 'hsl(var(--muted-foreground))'
+                    }}
+                  >
+                    ?
+                  </div>
+                </div>
                 <span style={{
                   fontSize: '12px',
                   color: 'hsl(var(--muted-foreground))',
@@ -1458,7 +2053,7 @@ function SeedreamPage() {
                       color: 'hsl(var(--muted-foreground))',
                       lineHeight: '1.4'
                     }}>
-                      Seedream 4.5 wird bis zu {maxImages} Bilder generieren, basierend auf deinen {uploadedImages.length} Referenzbildern. 
+                      Seedream 4.5 wird bis zu {maxImages} Bilder generieren, basierend auf deinen {uploadedImages.length} hochgeladenen Bildern. 
                       Jede Generation variiert leicht für mehr Vielfalt. Perfekt für kreative Exploration!
                     </p>
                   </div>
@@ -1481,75 +2076,69 @@ function SeedreamPage() {
               {error}
             </div>
           )}
-
-          {/* Generate Button */}
-          <div style={{ marginTop: '30px' }}>
-          <button
-            onClick={handleGenerate}
-            disabled={isGenerating || !prompt.trim()}
-            style={{
-              width: '100%',
-              padding: '14px 24px',
-              border: 'none',
-              borderRadius: '10px',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: isGenerating || !prompt.trim() ? 'not-allowed' : 'pointer',
-              transition: 'all 0.3s ease',
-              background: isGenerating || !prompt.trim() 
-                ? 'hsl(var(--muted))' 
-                : 'linear-gradient(135deg, #667eea, #764ba2)',
-              color: 'white',
-              opacity: isGenerating || !prompt.trim() ? 0.6 : 1,
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-            onMouseEnter={(e) => {
-              if (!isGenerating && prompt.trim()) {
-                e.currentTarget.style.transform = 'translateY(-2px)'
-                e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.4)'
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isGenerating && prompt.trim()) {
-                e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow = 'none'
-              }
-            }}
-          >
-            {isGenerating ? (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}>
-                <div style={{
-                  width: '20px',
-                  height: '20px',
-                  border: '2px solid transparent',
-                  borderTop: '2px solid white',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite'
-                }} />
-                <span>Generiere Bilder...</span>
-              </div>
-            ) : (
-              (() => {
-                const baseText = `${numImages} ${numImages === 1 ? 'Bild' : 'Bilder'} generieren`
-                const modeEmoji = uploadedImages.length === 0 ? '🌱' : 
-                                  uploadedImages.length === 1 ? '🖼️' : '🎨'
-                const modeText = uploadedImages.length === 0 ? '' : 
-                                 uploadedImages.length === 1 ? ' (Image-to-Image)' : 
-                                 ' (Multi-Blending)'
-                const sequentialText = sequentialGeneration && uploadedImages.length > 0 ? 
-                                       ` → bis zu ${maxImages}` : ''
-                return `${modeEmoji} ${baseText}${modeText}${sequentialText}`
-              })()
-            )}
-          </button>
-          </div>
         </div>
+      </div>
+      
+      {/* Generate Button - Outside container */}
+      <div style={{ 
+        marginTop: isMobile ? '-25px' : '-35px',
+        paddingLeft: isMobile ? '20px' : '0',
+        paddingRight: isMobile ? '20px' : '0'
+      }}>
+        <button
+          onClick={handleGenerate}
+          disabled={isGenerating || !prompt.trim()}
+          style={{
+            width: '100%',
+            padding: '14px 24px',
+            border: 'none',
+            borderRadius: '10px',
+            fontSize: '16px',
+            fontWeight: '600',
+            cursor: isGenerating || !prompt.trim() ? 'not-allowed' : 'pointer',
+            transition: 'all 0.3s ease',
+            background: isGenerating || !prompt.trim() 
+              ? 'hsl(var(--muted))' 
+              : 'linear-gradient(135deg, #667eea, #764ba2)',
+            color: 'white',
+            opacity: isGenerating || !prompt.trim() ? 0.6 : 1,
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+          onMouseEnter={(e) => {
+            if (!isGenerating && prompt.trim()) {
+              e.currentTarget.style.transform = 'translateY(-2px)'
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.4)'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isGenerating && prompt.trim()) {
+              e.currentTarget.style.transform = 'translateY(0px)'
+              e.currentTarget.style.boxShadow = 'none'
+            }
+          }}
+        >
+          {isGenerating ? (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}>
+              <div style={{
+                width: '16px',
+                height: '16px',
+                border: '2px solid rgba(255,255,255,0.3)',
+                borderTop: '2px solid white',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }}></div>
+              <span>Generiere Bilder...</span>
+            </div>
+          ) : (
+            'Bilder generieren'
+          )}
+        </button>
       </div>
 
         {/* Generated Images */}
@@ -1704,6 +2293,7 @@ function SeedreamPage() {
           display: 'grid',
           gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(250px, 1fr))',
           gap: isMobile ? '15px' : '20px',
+          marginTop: '25px',
           marginBottom: '40px'
         }}>
           <div style={{
@@ -1776,8 +2366,8 @@ function SeedreamPage() {
           }}
           style={{ display: 'none' }}
         />
-    </div>
-  )
-}
+      </div>
+    )
+  }
 
 export default SeedreamPage

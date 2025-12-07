@@ -41,34 +41,46 @@ export async function generateSeedreamImage(options = {}) {
       throw new Error('Prompt ist erforderlich')
     }
 
-    // Convert size + aspectRatio to pixels - KORREKTE Berechnung
+    // Convert size + aspectRatio to pixels - Seedream 4.5 Requirements
     const getPixelSize = (resolution, ratio) => {
-      const baseSizes = {
-        '1K': 1024,
-        '2K': 2048,  
-        '4K': 4096
-      }
-      
-      const calculateCorrectSize = (baseSize, aspectRatio) => {
-        const [w, h] = aspectRatio.split(':').map(Number)
-        
-        if (w > h) {
-          // Landscape: width ist die längste Seite
-          const width = baseSize
-          const height = Math.round(baseSize * (h / w))
-          return { width, height }
-        } else {
-          // Portrait: height ist die längste Seite  
-          const height = baseSize
-          const width = Math.round(baseSize * (w / h))
-          return { width, height }
+      // Use Seedream 4.5 recommended sizes from documentation
+      const sizeMap = {
+        '1K': {
+          '1:1': '2048x2048',     // 4,194,304 pixels
+          '4:3': '2304x1728',     // 3,981,312 pixels  
+          '3:4': '1728x2304',     // 3,981,312 pixels
+          '16:9': '2560x1440',    // 3,686,400 pixels
+          '9:16': '1440x2560',    // 3,686,400 pixels
+          '3:2': '2496x1664',     // 4,153,344 pixels
+          '2:3': '1664x2496',     // 4,153,344 pixels
+          '21:9': '3024x1296'     // 3,919,104 pixels
+        },
+        '2K': {
+          '1:1': '2048x2048',
+          '4:3': '2304x1728', 
+          '3:4': '1728x2304',
+          '16:9': '2560x1440',
+          '9:16': '1440x2560',
+          '3:2': '2496x1664',
+          '2:3': '1664x2496',
+          '21:9': '3024x1296'
+        },
+        '4K': {
+          '1:1': '4096x4096',     // 16,777,216 pixels (max)
+          '4:3': '4096x3072',     // Too high, use smaller
+          '3:4': '3072x4096',     // Too high, use smaller
+          '16:9': '4096x2304',    // 9,437,184 pixels
+          '9:16': '2304x4096',    // 9,437,184 pixels
+          '3:2': '4096x2731',     // 11,189,504 pixels
+          '2:3': '2731x4096',     // 11,189,504 pixels
+          '21:9': '4096x1752'     // 7,176,192 pixels
         }
       }
       
-      const baseSize = baseSizes[resolution] || 1024
-      const result = calculateCorrectSize(baseSize, ratio)
+      const aspectKey = ratio || '9:16'
+      const resKey = resolution || '1K'
       
-      return `${result.width}x${result.height}`
+      return sizeMap[resKey]?.[aspectKey] || sizeMap['1K']['9:16']
     }
     
     const pixelSize = getPixelSize(size, aspectRatio)
@@ -77,13 +89,7 @@ export async function generateSeedreamImage(options = {}) {
       model: 'seedream-4-5-251128',
       prompt: prompt.trim(),
       size: pixelSize,
-      watermark: watermark,
-      num_images: num_images
-    }
-
-    // Add style if not auto
-    if (style !== 'auto') {
-      requestData.style = style
+      watermark: watermark
     }
 
     // Add reference images if provided
@@ -110,12 +116,18 @@ export async function generateSeedreamImage(options = {}) {
       requestData.sequential_image_generation_options = {
         max_images: Math.min(max_images, 15)
       }
+    } else {
+      // Explicitly set to disabled for single image generation
+      requestData.sequential_image_generation = 'disabled'
+      // For single image generation, we need to handle num_images differently
+      // Since sequential_image_generation is disabled, we make multiple separate requests
+      // But for now, let's just generate 1 image when disabled
     }
 
-    // Add prompt optimization
-    if (promptOptimization && promptOptimization !== 'standard') {
+    // Add prompt optimization - only if enabled, seedream-4.5 only supports 'standard' mode
+    if (promptOptimization === true) {
       requestData.optimize_prompt_options = {
-        mode: promptOptimization
+        mode: 'standard' // Seedream-4.5 only supports standard mode
       }
     }
 

@@ -18,7 +18,7 @@ function SeedreamPage() {
   const [style, setStyle] = useState('photographic')
   const [numImages, setNumImages] = useState(1)
   const [watermark, setWatermark] = useState(false)
-  const [promptOptimization, setPromptOptimization] = useState('fast') // 'standard' or 'fast'
+  const [promptOptimization, setPromptOptimization] = useState(true) // true = enable optimization, false = disable
   const [showOptimizationInfo, setShowOptimizationInfo] = useState(false)
   const [showStyleInfo, setShowStyleInfo] = useState(false)
   const [showSequentialInfo, setShowSequentialInfo] = useState(false)
@@ -28,6 +28,8 @@ function SeedreamPage() {
   const [error, setError] = useState('')
   const [usageInfo, setUsageInfo] = useState(null)
   const [generationTime, setGenerationTime] = useState(null)
+  const [startTime, setStartTime] = useState(null)
+  const [elapsedTime, setElapsedTime] = useState(0)
   const [accountInfo, setAccountInfo] = useState(null)
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
 
@@ -47,6 +49,27 @@ function SeedreamPage() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  // Timer useEffect - runs every second when generating
+  React.useEffect(() => {
+    let interval
+    if (isGenerating && startTime) {
+      interval = setInterval(() => {
+        setElapsedTime(Date.now() - startTime)
+      }, 100) // Update every 100ms for smooth counting
+    } else {
+      setElapsedTime(0)
+    }
+    
+    return () => clearInterval(interval)
+  }, [isGenerating, startTime])
+
+  // Timer formatting helper
+  const formatTime = (milliseconds) => {
+    const seconds = Math.floor(milliseconds / 1000)
+    const ms = Math.floor((milliseconds % 1000) / 100)
+    return `${seconds}.${ms}s`
+  }
 
   // Image Upload Handlers
   const handleFileSelect = (files) => {
@@ -127,6 +150,7 @@ function SeedreamPage() {
       console.log('Images:', uploadedImages.length)
 
       const startTime = Date.now()
+      setStartTime(startTime) // Start the live timer
       
       const result = await generateSeedreamImage({
         prompt,
@@ -158,6 +182,7 @@ function SeedreamPage() {
       setError(error.message)
     } finally {
       setIsGenerating(false)
+      setStartTime(null) // Stop the live timer
     }
   }
 
@@ -1302,14 +1327,22 @@ function SeedreamPage() {
               </label>
               
               {/* Prompt Optimierung */}
-              <div style={{
+              <label style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '12px',
                 background: 'hsl(var(--background))',
                 borderRadius: '8px',
-                border: '1px solid hsl(var(--border))'
+                border: '1px solid hsl(var(--border))',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'hsl(var(--muted) / 0.1)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'hsl(var(--background))'
               }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1317,8 +1350,9 @@ function SeedreamPage() {
                       fontSize: '14px',
                       fontWeight: '500',
                       color: 'hsl(var(--foreground))',
+                      display: 'block'
                     }}>
-                      Prompt Optimierung
+                      Prompt Optimierung aktivieren
                     </span>
                     <div 
                       style={{
@@ -1354,107 +1388,19 @@ function SeedreamPage() {
                     fontSize: '12px',
                     color: 'hsl(var(--muted-foreground))'
                   }}>
-                    {promptOptimization === 'standard' ? 'Höhere Qualität, längere Generation' : 'Schneller, durchschnittliche Qualität'}
+                    {promptOptimization ? 'Seedream erweitert automatisch deinen Prompt für bessere Qualität' : 'Dein Prompt wird unverändert verwendet'}
                   </span>
                 </div>
-                <select
-                  value={promptOptimization}
-                  onChange={(e) => setPromptOptimization(e.target.value)}
+                <input
+                  type="checkbox"
+                  checked={promptOptimization}
+                  onChange={(e) => setPromptOptimization(e.target.checked)}
                   style={{
-                    padding: '8px 12px',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px',
-                    background: 'hsl(var(--background))',
-                    color: 'hsl(var(--foreground))',
-                    fontSize: '13px',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    minWidth: '100px'
+                    transform: 'scale(1.2)',
+                    accentColor: '#667eea'
                   }}
-                >
-                  <option value="standard">Standard</option>
-                  <option value="fast">Schnell</option>
-                </select>
-              </div>
-              
-              {/* Stil */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '12px',
-                background: 'hsl(var(--background))',
-                borderRadius: '8px',
-                border: '1px solid hsl(var(--border))'
-              }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: 'hsl(var(--foreground))',
-                    }}>
-                      🎨 Stil
-                    </span>
-                    <div 
-                      style={{
-                        width: '16px',
-                        height: '16px',
-                        borderRadius: '50%',
-                        border: '1px solid hsl(var(--muted-foreground))',
-                        color: 'hsl(var(--muted-foreground))',
-                        fontSize: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        setShowStyleInfo(true)
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'hsl(var(--muted))'
-                        e.currentTarget.style.borderColor = 'hsl(var(--primary))'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'transparent'
-                        e.currentTarget.style.borderColor = 'hsl(var(--muted-foreground))'
-                      }}
-                    >
-                      ?
-                    </div>
-                  </div>
-                  <span style={{
-                    fontSize: '12px',
-                    color: 'hsl(var(--muted-foreground))'
-                  }}>
-                    {style === 'auto' ? 'KI wählt automatisch' : 'Manuell gewählt'}
-                  </span>
-                </div>
-                <select
-                  value={style}
-                  onChange={(e) => setStyle(e.target.value)}
-                  style={{
-                    padding: '8px 12px',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px',
-                    background: 'hsl(var(--background))',
-                    color: 'hsl(var(--foreground))',
-                    fontSize: '13px',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    minWidth: '120px'
-                  }}
-                >
-                  {SEEDREAM_STYLES.map(styleOption => (
-                    <option key={styleOption.value} value={styleOption.value}>
-                      {styleOption.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                />
+              </label>
                 </div>
               )}
             </div>
@@ -1553,167 +1499,6 @@ function SeedreamPage() {
             </div>
           )}
 
-          {/* Style Info Modal */}
-          {showStyleInfo && (
-            <div 
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 1000
-              }}
-              onClick={() => setShowStyleInfo(false)}
-            >
-              <div 
-                style={{
-                  background: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '16px',
-                  padding: '24px',
-                  maxWidth: '600px',
-                  margin: '20px',
-                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
-                  maxHeight: '80vh',
-                  overflowY: 'auto'
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <h3 style={{
-                  margin: '0 0 16px 0',
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  color: 'hsl(var(--foreground))'
-                }}>
-                  🎨 Bildstile Erklärt
-                </h3>
-                
-                <div style={{ 
-                  lineHeight: '1.6',
-                  color: 'hsl(var(--foreground))',
-                  fontSize: '14px'
-                }}>
-                  <div style={{
-                    display: 'grid',
-                    gap: '12px'
-                  }}>
-                    <div style={{
-                      background: 'hsl(var(--muted) / 0.2)',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: '2px solid #667eea'
-                    }}>
-                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>📸 Fotorealistisch (Standard)</p>
-                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
-                        Extrem realistische Fotos mit natürlicher Beleuchtung und Texturen
-                      </p>
-                    </div>
-
-                    <div style={{
-                      background: 'hsl(var(--muted) / 0.2)',
-                      padding: '12px',
-                      borderRadius: '8px'
-                    }}>
-                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>🤖 Automatisch</p>
-                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
-                        KI wählt den besten Stil basierend auf deinem Prompt
-                      </p>
-                    </div>
-
-                    <div style={{
-                      background: 'hsl(var(--muted) / 0.2)',
-                      padding: '12px',
-                      borderRadius: '8px'
-                    }}>
-                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>💻 Digital Art</p>
-                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
-                        Moderne digitale Kunst mit lebendigen Farben und sauberen Linien
-                      </p>
-                    </div>
-
-                    <div style={{
-                      background: 'hsl(var(--muted) / 0.2)',
-                      padding: '12px',
-                      borderRadius: '8px'
-                    }}>
-                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>📚 Comic Style</p>
-                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
-                        Comic-/Manga-Stil mit kräftigen Konturen und expressiven Farben
-                      </p>
-                    </div>
-
-                    <div style={{
-                      background: 'hsl(var(--muted) / 0.2)',
-                      padding: '12px',
-                      borderRadius: '8px'
-                    }}>
-                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>🧙‍♂️ Fantasy Art</p>
-                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
-                        Magische, mystische Kunstwerke mit dramatischen Effekten
-                      </p>
-                    </div>
-
-                    <div style={{
-                      background: 'hsl(var(--muted) / 0.2)',
-                      padding: '12px',
-                      borderRadius: '8px'
-                    }}>
-                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>📝 Line Art</p>
-                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
-                        Minimalistische Strichzeichnungen und Skizzen
-                      </p>
-                    </div>
-
-                    <div style={{
-                      background: 'hsl(var(--muted) / 0.2)',
-                      padding: '12px',
-                      borderRadius: '8px'
-                    }}>
-                      <p style={{ margin: '0 0 6px 0', fontWeight: '600' }}>🎌 Anime Style</p>
-                      <p style={{ margin: '0', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
-                        Japanischer Anime-/Manga-Stil mit großen Augen und expressiven Gesichtern
-                      </p>
-                    </div>
-                  </div>
-
-                  <div style={{
-                    marginTop: '16px',
-                    padding: '12px',
-                    background: 'hsl(var(--primary) / 0.1)',
-                    borderRadius: '8px',
-                    border: '1px solid hsl(var(--primary) / 0.2)'
-                  }}>
-                    <p style={{ margin: '0', fontSize: '12px', color: 'hsl(var(--primary))', fontWeight: '500' }}>
-                      💡 Tipp: "Fotorealistisch" ist ideal für Produktfotos, Porträts und realistische Szenen. 
-                      Für kreative Projekte probiere "Digital Art" oder "Fantasy Art" aus!
-                    </p>
-                  </div>
-                </div>
-                
-                <button
-                  onClick={() => setShowStyleInfo(false)}
-                  style={{
-                    background: 'hsl(var(--primary))',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    marginTop: '16px'
-                  }}
-                >
-                  Verstanden
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Sequential Generation Info Modal */}
           {showSequentialInfo && (
@@ -2133,7 +1918,7 @@ function SeedreamPage() {
                 borderRadius: '50%',
                 animation: 'spin 1s linear infinite'
               }}></div>
-              <span>Generiere Bilder...</span>
+              <span>Generiere Bilder... {elapsedTime > 0 ? formatTime(elapsedTime) : ''}</span>
             </div>
           ) : (
             'Bilder generieren'
@@ -2156,7 +1941,7 @@ function SeedreamPage() {
               fontWeight: '600',
               color: '#764ba2'
             }}>
-              Generierte Bilder ({generatedImages.length})
+              Generierte Bilder ({generatedImages.length}){generationTime && ` • ${generationTime}s`}
             </h3>
             
             <div style={{

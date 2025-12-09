@@ -133,7 +133,16 @@ export async function generateSeedreamImage(options = {}) {
 
     console.log('🚀 Making Seedream API call...')
 
-    const response = await fetch('http://localhost:3002/seedream/generate', {
+    // Use environment-specific endpoint
+    const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    const API_ENDPOINT = isProduction
+      ? '/api/seedream-generate'      // Production: use Vercel serverless function
+      : 'http://localhost:3002/seedream/generate'  // Local: use local proxy server
+    
+    console.log(`🌍 Environment: ${isProduction ? 'Production' : 'Development'}`)
+    console.log(`📡 API Endpoint: ${API_ENDPOINT}`)
+    
+    const response = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

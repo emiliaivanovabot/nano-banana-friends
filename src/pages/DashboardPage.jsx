@@ -402,7 +402,7 @@ function DashboardPage() {
       id: 'comfyui',
       title: 'Comfyui',
       subtitle: 'Realistic Photos', 
-      path: 'https://vbulletin-periods-toe-bargains.trycloudflare.com/',
+      path: 'https://comfyui-web-interface-rouge.vercel.app/',
       gradient: 'linear-gradient(135deg, #a8edea, #fed6e3)',
       available: true,
       external: true

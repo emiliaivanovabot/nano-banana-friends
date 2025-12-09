@@ -9,6 +9,9 @@ import {
   SEEDREAM_STYLES, 
   SEEDREAM_SIZES 
 } from '../services/seedreamService.js'
+import { uploadAndSaveImage } from '../utils/imageUpload.js'
+import RecentImagesHistory from '../components/RecentImagesHistory.jsx'
+import UserInspoGallery from '../components/UserInspoGallery.jsx'
 
 function SeedreamPage() {
   const { user } = useAuth()
@@ -85,6 +88,15 @@ function SeedreamPage() {
     const newImages = [...uploadedImages, ...fileArray].slice(0, 14)
     setUploadedImages(newImages)
     setError('')
+    
+    // Calculate and show total file size
+    const totalBytes = newImages.reduce((sum, file) => sum + file.size, 0)
+    const totalMB = (totalBytes / (1024 * 1024)).toFixed(2)
+    console.log(`📊 Total uploaded images: ${newImages.length} files, ${totalMB} MB`)
+    
+    if (totalBytes > 10 * 1024 * 1024) { // 10MB limit
+      setError(`⚠️ Gesamtgröße zu hoch: ${totalMB} MB (Max: 10 MB)`)
+    }
     
   }
 
@@ -173,6 +185,53 @@ function SeedreamPage() {
         setGeneratedImages(result.images)
         showUsageFromResponse(result)
         console.log(`✅ Images generated: ${result.images.length} in ${duration}s`)
+        
+        // Auto-save images to FTP server and gallery (non-blocking)
+        if (result.images && result.images.length > 0 && user?.username) {
+          result.images.forEach((imageUrl, index) => {
+            // Convert Seedream image URL to base64 and upload to FTP
+            fetch(imageUrl)
+              .then(response => response.blob())
+              .then(blob => {
+                return new Promise((resolve) => {
+                  const reader = new FileReader()
+                  reader.onload = () => resolve(reader.result)
+                  reader.readAsDataURL(blob)
+                })
+              })
+              .then(base64Image => {
+                // Prepare generation metadata similar to Nano-Banana
+                const estimatedTokens = Math.round(prompt.length * 1.2) // Rough estimation for Seedream
+                const estimatedUsageMetadata = {
+                  promptTokenCount: Math.round(estimatedTokens * 0.3), // Estimated prompt tokens
+                  candidatesTokenCount: Math.round(estimatedTokens * 0.7), // Estimated output tokens
+                  totalTokenCount: estimatedTokens
+                }
+                
+                return uploadAndSaveImage(
+                  base64Image,
+                  user.username,
+                  'seedream-single',
+                  prompt,
+                  index,
+                  size,
+                  index === 0 ? parseFloat(duration) : null, // Generation time only for first image
+                  estimatedUsageMetadata,
+                  aspectRatio
+                )
+              })
+              .then(uploadResult => {
+                if (uploadResult.success) {
+                  console.log(`✅ Seedream image ${index + 1} uploaded to gallery:`, uploadResult.imageUrl)
+                } else {
+                  console.error(`❌ Failed to upload image ${index + 1}:`, uploadResult.error)
+                }
+              })
+              .catch(error => {
+                console.error(`❌ Error processing image ${index + 1} for upload:`, error)
+              })
+          })
+        }
       } else {
         throw new Error(result.error)
       }
@@ -2070,6 +2129,36 @@ function SeedreamPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Community Inspiration Gallery */}
+        {user && (
+          <UserInspoGallery currentUser={user} />
+        )}
+
+        {/* Personal Gallery - Recent Images */}
+        {user && (
+          <div style={{
+            background: 'hsl(var(--card))',
+            borderRadius: '20px',
+            padding: '30px',
+            border: '1px solid hsl(var(--border))',
+            marginBottom: '30px'
+          }}>
+            <h3 style={{
+              margin: '0 0 20px 0',
+              fontSize: '20px',
+              fontWeight: '600',
+              color: '#764ba2',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <span>🖼️</span>
+              Meine Seedream Galerie
+            </h3>
+            <RecentImagesHistory currentUser={user} />
           </div>
         )}
 

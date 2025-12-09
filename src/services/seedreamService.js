@@ -161,7 +161,11 @@ export async function generateSeedreamImage(options = {}) {
       } else if (response.status === 429) {
         throw new Error('Rate Limit erreicht. Bitte warte einen Moment und versuche es erneut.')
       } else {
-        throw new Error(errorData.message || `API Fehler: ${response.status}`)
+        // Show detailed error for debugging
+        const errorMsg = errorData.error?.message || errorData.message || `API Fehler: ${response.status}`
+        const errorDetails = errorData.error?.code ? ` (Code: ${errorData.error.code})` : ''
+        console.error('🔍 Full error details:', errorData)
+        throw new Error(errorMsg + errorDetails)
       }
     }
 

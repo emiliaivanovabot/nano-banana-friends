@@ -40,9 +40,19 @@ function SeedreamPage() {
   const [uploadedImages, setUploadedImages] = useState([])
   const [sequentialGeneration, setSequentialGeneration] = useState(false)
   const [maxImages, setMaxImages] = useState(15)
+  
+  // Calculate correct max images based on uploaded images
+  const getMaxOutputImages = () => {
+    return Math.max(1, 15 - uploadedImages.length)
+  }
   const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef(null)
 
+
+  // Auto-scroll to top on page load
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
 
   // Mobile detection
   React.useEffect(() => {
@@ -146,10 +156,9 @@ function SeedreamPage() {
       const validationOptions = { 
         prompt, 
         size, 
-        num_images: numImages,
         images: uploadedImages,
         sequential_image_generation: sequentialGeneration ? 'auto' : 'disabled',
-        max_images: maxImages
+        max_images: getMaxOutputImages()
       }
       
       const validation = validateSeedreamOptions(validationOptions)
@@ -159,36 +168,86 @@ function SeedreamPage() {
       }
 
       console.log('🌱 Starting Seedream generation...')
+      console.log('📝 ORIGINAL PROMPT:', prompt)
+      console.log('⚡ Prompt Optimization:', promptOptimization ? 'ENABLED' : 'DISABLED')
       console.log('Images:', uploadedImages.length)
 
       const startTime = Date.now()
       setStartTime(startTime) // Start the live timer
       
-      const result = await generateSeedreamImage({
-        prompt,
-        size,
-        aspectRatio,
-        style,
-        num_images: numImages,
-        watermark,
-        images: uploadedImages, // Add reference images
-        sequential_image_generation: sequentialGeneration ? 'auto' : 'disabled',
-        max_images: maxImages,
-        promptOptimization // Add prompt optimization
-      })
+      // Multiple API calls approach (like Nano Banana)
+      let allImages = []
+      let totalDuration = 0
+      
+      if (sequentialGeneration) {
+        // Sequential generation - single call with auto
+        const result = await generateSeedreamImage({
+          prompt,
+          size,
+          aspectRatio,
+          style,
+          watermark,
+          images: uploadedImages,
+          sequential_image_generation: 'auto',
+          max_images: getMaxOutputImages(),
+          promptOptimization
+        })
+        
+        const endTime = Date.now()
+        totalDuration = ((endTime - startTime) / 1000).toFixed(1)
+        
+        if (result.success) {
+          allImages = result.images
+          setGeneratedImages(allImages)
+          showUsageFromResponse(result)
+        }
+      } else {
+        // Multiple separate calls for exact control (like Nano Banana)
+        for (let i = 0; i < numImages; i++) {
+          console.log(`🌱 Generating image ${i + 1}/${numImages}...`)
+          
+          const result = await generateSeedreamImage({
+            prompt,
+            size,
+            aspectRatio,
+            style,
+            watermark,
+            images: uploadedImages,
+            sequential_image_generation: 'disabled', // Always single image per call
+            promptOptimization
+          })
+          
+          if (result.success && result.images.length > 0) {
+            allImages.push(...result.images)
+            
+            // Log optimized prompt for comparison
+            result.images.forEach((image, idx) => {
+              if (image.revisedPrompt && image.revisedPrompt !== prompt) {
+                console.log(`📝 OPTIMIZED PROMPT (Bild ${allImages.length - result.images.length + idx + 1}):`, image.revisedPrompt)
+                console.log(`🔄 VERGLEICH:`)
+                console.log(`   Original: "${prompt}"`)
+                console.log(`   Optimiert: "${image.revisedPrompt}"`)
+              }
+            })
+            
+            // Update display immediately as each image comes in (sukzessive Anzeige)
+            setGeneratedImages([...allImages])
+            showUsageFromResponse(result)
+          } else {
+            console.error(`❌ Failed to generate image ${i + 1}:`, result.error)
+          }
+        }
+        
+        const endTime = Date.now()
+        totalDuration = ((endTime - startTime) / 1000).toFixed(1)
+      }
 
-      const endTime = Date.now()
-      const duration = ((endTime - startTime) / 1000).toFixed(1)
-      setGenerationTime(duration)
-
-      if (result.success) {
-        setGeneratedImages(result.images)
-        showUsageFromResponse(result)
-        console.log(`✅ Images generated: ${result.images.length} in ${duration}s`)
+      setGenerationTime(totalDuration)
+      console.log(`✅ Total images generated: ${allImages.length} in ${totalDuration}s`)
         
         // Auto-save images to FTP server and gallery (non-blocking)
-        if (result.images && result.images.length > 0 && user?.username) {
-          result.images.forEach((imageUrl, index) => {
+        if (allImages && allImages.length > 0 && user?.username) {
+          allImages.forEach((imageUrl, index) => {
             // Convert Seedream image URL to base64 and upload to FTP
             fetch(imageUrl)
               .then(response => response.blob())
@@ -232,8 +291,9 @@ function SeedreamPage() {
               })
           })
         }
-      } else {
-        throw new Error(result.error)
+      
+      if (allImages.length === 0) {
+        throw new Error('Keine Bilder generiert')
       }
 
     } catch (error) {
@@ -349,15 +409,6 @@ function SeedreamPage() {
           }}>
             Seedream 4.5 Pro
           </h1>
-          <p style={{
-            margin: '0 0 15px 0',
-            fontSize: '16px',
-            color: 'hsl(var(--muted-foreground))',
-            fontFamily: 'Georgia, serif',
-            fontStyle: 'italic'
-          }}>
-            High-fidelity 4K AI Image Generation
-          </p>
         </div>
       </div>
 
@@ -439,96 +490,8 @@ function SeedreamPage() {
           marginBottom: isMobile ? '25px' : '30px'
         }}>
           
-          {/* Form Header */}
-          <h3 style={{
-            margin: '0 0 25px 0',
-            fontSize: '20px',
-            fontWeight: '600',
-            color: '#667eea'
-          }}>
-            Bild generieren
-          </h3>
 
           
-          {/* Prompt Input */}
-          <div style={{ marginBottom: '25px' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '8px'
-            }}>
-              <label style={{
-                fontSize: '14px',
-                fontWeight: '500',
-                color: 'hsl(var(--foreground))',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                🎨 Prompt
-                <span style={{
-                  fontSize: '12px',
-                  color: 'hsl(var(--muted-foreground))',
-                  background: 'hsl(var(--muted) / 0.3)',
-                  padding: '2px 8px',
-                  borderRadius: '12px'
-                }}>
-                  Max 600 Wörter empfohlen
-                </span>
-              </label>
-            </div>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Beschreibe das Bild, das du generieren möchtest..."
-              style={{
-                width: '100%',
-                minHeight: '100px',
-                padding: '12px',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
-                fontSize: '14px',
-                resize: 'vertical',
-                background: 'hsl(var(--background))',
-                color: 'hsl(var(--foreground))',
-                fontFamily: 'inherit',
-                transition: 'border-color 0.3s ease'
-              }}
-              maxLength={1000}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#667eea'
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'hsl(var(--border))'
-              }}
-            />
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginTop: '6px'
-            }}>
-              <span style={{
-                fontSize: '12px',
-                color: 'hsl(var(--muted-foreground))'
-              }}>
-                {prompt.length}/1000 Zeichen
-              </span>
-              {prompt.length > 600 && (
-                <span style={{
-                  fontSize: '11px',
-                  color: '#ffa726',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  background: 'hsl(var(--warning) / 0.1)'
-                }}>
-                  ⚠️ Sehr lang - könnte Details verlieren
-                </span>
-              )}
-            </div>
-          </div>
-
           {/* Image Upload Area */}
           <div style={{ marginBottom: '30px' }}>
               <div style={{
@@ -582,174 +545,88 @@ function SeedreamPage() {
                 )}
               </div>
 
-              {/* Drag & Drop Zone */}
-              <div
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  border: `2px dashed ${isDragOver ? '#667eea' : 'hsl(var(--border))'}`,
-                  borderRadius: '12px',
-                  padding: isMobile ? '30px 20px' : '40px 30px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  background: isDragOver 
-                    ? 'hsl(var(--primary) / 0.05)' 
-                    : uploadedImages.length > 0 
-                      ? 'hsl(var(--muted) / 0.1)'
-                      : 'hsl(var(--background))',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-                onMouseEnter={(e) => {
-                  if (uploadedImages.length === 0) {
-                    e.currentTarget.style.borderColor = '#667eea'
-                    e.currentTarget.style.background = 'hsl(var(--primary) / 0.03)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isDragOver && uploadedImages.length === 0) {
-                    e.currentTarget.style.borderColor = 'hsl(var(--border))'
-                    e.currentTarget.style.background = 'hsl(var(--background))'
-                  }
-                }}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/bmp,image/tiff,image/gif"
-                  multiple={true}
-                  onChange={(e) => handleFileSelect(e.target.files)}
-                  style={{ display: 'none' }}
-                />
+              {/* Kompakter Upload Button */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                flexWrap: 'wrap'
+              }}>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: isDragOver 
+                      ? 'hsl(var(--primary) / 0.15)' 
+                      : uploadedImages.length > 0 
+                        ? 'linear-gradient(135deg, hsl(142, 76%, 36%), hsl(142, 76%, 40%))'
+                        : 'hsl(var(--primary) / 0.1)',
+                    color: uploadedImages.length > 0 ? 'white' : 'hsl(var(--primary))',
+                    border: uploadedImages.length > 0 
+                      ? 'none' 
+                      : `1px solid hsl(var(--primary) / 0.3)`,
+                    borderRadius: '8px',
+                    padding: '10px 14px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: uploadedImages.length > 0 
+                      ? '0 2px 8px hsl(142, 76%, 36%, 0.3)'
+                      : 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (uploadedImages.length === 0) {
+                      e.currentTarget.style.background = 'hsl(var(--primary) / 0.15)'
+                    } else {
+                      e.currentTarget.style.transform = 'translateY(-1px)'
+                      e.currentTarget.style.boxShadow = '0 4px 12px hsl(142, 76%, 36%, 0.4)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (uploadedImages.length === 0) {
+                      e.currentTarget.style.background = 'hsl(var(--primary) / 0.1)'
+                    } else {
+                      e.currentTarget.style.transform = 'translateY(0)'
+                      e.currentTarget.style.boxShadow = '0 2px 8px hsl(142, 76%, 36%, 0.3)'
+                    }
+                  }}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/bmp,image/tiff,image/gif"
+                    multiple={true}
+                    onChange={(e) => handleFileSelect(e.target.files)}
+                    style={{ display: 'none' }}
+                  />
+                  
+                  {uploadedImages.length === 0 ? (
+                    <>
+                      📁 Bilder auswählen
+                    </>
+                  ) : (
+                    <>
+                      📷 {uploadedImages.length} Bild{uploadedImages.length !== 1 ? 'er' : ''}
+                    </>
+                  )}
+                </button>
                 
-                {uploadedImages.length === 0 ? (
-                  <div>
-                    <div style={{
-                      width: '56px',
-                      height: '56px',
-                      borderRadius: '16px',
-                      background: 'linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--primary) / 0.05))',
-                      border: '2px solid hsl(var(--primary) / 0.2)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: '20px',
-                      transition: 'all 0.3s ease',
-                      margin: '0 auto 20px auto'
-                    }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="7,10 12,15 17,10"/>
-                        <line x1="12" y1="15" x2="12" y2="3"/>
-                      </svg>
-                    </div>
-                    <h3 style={{
-                      margin: '0 0 8px 0',
-                      fontSize: '18px',
-                      fontWeight: '600',
-                      color: 'hsl(var(--foreground))',
-                      textAlign: 'center'
-                    }}>
-                      Bilder hinzufügen
-                    </h3>
-                    <p style={{
-                      margin: '0 0 20px 0',
-                      fontSize: '14px',
-                      color: 'hsl(var(--muted-foreground))',
-                      textAlign: 'center',
-                      lineHeight: '1.5'
-                    }}>
-                      Ziehe Dateien hierher oder klicke zum Durchsuchen
-                    </p>
-                    <div style={{
-                      display: 'flex',
-                      gap: '8px',
-                      flexWrap: 'wrap',
-                      justifyContent: 'center',
-                      marginBottom: '16px'
-                    }}>
-                      {['JPEG', 'PNG', 'WebP', 'GIF', 'BMP', 'TIFF'].map(format => (
-                        <span
-                          key={format}
-                          style={{
-                            background: 'hsl(var(--muted) / 0.4)',
-                            color: 'hsl(var(--muted-foreground))',
-                            fontSize: '11px',
-                            fontWeight: '500',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            border: '1px solid hsl(var(--border))'
-                          }}
-                        >
-                          {format}
-                        </span>
-                      ))}
-                    </div>
-                    
-                    <div style={{
-                      fontSize: '12px',
-                      color: 'hsl(var(--muted-foreground))',
-                      textAlign: 'center',
-                      opacity: 0.8
-                    }}>
-                      Max. 14 Bilder • Je 10MB • Bis 6000×6000px
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '12px',
-                      background: 'linear-gradient(135deg, hsl(142, 76%, 36%), hsl(142, 76%, 40%))',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: '16px',
-                      boxShadow: '0 4px 12px hsl(142, 76%, 36%, 0.3)',
-                      margin: '0 auto 16px auto'
-                    }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20,6 9,17 4,12"/>
-                      </svg>
-                    </div>
-                    <p style={{
-                      margin: '0 0 8px 0',
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: 'hsl(var(--foreground))',
-                      textAlign: 'center'
-                    }}>
-                      {uploadedImages.length} {uploadedImages.length === 1 ? 'Bild' : 'Bilder'} bereit
-                    </p>
-                    <p style={{
-                      margin: 0,
-                      fontSize: '14px',
-                      color: 'hsl(var(--muted-foreground))',
-                      textAlign: 'center'
-                    }}>
-                      Weitere hinzufügen oder weiter zu den Einstellungen
-                    </p>
-                    
-                    {uploadedImages.length < 14 && (
-                      <div style={{
-                        marginTop: '12px',
-                        fontSize: '12px',
-                        color: 'hsl(var(--primary))',
-                        background: 'hsl(var(--primary) / 0.1)',
-                        padding: '6px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid hsl(var(--primary) / 0.2)',
-                        display: 'inline-block'
-                      }}>
-                        Noch {14 - uploadedImages.length} weitere möglich
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Infos */}
+                <div style={{
+                  fontSize: '11px',
+                  color: 'hsl(var(--muted-foreground))',
+                  lineHeight: '1.3'
+                }}>
+                  Max. 14 • Je 10MB • JPEG, PNG, WebP, GIF
+                  <br />
+                  <span style={{ opacity: 0.7 }}>Drag & Drop unterstützt</span>
+                </div>
               </div>
 
               {/* Upload Progress Info */}
@@ -967,6 +844,202 @@ function SeedreamPage() {
                 </div>
               )}
             </div>
+
+          {/* Prompt Input */}
+          <div style={{ marginBottom: '25px' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '8px'
+            }}>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: '500',
+                color: 'hsl(var(--foreground))',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                🎨 Prompt
+                <span style={{
+                  fontSize: '12px',
+                  color: 'hsl(var(--muted-foreground))',
+                  background: 'hsl(var(--muted) / 0.3)',
+                  padding: '2px 8px',
+                  borderRadius: '12px'
+                }}>
+                  Max 600 Wörter empfohlen
+                </span>
+              </label>
+            </div>
+
+            {/* Quick Prompt Buttons */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '8px',
+              marginBottom: '12px'
+            }}>
+              <button
+                onClick={() => setPrompt('an other camera angle, from above')}
+                style={{
+                  background: 'hsl(var(--muted) / 0.3)',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '6px',
+                  padding: '6px 10px',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  color: 'hsl(var(--foreground))',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'hsl(var(--primary) / 0.1)'
+                  e.currentTarget.style.borderColor = 'hsl(var(--primary) / 0.3)'
+                  e.currentTarget.style.color = 'hsl(var(--primary))'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'hsl(var(--muted) / 0.3)'
+                  e.currentTarget.style.borderColor = 'hsl(var(--border))'
+                  e.currentTarget.style.color = 'hsl(var(--foreground))'
+                }}
+              >
+                Von oben
+              </button>
+
+              <button
+                onClick={() => setPrompt('an other camera angle, from below')}
+                style={{
+                  background: 'hsl(var(--muted) / 0.3)',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '6px',
+                  padding: '6px 10px',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  color: 'hsl(var(--foreground))',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'hsl(var(--primary) / 0.1)'
+                  e.currentTarget.style.borderColor = 'hsl(var(--primary) / 0.3)'
+                  e.currentTarget.style.color = 'hsl(var(--primary))'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'hsl(var(--muted) / 0.3)'
+                  e.currentTarget.style.borderColor = 'hsl(var(--border))'
+                  e.currentTarget.style.color = 'hsl(var(--foreground))'
+                }}
+              >
+                Von unten
+              </button>
+
+              <button
+                onClick={() => setPrompt('professional photoshoot, studio lighting, high quality')}
+                style={{
+                  background: 'hsl(var(--muted) / 0.3)',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '6px',
+                  padding: '6px 10px',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  color: 'hsl(var(--foreground))',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'hsl(var(--primary) / 0.1)'
+                  e.currentTarget.style.borderColor = 'hsl(var(--primary) / 0.3)'
+                  e.currentTarget.style.color = 'hsl(var(--primary))'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'hsl(var(--muted) / 0.3)'
+                  e.currentTarget.style.borderColor = 'hsl(var(--border))'
+                  e.currentTarget.style.color = 'hsl(var(--foreground))'
+                }}
+              >
+                Studio
+              </button>
+
+              <button
+                onClick={() => setPrompt('natural lighting, outdoor setting, candid moment')}
+                style={{
+                  background: 'hsl(var(--muted) / 0.3)',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '6px',
+                  padding: '6px 10px',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  color: 'hsl(var(--foreground))',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'hsl(var(--primary) / 0.1)'
+                  e.currentTarget.style.borderColor = 'hsl(var(--primary) / 0.3)'
+                  e.currentTarget.style.color = 'hsl(var(--primary))'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'hsl(var(--muted) / 0.3)'
+                  e.currentTarget.style.borderColor = 'hsl(var(--border))'
+                  e.currentTarget.style.color = 'hsl(var(--foreground))'
+                }}
+              >
+                Natürlich
+              </button>
+            </div>
+
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Beschreibe das Bild, das du generieren möchtest..."
+              style={{
+                width: '100%',
+                minHeight: '100px',
+                padding: '12px',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '8px',
+                fontSize: '14px',
+                resize: 'vertical',
+                background: 'hsl(var(--background))',
+                color: 'hsl(var(--foreground))',
+                fontFamily: 'inherit',
+                transition: 'border-color 0.3s ease'
+              }}
+              maxLength={1000}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#667eea'
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'hsl(var(--border))'
+              }}
+            />
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: '6px'
+            }}>
+              <span style={{
+                fontSize: '12px',
+                color: 'hsl(var(--muted-foreground))'
+              }}>
+                {prompt.length}/1000 Zeichen
+              </span>
+              {prompt.length > 600 && (
+                <span style={{
+                  fontSize: '11px',
+                  color: '#ffa726',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  background: 'hsl(var(--warning) / 0.1)'
+                }}>
+                  ⚠️ Sehr lang - könnte Details verlieren
+                </span>
+              )}
+            </div>
+          </div>
 
           {/* Settings Grid */}
           <div style={{
@@ -1252,7 +1325,7 @@ function SeedreamPage() {
                   <input
                     type="range"
                     min="1"
-                    max="4"
+                    max="10"
                     step="1"
                     value={numImages}
                     onChange={(e) => setNumImages(Number(e.target.value))}
@@ -1260,7 +1333,7 @@ function SeedreamPage() {
                       width: '100%',
                       height: '6px',
                       borderRadius: '3px',
-                      background: `linear-gradient(to right, #667eea 0%, #667eea ${((numImages - 1) / 3) * 100}%, hsl(var(--border)) ${((numImages - 1) / 3) * 100}%, hsl(var(--border)) 100%)`,
+                      background: `linear-gradient(to right, #667eea 0%, #667eea ${((numImages - 1) / 9) * 100}%, hsl(var(--border)) ${((numImages - 1) / 9) * 100}%, hsl(var(--border)) 100%)`,
                       outline: 'none',
                       appearance: 'none',
                       cursor: 'pointer'
@@ -1897,7 +1970,7 @@ function SeedreamPage() {
                       color: 'hsl(var(--muted-foreground))',
                       lineHeight: '1.4'
                     }}>
-                      Seedream 4.5 wird bis zu {maxImages} Bilder generieren, basierend auf deinen {uploadedImages.length} hochgeladenen Bildern. 
+                      Seedream 4.5 wird bis zu {getMaxOutputImages()} Bilder generieren, basierend auf deinen {uploadedImages.length} hochgeladenen Bildern. 
                       Jede Generation variiert leicht für mehr Vielfalt. Perfekt für kreative Exploration!
                     </p>
                   </div>
@@ -2006,9 +2079,14 @@ function SeedreamPage() {
             <div style={{
               display: 'grid',
               gap: '25px',
-              gridTemplateColumns: generatedImages.length === 1 ? '1fr' :
-                generatedImages.length === 2 ? 'repeat(auto-fit, minmax(300px, 1fr))' :
-                'repeat(auto-fit, minmax(250px, 1fr))'
+              gridTemplateColumns: 
+                generatedImages.length === 1 ? '1fr' :
+                generatedImages.length === 2 ? 'repeat(2, 1fr)' :
+                generatedImages.length <= 4 ? 'repeat(2, 1fr)' :
+                generatedImages.length <= 6 ? 'repeat(3, 1fr)' :
+                'repeat(4, 1fr)', // 7+ Bilder in 4 Spalten
+              maxWidth: generatedImages.length === 1 ? '600px' : '800px', // Kleinere Bilder
+              margin: '0 auto'
             }}>
               {generatedImages.map((image, index) => (
                 <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

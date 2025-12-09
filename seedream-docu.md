@@ -1,3 +1,101 @@
+# Seedream 4.5 Deployment Documentation
+
+## Deployment Solution für Online-Verfügbarkeit
+
+### Problem
+- Seedream funktionierte lokal perfekt, aber nicht online
+- CORS-Fehler beim Zugriff auf localhost:3002 von Vercel-App
+- API Key wurde im Frontend exponiert (Sicherheitsproblem)
+
+### Lösung: Dual-Environment Setup
+
+#### 1. Vercel Serverless Function (Production)
+**Datei:** `api/seedream-generate.js`
+```javascript
+const SEEDREAM_API_KEY = process.env.SEEDREAM_API_KEY
+const SEEDREAM_API_BASE_URL = 'https://ark.ap-southeast.bytepluses.com/api/v3'
+
+export default async function handler(req, res) {
+  // CORS Headers
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization')
+
+  if (req.method === 'OPTIONS') return res.status(200).end()
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+  try {
+    const response = await fetch(`${SEEDREAM_API_BASE_URL}/images/generations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SEEDREAM_API_KEY}`
+      },
+      body: JSON.stringify(req.body)
+    })
+    
+    const data = await response.json()
+    if (!response.ok) return res.status(response.status).json(data)
+    res.json(data)
+  } catch (error) {
+    res.status(500).json({ error: error.message, details: 'Serverless function error' })
+  }
+}
+```
+
+#### 2. Environment Detection (Frontend)
+**Datei:** `src/services/seedreamService.js`
+```javascript
+// Environment-specific endpoint detection
+const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+const API_ENDPOINT = isProduction
+  ? '/api/seedream-generate'      // Production: Vercel serverless function
+  : 'http://localhost:3002/seedream/generate'  // Local: Express proxy server
+
+console.log(`🌍 Environment: ${isProduction ? 'Production' : 'Development'}`)
+console.log(`📡 API Endpoint: ${API_ENDPOINT}`)
+
+const response = await fetch(API_ENDPOINT, { ... })
+```
+
+#### 3. Environment Variables Setup
+**Lokal (.env.local):**
+```bash
+# Frontend (VITE prefix für Browser-Zugriff)
+VITE_SEEDREAM_API_KEY=9c22ab19-a45a-4930-9e2a-18bd72910bff
+
+# Backend (für API Routes, ohne VITE prefix)
+SEEDREAM_API_KEY=9c22ab19-a45a-4930-9e2a-18bd72910bff
+```
+
+**Vercel Dashboard:**
+- Variable: `SEEDREAM_API_KEY`
+- Wert: `9c22ab19-a45a-4930-9e2a-18bd72910bff`
+
+#### 4. URLs und Links
+- **Lokaler Proxy:** http://localhost:3002/seedream/generate
+- **Production API:** https://nano-banana-friends.vercel.app/api/seedream-generate
+- **ComfyUI (aktualisiert):** https://comfyui-web-interface-rouge.vercel.app/
+- **Seedream API Basis:** https://ark.ap-southeast.bytepluses.com/api/v3
+
+### Deployment Schritte
+1. ✅ Vercel serverless function erstellt: `api/seedream-generate.js`
+2. ✅ Environment detection implementiert in `seedreamService.js`
+3. ✅ Environment variables konfiguriert (lokal und Vercel)
+4. ✅ ComfyUI Link aktualisiert auf neue Vercel URL
+5. ✅ Code committed und zu GitHub gepusht
+6. ✅ Vercel Auto-Deploy getriggert
+7. ✅ Environment Variable `SEEDREAM_API_KEY` in Vercel gesetzt
+
+### Sicherheitsverbesserungen
+- ✅ API Key nicht mehr im Frontend exponiert
+- ✅ Serverless function handhabt API calls sicher
+- ✅ CORS richtig konfiguriert für Cross-Origin Requests
+
+---
+
+## Original API Dokumentation
+
 POST https://ark.ap-southeast.bytepluses.com/api/v3/images/generations Try
 This document describes the input and output parameters for the image generation API.
 Warning

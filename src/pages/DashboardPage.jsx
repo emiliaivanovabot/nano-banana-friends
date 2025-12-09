@@ -408,22 +408,6 @@ function DashboardPage() {
       external: true
     },
     {
-      id: 'kling-avatar',
-      title: 'Kling Avatar 2.0',
-      subtitle: 'AI Talking Avatars',
-      path: '/kling-avatar',
-      gradient: 'linear-gradient(135deg, #ff6b6b, #ffa726)',
-      available: true
-    },
-    {
-      id: 'seedream',
-      title: 'Seedream 4.5 Pro',
-      subtitle: 'High-Fidelity Images',
-      path: '/seedream',
-      gradient: 'linear-gradient(135deg, #667eea, #764ba2)',
-      available: true
-    },
-    {
       id: 'grok-playground',
       path: '/grok-playground',
       title: 'Grok Playground',
@@ -433,24 +417,6 @@ function DashboardPage() {
       paused: true
     },
     {
-      id: 'wan-video',
-      title: 'WAN 2.5 Video',
-      subtitle: 'AI Video Creator',
-      path: '/wan-video',
-      gradient: 'linear-gradient(135deg, #f093fb, #f5576c)',
-      available: true,
-      paused: false
-    },
-    {
-      id: 'wan-video-origin',
-      title: 'WAN 2.5 Origin',
-      subtitle: 'Premium Video Suite',
-      path: '/wan-video-public',
-      gradient: 'linear-gradient(135deg, #FFD700, #FFA500)',
-      available: true,
-      paused: false
-    },
-    {
       id: 'gallery',
       path: '/gallery', 
       title: 'Bilder Galerie',
@@ -458,6 +424,43 @@ function DashboardPage() {
       gradient: 'linear-gradient(135deg, #667eea, #764ba2)',
       available: true
     },
+    // Admin-only tools - only for emilia.ivanova
+    ...(user?.username === 'emilia.ivanova' ? [
+      {
+        id: 'kling-avatar',
+        title: 'Kling Avatar 2.0',
+        subtitle: 'AI Talking Avatars',
+        path: '/kling-avatar',
+        gradient: 'linear-gradient(135deg, #ff6b6b, #ffa726)',
+        available: true
+      },
+      {
+        id: 'seedream',
+        title: 'Seedream 4.5 Pro',
+        subtitle: 'High-Fidelity Images',
+        path: '/seedream',
+        gradient: 'linear-gradient(135deg, #667eea, #764ba2)',
+        available: true
+      },
+      {
+        id: 'wan-video',
+        title: 'WAN 2.5 Video',
+        subtitle: 'AI Video Creator',
+        path: '/wan-video',
+        gradient: 'linear-gradient(135deg, #f093fb, #f5576c)',
+        available: true,
+        paused: false
+      },
+      {
+        id: 'wan-video-origin',
+        title: 'WAN 2.5 Origin',
+        subtitle: 'Premium Video Suite',
+        path: '/wan-video-public',
+        gradient: 'linear-gradient(135deg, #FFD700, #FFA500)',
+        available: true,
+        paused: false
+      }
+    ] : []),
     // Admin-only tool for emilia.ivanova
     ...(user?.username === 'emilia.ivanova' ? [{
       id: 'user-gallery',
@@ -862,7 +865,7 @@ function DashboardPage() {
                 style={{
                   textDecoration: 'none',
                   display: 'block',
-                  background: tool.id === 'nano-banana' ? '#a86d09' : tool.id === 'gallery' ? '#5a387d' : tool.id === 'user-gallery' ? '#c44c4c' : tool.id === 'qwen' ? '#2563eb' : tool.id === 'comfyui' ? 'rgba(59, 130, 246, 0.25)' : 'hsl(var(--card))',
+                  background: tool.id === 'nano-banana' ? '#a86d09' : tool.id === 'gallery' ? '#5a387d' : tool.id === 'user-gallery' ? '#c44c4c' : tool.id === 'qwen' ? '#2563eb' : tool.id === 'comfyui' ? 'rgba(59, 130, 246, 0.25)' : tool.id === 'seedream' ? '#8B5CF6' : tool.id === 'wan-video' ? '#E91E63' : tool.id === 'wan-video-origin' ? '#FF6B35' : tool.id === 'kling-avatar' ? '#00CED1' : 'hsl(var(--card))',
                   borderRadius: isMobile ? '16px' : '25px',
                   padding: isMobile ? '16px 20px' : '20px 30px',
                   boxShadow: tool.id === 'comfyui' ? '0 0 20px rgba(59, 130, 246, 0.4), 0 0 40px rgba(59, 130, 246, 0.2)' : '0 15px 35px hsl(var(--background) / 0.2)',

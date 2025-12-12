@@ -221,11 +221,11 @@ function App() {
               </Suspense>
             </ProtectedRoute>
           } />
-        </Routes>
-      </Router>
-    </AuthProvider>
-  </ErrorBoundary>
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 
-export default App// Environment fix Mon Nov 24 17:21:06 +03 2025
+export default App

@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     }
     console.log('📋 Request body structure:', JSON.stringify(requestBody, null, 2))
     
-    const response = await fetch(`${SEEDREAM_API_BASE_URL}/images/generations`, {
+    const response = await fetch(`${SEEDREAM_API_BASE_URL}/text2img/generation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

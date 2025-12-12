@@ -175,7 +175,7 @@ function PremiumDropdown({ label, value, onChange, options }) {
   )
 }
 
-function NonoBananaPage() {
+function NonoBananaMultiPromptsPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -3570,4 +3570,4 @@ function NonoBananaPage() {
   )
 }
 
-export default NonoBananaPage
+export default NonoBananaMultiPromptsPage

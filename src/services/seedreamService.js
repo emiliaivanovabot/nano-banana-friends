@@ -1,5 +1,8 @@
 // Seedream 4.5 Service
 // Integration for BytePlus Seedream 4.5 API - High-fidelity Image Generation
+// Enhanced with Credit Tracking System
+
+import { supabase } from '../lib/supabase'
 
 const SEEDREAM_API_KEY = import.meta.env.VITE_SEEDREAM_API_KEY
 const SEEDREAM_API_BASE_URL = 'https://ark.ap-southeast.bytepluses.com/api/v3'
@@ -14,7 +17,60 @@ async function fileToBase64(file) {
   })
 }
 
-// Generate image with Seedream 4.5
+// Credit Management Functions
+async function getUserCredits(userId) {
+  const { data, error } = await supabase.rpc('get_user_credits', {
+    p_user_id: userId
+  })
+  
+  if (error) {
+    console.error('Failed to get user credits:', error)
+    return null
+  }
+  
+  return data
+}
+
+async function calculateSeedreamCost(numImages, resolution) {
+  const { data, error } = await supabase.rpc('calculate_seedream_cost', {
+    p_num_images: numImages,
+    p_resolution: resolution
+  })
+  
+  if (error) {
+    console.error('Failed to calculate cost:', error)
+    return 0.04 * numImages // Fallback calculation
+  }
+  
+  return data
+}
+
+async function checkSufficientCredits(userId, estimatedCost) {
+  const credits = await getUserCredits(userId)
+  if (!credits) return false
+  
+  return credits.seedream_credits >= estimatedCost
+}
+
+async function deductCredits(userId, amount, generationId, metadata = {}) {
+  const { data, error } = await supabase.rpc('deduct_user_credits', {
+    p_user_id: userId,
+    p_credit_type: 'seedream',
+    p_amount: amount,
+    p_generation_id: generationId,
+    p_description: 'Seedream 4.5 Image Generation',
+    p_metadata: metadata
+  })
+  
+  if (error) {
+    console.error('Failed to deduct credits:', error)
+    throw new Error('Credit deduction failed')
+  }
+  
+  return data
+}
+
+// Generate image with Seedream 4.5 (Enhanced with Credit Tracking)
 export async function generateSeedreamImage(options = {}) {
   const {
     prompt,
@@ -26,12 +82,30 @@ export async function generateSeedreamImage(options = {}) {
     images = [], // Reference images (0-14 files)
     sequential_image_generation = 'disabled', // 'auto', 'disabled'
     max_images = 15, // For sequential generation
-    promptOptimization = 'standard' // 'standard' or 'fast'
+    promptOptimization = 'standard', // 'standard' or 'fast'
+    userId = null, // User ID for credit tracking
+    generationId = null // Generation ID for linking to database
   } = options
 
+  let estimatedCost = 0
+
   try {
-    console.log('🌱 Starting Seedream 4.5 generation...')
-    console.log('Options:', { prompt, size, watermark, num_images, style })
+    console.log('🌱 Starting Seedream 4.5 generation with credit tracking...')
+    console.log('Options:', { prompt, size, watermark, num_images, style, userId })
+
+    // Step 1: Calculate estimated cost
+    estimatedCost = await calculateSeedreamCost(num_images, size)
+    console.log(`💰 Estimated cost: $${estimatedCost} for ${num_images} images at ${size}`)
+
+    // Step 2: Check if user has sufficient credits (only if userId provided)
+    if (userId) {
+      const hasCredits = await checkSufficientCredits(userId, estimatedCost)
+      if (!hasCredits) {
+        const userCredits = await getUserCredits(userId)
+        throw new Error(`Nicht genügend Credits. Du hast $${userCredits?.seedream_credits || 0}, benötigt werden $${estimatedCost}. Bitte lade dein Konto auf.`)
+      }
+      console.log('✅ Credit check passed')
+    }
 
     if (!SEEDREAM_API_KEY) {
       throw new Error('Seedream API Key nicht gefunden in Environment Variables')
@@ -135,14 +209,14 @@ export async function generateSeedreamImage(options = {}) {
 
     // Use environment-specific endpoint
     const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-    const API_ENDPOINT = isProduction
+    const apiEndpoint = isProduction
       ? '/api/seedream-generate'      // Production: use Vercel serverless function
       : 'http://localhost:3002/seedream/generate'  // Local: use local proxy server
     
     console.log(`🌍 Environment: ${isProduction ? 'Production' : 'Development'}`)
-    console.log(`📡 API Endpoint: ${API_ENDPOINT}`)
+    console.log(`📡 API Endpoint: ${apiEndpoint}`)
     
-    const response = await fetch(API_ENDPOINT, {
+    const response = await fetch(apiEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -160,6 +234,8 @@ export async function generateSeedreamImage(options = {}) {
         throw new Error('Nicht genügend Credits. Bitte lade dein BytePlus Konto auf.')
       } else if (response.status === 429) {
         throw new Error('Rate Limit erreicht. Bitte warte einen Moment und versuche es erneut.')
+      } else if (response.status === 400 && errorData.error?.code === 'InputImageSensitiveContentDetected') {
+        throw new Error('Das hochgeladene Bild enthält nicht erlaubte Inhalte. Bitte verwende ein anderes Bild oder generiere ohne Referenzbild.')
       } else {
         // Show detailed error for debugging
         const errorMsg = errorData.error?.message || errorData.message || `API Fehler: ${response.status}`
@@ -177,6 +253,30 @@ export async function generateSeedreamImage(options = {}) {
       throw new Error('Ungültige API-Antwort: Keine Bilder erhalten')
     }
 
+    // Step 3: Deduct credits after successful generation
+    if (userId && estimatedCost > 0) {
+      try {
+        const actualImagesGenerated = data.data.length
+        const finalCost = await calculateSeedreamCost(actualImagesGenerated, size)
+        
+        const deductResult = await deductCredits(userId, finalCost, generationId, {
+          images_generated: actualImagesGenerated,
+          resolution: size,
+          aspect_ratio: aspectRatio,
+          watermark: watermark,
+          prompt_length: prompt.length,
+          reference_images: images.length,
+          api_usage: data.usage || null
+        })
+        
+        console.log(`💸 Credits deducted: $${finalCost} (Balance: $${deductResult.balance_before} → $${deductResult.balance_after})`)
+      } catch (creditError) {
+        console.error('⚠️ Credit deduction failed:', creditError)
+        // Don't fail the entire generation for credit tracking errors
+        // The images were successfully generated
+      }
+    }
+
     return {
       success: true,
       images: data.data.map(item => ({
@@ -184,6 +284,7 @@ export async function generateSeedreamImage(options = {}) {
         revisedPrompt: item.revised_prompt || prompt
       })),
       usage: data.usage || null,
+      cost: estimatedCost,
       message: 'Bilder erfolgreich generiert'
     }
 
@@ -206,11 +307,10 @@ export async function getSeedreamAccountInfo() {
       throw new Error('Seedream API Key nicht gefunden')
     }
 
-    // Note: This might need adjustment based on actual BytePlus API endpoints
-    const response = await fetch(`${SEEDREAM_API_BASE_URL}/account/usage`, {
+    // Note: Account info via proxy - this might need adjustment based on actual BytePlus API endpoints
+    const response = await fetch('/api/seedream-account', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${SEEDREAM_API_KEY}`,
         'Content-Type': 'application/json'
       }
     })
@@ -344,6 +444,9 @@ export function validateImageFiles(files) {
     errors
   }
 }
+
+// Export Credit Management Functions for external use
+export { getUserCredits, calculateSeedreamCost, checkSufficientCredits, deductCredits }
 
 // Available styles for Seedream 4.5
 export const SEEDREAM_STYLES = [

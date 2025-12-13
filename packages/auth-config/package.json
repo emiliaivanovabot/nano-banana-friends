@@ -1,0 +1,33 @@
+{
+  "name": "@repo/auth-config",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./hooks": "./dist/hooks.js",
+    "./utils": "./dist/utils.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "@repo/database": "*",
+    "@supabase/supabase-js": "^2.84.0",
+    "bcryptjs": "^3.0.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@repo/eslint-config": "*",
+    "typescript": "^5.0.0",
+    "@types/bcryptjs": "^2.4.0"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  }
+}

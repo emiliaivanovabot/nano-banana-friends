@@ -1,0 +1,15 @@
+{
+  "buildCommand": "cd ../.. && npx turbo run build --filter=nano-banana",
+  "outputDirectory": ".next",
+  "installCommand": "cd ../.. && npm install",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "@supabase_url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase_anon_key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
+    "GEMINI_API_KEY": "@gemini_api_key",
+    "GROK_API_KEY": "@grok_api_key",
+    "GEMINI_MODEL": "gemini-2.5-flash-image"
+  }
+}

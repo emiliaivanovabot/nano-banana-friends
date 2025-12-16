@@ -1,4 +1,8 @@
 /* Nano Banana Friends - Premium CSS */
+@import './styles/design-system/tokens.css';
+@import './styles/design-system/components.css';
+@import './styles/design-system/media-components.css';
+@import './styles/design-system/instagram-components.css';
 @import './styles/swipe-enhancements.css';
 
 body {

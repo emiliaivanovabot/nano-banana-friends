@@ -1,0 +1,240 @@
+/* NANO BANANA FRIENDS - DESIGN TOKENS */
+/* Diese Datei definiert alle globalen Design-Variablen */
+
+:root {
+  /* ============================================
+     COLOR SYSTEM - Erweitert
+     ============================================ */
+  
+  /* Base Colors */
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+
+  /* Card & Surface Colors */
+  --card: 240 8% 7%;
+  --card-foreground: 0 0% 98%;
+
+  /* Popover Colors */
+  --popover: 240 8% 7%;
+  --popover-foreground: 0 0% 98%;
+
+  /* Primary Brand Colors */
+  --primary: 47 100% 65%;
+  --primary-foreground: 240 10% 3.9%;
+
+  /* Secondary Colors */
+  --secondary: 280 70% 60%;
+  --secondary-foreground: 0 0% 98%;
+
+  /* Muted Colors */
+  --muted: 240 5% 15%;
+  --muted-foreground: 240 5% 50%;
+
+  /* Accent Colors */
+  --accent: 240 5% 15%;
+  --accent-foreground: 0 0% 98%;
+
+  /* Destructive Colors */
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 85.7% 97.3%;
+
+  /* Border & Ring Colors */
+  --border: 240 5% 15%;
+  --input: 240 5% 15%;
+  --ring: 240 4.9% 83.9%;
+
+  /* Tool-specific Brand Colors */
+  --nano-banana: #a86d09;
+  --qwen: #2563eb;
+  --seedream: #8B5CF6;
+  --wan: #E91E63;
+  --kling: #00CED1;
+  --gallery: #5a387d;
+  --grok: #667eea;
+  --community: #ff6b6b;
+  --instagram: #E1306C;
+
+  /* Status Colors */
+  --success: 120 100% 30%;
+  --warning: 45 100% 50%;
+  --info: 210 100% 50%;
+
+  /* ============================================
+     SPACING SYSTEM
+     ============================================ */
+  
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+
+  /* Container Spacing */
+  --container-padding: 20px;
+  --container-padding-mobile: 16px;
+  --container-max-width: 1200px;
+
+  /* ============================================
+     TYPOGRAPHY SYSTEM
+     ============================================ */
+  
+  /* Font Families */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  --font-brand: 'Space Grotesk', sans-serif;
+  --font-serif: Georgia, serif;
+
+  /* Font Sizes */
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 20px;
+  --text-3xl: 24px;
+  --text-4xl: 28px;
+  --text-5xl: 32px;
+
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Line Heights */
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  /* Letter Spacing */
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+  --tracking-wider: 0.05em;
+
+  /* ============================================
+     BORDER RADIUS SYSTEM
+     ============================================ */
+  
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* Component-specific Radius */
+  --radius-button: var(--radius-lg);
+  --radius-card: var(--radius-2xl);
+  --radius-input: var(--radius-md);
+
+  /* ============================================
+     SHADOW SYSTEM
+     ============================================ */
+  
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.15);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.25);
+
+  /* Tool Card Shadows */
+  --shadow-card: 0 15px 35px hsl(var(--background) / 0.2);
+  --shadow-card-hover: 0 25px 50px rgba(0, 0, 0, 0.15);
+
+  /* Glow Effects */
+  --glow-primary: 0 0 20px hsl(var(--primary) / 0.3);
+  --glow-blue: 0 0 20px #3b82f6;
+
+  /* ============================================
+     Z-INDEX SYSTEM
+     ============================================ */
+  
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+
+  /* ============================================
+     TRANSITION SYSTEM
+     ============================================ */
+  
+  --transition-fast: 0.1s ease;
+  --transition-base: 0.3s ease;
+  --transition-slow: 0.5s ease;
+
+  /* Common Transitions */
+  --transition-colors: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+  --transition-transform: transform 0.3s ease;
+  --transition-shadow: box-shadow 0.3s ease;
+  --transition-all: all 0.3s ease;
+
+  /* ============================================
+     BREAKPOINT SYSTEM
+     ============================================ */
+  
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  /* ============================================
+     COMPONENT SIZING
+     ============================================ */
+  
+  /* Button Sizes */
+  --button-height-sm: 32px;
+  --button-height-md: 40px;
+  --button-height-lg: 48px;
+
+  /* Input Sizes */
+  --input-height-sm: 32px;
+  --input-height-md: 40px;
+  --input-height-lg: 48px;
+
+  /* ============================================
+     GRADIENTS
+     ============================================ */
+  
+  --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+  --gradient-nano-banana: linear-gradient(135deg, #fbbf24, #f59e0b);
+  --gradient-qwen: linear-gradient(135deg, #4facfe, #00f2fe);
+  --gradient-seedream: linear-gradient(135deg, #a8edea, #fed6e3);
+  --gradient-wan: linear-gradient(135deg, #f093fb, #f5576c);
+  --gradient-kling: linear-gradient(135deg, #FFD700, #FFA500);
+  --gradient-gallery: linear-gradient(135deg, #667eea, #764ba2);
+  --gradient-grok: linear-gradient(135deg, #667eea, #764ba2);
+  --gradient-instagram: linear-gradient(135deg, #E1306C, #FD1D1D, #F77737);
+}
+
+/* ============================================
+   DARK MODE OVERRIDES (wenn gewünscht)
+   ============================================ */
+
+@media (prefers-color-scheme: light) {
+  :root {
+    /* Light mode würde hier definiert werden */
+    /* Aktuell ist die App für Dark Mode optimiert */
+  }
+}
+
+/* ============================================
+   MOBILE OVERRIDES
+   ============================================ */
+
+@media (max-width: 768px) {
+  :root {
+    /* Mobile-specific adjustments */
+    --container-padding: var(--container-padding-mobile);
+    --text-4xl: 20px;
+    --text-3xl: 18px;
+    --spacing-lg: 16px;
+    --spacing-xl: 24px;
+  }
+}

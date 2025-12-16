@@ -12,23 +12,24 @@ import OnboardingPage from './auth/OnboardingPage.jsx'
 // Non-critical pages - lazy load with code splitting
 const HomePage = lazy(() => import('./pages/HomePage.jsx'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'))
-const GenerationModesPage = lazy(() => import('./pages/GenerationModesPage.jsx'))
-const WanVideoPage = lazy(() => import('./pages/WanVideoPage.jsx'))
-const WanVideoPublicPage = lazy(() => import('./pages/WanVideoPublicPage.jsx'))
-const NonoBananaPage = lazy(() => import('./pages/NonoBananaPage.jsx'))
-const NonoBananaModelPage = lazy(() => import('./pages/NonoBananaModelPage.jsx'))
-const NonoBananaCollabPage = lazy(() => import('./pages/NonoBananaCollabPage.jsx'))
-const NonoBananaImage2ImagePage = lazy(() => import('./pages/NonoBananaImage2ImagePage.jsx'))
-const NonoBananaMultiPromptsPage = lazy(() => import('./pages/NonoBananaMultiPromptsPage.jsx'))
-const PromptCreatorPage = lazy(() => import('./pages/PromptCreatorPage.jsx'))
-const QwenPage = lazy(() => import('./pages/QwenPage.jsx'))
-const CommunityPromptsPage = lazy(() => import('./pages/CommunityPromptsPage.jsx'))
+const GenerationModesPage = lazy(() => import('./tools/nano-banana/modes/pages/GenerationModesPage.jsx'))
+const WanVideoPage = lazy(() => import('./tools/wan/wan-2-5/pages/WanVideoPage.jsx'))
+const WanVideoPublicPage = lazy(() => import('./tools/wan/wan-2-5/pages/WanVideoPublicPage.jsx'))
+const NonoBananaPage = lazy(() => import('./tools/nano-banana/modes/pages/NonoBananaPage.jsx'))
+const NonoBananaModelPage = lazy(() => import('./tools/nano-banana/classic/pages/NonoBananaModelPage.jsx'))
+const NonoBananaCollabPage = lazy(() => import('./tools/nano-banana/collab/pages/NonoBananaCollabPage.jsx'))
+const NonoBananaImage2ImagePage = lazy(() => import('./tools/nano-banana/image2image/pages/NonoBananaImage2ImagePage.jsx'))
+const NonoBananaMultiPromptsPage = lazy(() => import('./tools/nano-banana/multi-prompts/pages/NonoBananaMultiPromptsPage.jsx'))
+const PromptCreatorPage = lazy(() => import('./tools/nano-banana/prompt-creator/pages/PromptCreatorPage.jsx'))
+const QwenPage = lazy(() => import('./tools/qwen/pages/QwenPage.jsx'))
+const CommunityPromptsPage = lazy(() => import('./tools/community/pages/CommunityPromptsPage.jsx'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
-const GalleryPage = lazy(() => import('./pages/GalleryPage.jsx'))
-const InspirationPage = lazy(() => import('./pages/InspirationPage.jsx'))
-const KlingAvatarPage = lazy(() => import('./pages/KlingAvatarPage.jsx'))
-const SeedreamPage = lazy(() => import('./pages/SeedreamPage.jsx'))
-const GrokPlaygroundPage = lazy(() => import('./pages/GrokPlaygroundPage.jsx'))
+const GalleryPage = lazy(() => import('./tools/gallery/pages/GalleryPage.jsx'))
+const InspirationPage = lazy(() => import('./tools/community/pages/InspirationPage.jsx'))
+const KlingAvatarPage = lazy(() => import('./tools/kling/kling-avatar/pages/KlingAvatarPage.jsx'))
+const SeedreamPage = lazy(() => import('./tools/seedream/image-generation/pages/SeedreamPage.jsx'))
+const GrokPlaygroundPage = lazy(() => import('./tools/grok/pages/GrokPlaygroundPage.jsx'))
+const InstagramReelPage = lazy(() => import('./tools/kie-ai/instagram-reel-v01/pages/InstagramReelPage.jsx'))
 
 // Lazy load error boundary component
 const MobileErrorBoundary = lazy(() => import('./components/MobileErrorBoundary.jsx'))
@@ -218,6 +219,13 @@ function App() {
             <ProtectedRoute requireCompleteProfile={true}>
               <Suspense fallback={<PageLoader />}>
                 <GrokPlaygroundPage />
+              </Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/instagram-reel" element={
+            <ProtectedRoute requireCompleteProfile={true}>
+              <Suspense fallback={<PageLoader />}>
+                <InstagramReelPage />
               </Suspense>
             </ProtectedRoute>
           } />

@@ -1,0 +1,1562 @@
+{
+  "name": "My workflow 4",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Das ist der link zum  \n**tutorial**  [Youtube](https://www.youtube.com/watch?v=DqY797MuQio)",
+        "height": 80,
+        "width": 272
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -656,
+        -416
+      ],
+      "id": "2cb99afd-d4ec-4b57-8743-af3e2dad2dc6",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "formTitle": "create brief",
+        "formDescription": "Give dircetions to your ai character here",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "character image",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "setting image",
+              "fieldType": "file",
+              "multipleFiles": false
+            },
+            {
+              "fieldLabel": "item image",
+              "fieldType": "file",
+              "multipleFiles": false
+            },
+            {
+              "fieldLabel": "how many images",
+              "defaultValue": "1",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "how many videos",
+              "defaultValue": "1"
+            },
+            {
+              "fieldLabel": "creative direction",
+              "defaultValue": "have the character wear the dress in the settings. she talks to the camera aboout how she loves it abd that sge got it from nano emilia.ivanova fashion."
+            },
+            {
+              "fieldLabel": "aspect ratio",
+              "fieldType": "checkbox",
+              "defaultValue": "9:16",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "9:16"
+                  },
+                  {
+                    "option": "3:4"
+                  }
+                ]
+              },
+              "limitSelection": "exact",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -864,
+        0
+      ],
+      "id": "377dc364-dac3-4eb4-bfe1-0bf59cd3c652",
+      "name": "On form submission",
+      "webhookId": "80829972-ad2c-43b4-9fd3-ee9126334c1c"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "character_image",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -640,
+        -192
+      ],
+      "id": "e3d96333-980b-41bc-8d73-b0766c3acbc3",
+      "name": "character_image"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "setting_image",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -640,
+        0
+      ],
+      "id": "6dc1c6ce-fbe9-4b07-bd67-5f4688e89c0a",
+      "name": "setting_image"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "item_image",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -640,
+        192
+      ],
+      "id": "0e5bb2dc-eda8-417c-bb6f-3939153dc837",
+      "name": "item_image"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -416,
+        -16
+      ],
+      "id": "bc7a9aa3-dafd-4ddf-bad3-ff0d124650fb",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://kieai.redpandaai.co/api/file-base64-upload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "base64Data",
+              "value": "={{ $json.data }}"
+            },
+            {
+              "name": "uploadPath",
+              "value": "documents/upload"
+            },
+            {
+              "name": "fileName",
+              "value": "={{ $now }}.jpg"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -240,
+        0
+      ],
+      "id": "21d5f39f-6b76-48f4-b7c4-aa8335046d4c",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xOY1o4feS5gzFv9y",
+          "name": "kie.ai"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## GIVE ME INPUT",
+        "height": 608,
+        "width": 1008,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        -256
+      ],
+      "id": "655e5f6d-3950-4780-a849-62d923bb155c",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "data.downloadUrl"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        0
+      ],
+      "id": "32d89956-c8b6-40dd-aa53-6b05465ee591",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=**Give an image and video prompt for the posts below.\n\nUse the Think tool to review your output**\n\nNumber of image posts needed: {{ $('On form submission').item.json['how many images'] }}\nNumber of video posts needed: {{ $('On form submission').item.json['how many videos'] }}\nAspect ratio: {{ $('On form submission').item.json['aspect ratio'][0] }}\n\nCREATIVE DIRECTION:\n{{ $('On form submission').item.json['creative direction'] }}\n\n***\n\nIMAGE REFERENCES:\nThe following image references are provided. Note that if the URL is present, that it means the image reference exists. If you can, please surmise what the image contains based on the URL details so that your prompt adheres to it.\n\ncharacter_image: {{ $('On form submission').item.json['character image'].filename }}\nsetting_image: {{ $('On form submission').item.json['setting image'].filename }}\nitem_image: {{ $('On form submission').item.json['item image'].filename }}\n\n***\n\nCHARACTER BRIEF:\n\nName: Miquela\nAge 25\nShe’s expressive, fashion-forward, and unafraid to experiment with bold looks. Her posts balance playful selfies, high-fashion streetwear, and behind-the-scenes creative moments that feel spontaneous yet carefully curated.\n\nPersonality Bubbly, confident, expressive, and adventurous – she radiates positive energy and connects easily with her audience through humor and authenticity.\n\nVoice Style & Accent\nCheerful, natural conversational tone with a distinct Australian accent. She speaks casually, often using Gen Z slang and quick, witty phrasing that feels off-the-cuff but always on trend.\n\nTarget Audience\nGen Z and young millennials interested in fashion, digital culture, and creative tech. Followers who love style inspiration, futuristic aesthetics, and influencer authenticity with a digital twist.\n\nStyle Guide\nHighly stylized yet approachable visual tone. Fashion is bold and experimental, featuring vibrant colors, metallic accents, and playful streetwear. Lighting is natural with occasional high-contrast studio shots. Frequent use of city backdrops, mirror selfies, and creative compositions that showcase individuality and confidence. Posts often include subtle nods to virtual identity and self-expression through digital means. The overall feed vibe is hyperreal, creative, and trend-driven – like a fashionable friend.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=system_prompt:\n## SYSTEM PROMPT: Unified Prompt Generator for AI Influencer Multimedia Posts 🎥🖼️\n\nA – Ask:\nGenerate detailed prompts for a series of image and video posts based on a creative brief.\nReturn a single JSON object with a \"posts\" key containing one object per post.\nEach object must contain a title, caption, post_type, image_prompt, and video_prompt.\n\nG – Guidance:\nrole: content prompt engineer specializing in influencer multimedia posts\noutput_count: Equal to total number of image and video posts requested by the user\ncharacter_limit: None\nconstraints:\n- Output must be a structured JSON object with a single top-level key: \"posts\"\n  - Each post under \"posts\" must include:\n    - title: Max 3 words, stylized and catchy\n    - caption: No quotes, social and human tone, must include exactly 1 emoji and 2 hashtags\n    - post_type: Either \"image\" or \"video\"\n    - image_prompt: Always present, even for video posts\n    - video_prompt: Always present; if post_type is \"image\", value must be: \"not applicable\"\n    - Follow the creative direction closely; use it to guide:\n    - the physical composition and style of the post \n    - what the subject is doing (especially interaction with item if the image is provided)\n    - tone and polish of the aesthetic\n  - Follow the character brief to guide:\n    - tone of caption\n    - energy of title\n    - Use reference images (character_image, setting_image, item_image) when provided; infer plausible content if only filenames are given\n    - Never refer to images by filename\n    - Avoid including image URLs or markdown formatting\n    - Never name the character; always refer to them as \"the character in the image\"  \n    - Never modify the outfit or item from the reference when the request is to \"wear\" something\n\n    🔹 image_prompt (always required, even for video posts):\n    - Always begin with a sentence like: \"Have the character [in the given setting image, if it's provided], [[verb]] with the item if it is provided].\". Note that if the setting or item is undefined, that means they’re not provided and you should just skip them in this starting sentence.\n\nIf a clothing item is provided, edit this starting sentence to say something like:\n\"wearing the clothing that is provided\"\n    - subject: Based on character_image or character brief\n    - setting: Derived from setting_image or creative direction\n    - object: Based on item_image; describe interaction as per creative direction\n    - action: Focus on interaction with the object (e.g. \"posing with\", \"holding\", \"gesturing to\") – must reflect the request's context\n    - lighting: General description (e.g. \"natural light\", \"studio-lit\")\n    – no color-based terms\n    - post_style: Aesthetic derived from creative direction and character brief (e.g. \"clean pastel editorial with digital polish\")\n    🔹 video_prompt (always required):\n    - subject: From character_image or character brief\n    - setting: From setting_image or creative direction\n    - action: Expressive movement, gesture, or behavior aligned with brief\n    - lighting: General, consistent with image prompt (e.g. \"professional studio lighting\")\n\nFor the following parameters, carefully look at the CREATIVE DIRECTION section of the user prompt and identify if the user is requesting for dialogue, music, and voice. If not, then say \"no dialogue\" or \"no music\" for these fields. Only refer to the CHARACTER BRIEF section of the prompt for the dialogue and music if the CREATIVE DIRECTION requests for these\n  - dialogue: If user provides one or requests for one in the Creative Direction section, include it. If not, use: \"no dialogue\"\n  - music: If user requests music in the Creative Direction section, include appropriate ambient music. If not, use: \"no music\"\n  - voice: If dialogue is provided or requested in Creative Direction, must be consistent with character brief. If not requested, use: \"no dialogue\"\n  - Dialogue should never sound robotic or \"AI-generated\" – it must reflect real, casual, off-the-cuff human language\n  - Maintain a consistent voice tone across all video prompts, unless instructed otherwise\n\nE – Examples:\ngood_examples:\n\n{\n\"posts\": {\n\"post_1\": {\n\"title\": \"soft launch\",\n\"caption\": \"just me and my fave lil plush 🐰 #plushdrop #editorialenergy\",\n\"post_type\": \"image\",\n\"image_prompt\": \"Have the character in the given setting image, posing with the item that is provided.\\nsubject: the character in the image holding a pastel plush with bunny ears\\nsetting: Neutral beige background\\nobject: Metallic pink designer mini handbag\\naction: Posing with plush while showing off its accessories\\nlighting: Soft indoor studio-lit\\npost_style: High-fashion editorial realism with digital polish\",\n\"video_prompt\": \"not applicable\"\n},\n\"post_2\": {\n\"title\": \"plush talk\",\n\"caption\": \"can't believe i said this\non cam 🤳 #irlstyle #vibesync,\n\"post_type\": \"Video\",\n\"image_prompt\": \"Have the character\nin the given setting image, holding the item that\nis provided.\\nsubject: the character in the image\nseated with bunny plush in hand\\nsetting: Cozy\nstudio with ambient lighting\\nobject: Plush toy\nwith accessories\\naction: Holding the plush in lap\nand gesturing while seated\\nlighting: Basic indoor\nlighting setup\\npost_style: Editorial meets behind-\nthe-scenes realness\",\n\"video_prompt\": \"subject: the\ncharacter in the image in full outfit, seated\ncasually\\nsetting: Stylish indoor set with clean\nneutral tones\\naction: Talking to camera while\nplaying with plush\\ndialogue: okay wait... this\n\nplush? actual fashion icon.\\nmusic: high-quality lo-fi background music\\nvoice: Australian accent, casual Gen Z tone, spontaneous and confident\\nlighting: Indoor studio lighting with soft setup\"\n        }\n      }\n    }\n  }\n  bad_examples:\n    - Missing required fields like post_type or post_style\n    - Descriptions using color-based lighting terms (e.g. “purple tones”)\n    - Formal or robotic dialogue in video_prompt\n    - Excluding image_prompt from video posts\n    - Using markdown formatting, triple quotes, or block-level code styles\n    - Referring to the character by name\n    - Referring to images by filename\n    - Omitting required music or voice fields from video prompt\n    - Altering the item or outfit from the reference\n\nN - Notation:\n  format: JSON\n  example_output: |\n    {\n      \"posts\": {\n        \"post_1\": {\n          \"title\": \"soft launch\",\n          \"caption\": just me and my fave lil plush 🐰 #plushdrop #editorialenergy,\n          \"post_type\": \"image\",\n          \"image_prompt\": \"Have the character in the given setting image, posing with the item that is provided.\\nsubject: ...\\nsetting: ...\\nobject: ...\\naction: ...\\nlighting: ...\\npost_style: ...\",\n          \"video_prompt\": \"not applicable\"\n        },\n        \"post_2\": {\n          \"title\": \"plush talk\",\n          \"caption\": can’t believe i said this on cam ✏️ #irlstyle #vibesync,\n          \"post_type\": \"video\",\n          \"image_prompt\": \"Have the character in the given setting image, holding the item that is provided.\\nsubject: ...\\nsetting: ...\\nobject: ...\",\n\"video_prompt\": \"subject: \n...\\nsetting: ...\\naction: ...\\ndialogue: \n...\\nmusic: ...\\nvoice: ...\\nlighting: ...\"\n        }\n      }\n    }\nT - Tools:\n  - Think Tool: Use this to reflect on how the character, setting, creative direction, and user intent all combine to create consistent, high-quality prompts. Apply reasoning especially when reference images are missing or ambiguous.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        176,
+        0
+      ],
+      "id": "54c1b07c-8713-421d-ad22-18047574bbfb",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        128,
+        224
+      ],
+      "id": "48d43f2d-c0de-4c97-ac4a-4da66caa4bf8",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "9uB9PT7MZAomAv0L",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## good to know\n** wenn du am formular vorne was änderst, muss das im prompt aktuallisiert werden. evtl den prompt neu schreiben lassen, bio und sowas für andere modelle\n",
+        "height": 464,
+        "width": 608,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -112
+      ],
+      "id": "3af757fd-d0f7-4449-a3cd-345ab05634a9",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1.1,
+      "position": [
+        256,
+        224
+      ],
+      "id": "789ad878-fc46-4660-8eea-521f58016939",
+      "name": "Think"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"posts\": {\n    \"post_1\": {\n      \"title\": \"soft launch\",\n      \"caption\": \"just me and my fave lil plush 🐰 #plushdrop #editorialenergy\",\n      \"post_type\": \"image\",\n      \"image_prompt\": \"subject: ...\\nsetting: ...\\nobject: ...\\naction: ...\\ncamera: ...\\nlighting: ...\\npost_style: ...\",\n      \"video_prompt\": \"not applicable\"\n    },\n    \"post_2\": {\n      \"title\": \"plush talk\",\n      \"caption\": \"can't believe i said this on cam 🤳 #irlstyle #vibesync\",\n      \"post_type\": \"video\",\n      \"image_prompt\": \"subject: ...\\nsetting: ...\\nobject: ...\\naction: ...\\ncamera: ...\\nlighting: ...\\npost_style: ...\",\n      \"video_prompt\": \"subject: ...\\nsetting: ...\\naction: ...\\ndialogue: ...\\ncamera: ...\\nlighting: ...\\nvoice: ...\"\n    }\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        384,
+        224
+      ],
+      "id": "4f7257ec-e1f8-4d13-b00d-2535e1c06d6d",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.posts",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        496,
+        0
+      ],
+      "id": "0619574d-7024-4f07-9c4a-635df2a752c4",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "ghxCs4LK0QIp0kJS",
+          "mode": "list"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "image_prompt": "={{ $json.image_prompt }}",
+            "downloadUrl": "={{ $('Aggregate').item.json.downloadUrl }}"
+          },
+          "matchingColumns": [
+            "image_prompt",
+            "downloadUrl"
+          ],
+          "schema": [
+            {
+              "id": "image_prompt",
+              "displayName": "image_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "downloadUrl",
+              "displayName": "downloadUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1216,
+        -336
+      ],
+      "name": "Call get_nano_banana_edit_pics",
+      "id": "770d3065-33c0-4f6c-8c13-854831227437"
+    },
+    {
+      "parameters": {
+        "content": "## good to know\n**ich habe die nodes, 5 items, zu einer zusammengefasst. rechte maustaste, entpacken\n",
+        "height": 336,
+        "width": 288,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1136,
+        -464
+      ],
+      "id": "8d8b8057-2ffc-4417-89eb-80ad97543c66",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "GrihVdg7wSpT65T8",
+          "mode": "list",
+          "cachedResultName": "nano-banana-tutorial-robonugggets",
+          "cachedResultUrl": "/projects/lIrOmkqJ4K9YPLu8/datatables/GrihVdg7wSpT65T8"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "publish_status": "={{ $json.image_result && $json.image_result.includes('https://') }}",
+            "posting_id": "={{ $execution.id }}_{{ $('Split Out').item.json.title }}",
+            "video_output": "=",
+            "title": "={{ $('Split Out').item.json.title }}",
+            "caption": "={{ $('Split Out').item.json.caption }}",
+            "image_output": "={{ $json.image_result }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "posting_id",
+              "displayName": "posting_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "image_output",
+              "displayName": "image_output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "video_output",
+              "displayName": "video_output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "publish_status",
+              "displayName": "publish_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        -32
+      ],
+      "id": "04b12fa9-e428-4d1d-993e-fde44952995a",
+      "name": "Insert row"
+    },
+    {
+      "parameters": {
+        "amount": 60
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1104,
+        0
+      ],
+      "id": "af3a4a05-2cfc-4442-b680-022cbc7ce423",
+      "name": "Wait",
+      "webhookId": "32d77914-6ad5-4eb2-868b-66111cf99542"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1cf6912-a868-4a5c-a757-220022307818",
+              "name": "image_result",
+              "value": "={{ JSON.parse($json.data.resultJson).resultUrls[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1712,
+        -32
+      ],
+      "id": "c3adcd26-0ce0-4025-9136-9272e6504bc0",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/jobs/createTask",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"google/nano-banana-edit\",\n  \"input\": {\n    \"output_format\": \"jpeg\",\n    \"image_size\": \"{{ $json.aspect_ratio }}\",\n    \"prompt\": {{ JSON.stringify($json.image_prompt) }}\n    \n    {{\n      (() => {\n        const imgs = [\n          $json.image_1,\n          $json.image_2,\n          $json.image_3,\n          $json.image_4\n        ].filter(i => i && i !== \"\");\n        return imgs.length > 0\n          ? `, \"image_urls\": ${JSON.stringify(imgs)}`\n          : \"\";\n      })()\n    }}\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        928,
+        0
+      ],
+      "id": "e8842eb7-fe17-41e1-a84f-884a4b5d235f",
+      "name": "create_nanobanana_pic",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xOY1o4feS5gzFv9y",
+          "name": "kie.ai"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5a7bac3e-e841-4386-a9d6-53deec10a9cd",
+              "name": "image_prompt",
+              "value": "={{ $json.image_prompt }}",
+              "type": "string"
+            },
+            {
+              "id": "aaf6c690-0b9d-42e4-bf5a-cebdd876aea6",
+              "name": "image_1",
+              "value": "={{ $('Aggregate').item.json.downloadUrl[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "5daf636c-754f-4ff7-85db-7b6091a35d2f",
+              "name": "image_2",
+              "value": "={{ $('Aggregate').item.json.downloadUrl[1] }}",
+              "type": "string"
+            },
+            {
+              "id": "8a80399c-fa4b-4ac4-901f-46bd73f8ee3b",
+              "name": "image_3",
+              "value": "={{ $('Aggregate').item.json.downloadUrl[2] }}",
+              "type": "string"
+            },
+            {
+              "id": "faab7657-491f-4770-9722-2fc8cbc1122a",
+              "name": "aspect_ratio",
+              "value": "={{ $('On form submission').first().json['aspect ratio'][0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        736,
+        0
+      ],
+      "id": "cd5e3f39-f5ee-430d-8805-85cbe93c8101",
+      "name": "Edit_Fields"
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/jobs/recordInfo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1264,
+        0
+      ],
+      "id": "a375935e-3012-482a-8300-52d5278c803f",
+      "name": "get_nano_banna_pic",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xOY1o4feS5gzFv9y",
+          "name": "kie.ai"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "=success",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "9245bb6e-c0cd-4d6d-b51b-fa8f78cd976b"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "success"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "111cd81b-2f5c-400d-acbf-6e3a9ebabb93",
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "=waiting",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "in progress"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "634f3abd-ba90-4068-b57a-2da2ba324b8e",
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "=error",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "error"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1440,
+        -16
+      ],
+      "id": "6276009c-bcb8-44a9-9313-8a76e3b51eae",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1cf6912-a868-4a5c-a757-220022307818",
+              "name": "image_result",
+              "value": "={{ JSON.parse($json.data.resultJson).resultUrls[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1712,
+        192
+      ],
+      "id": "2967da4e-daa0-42bd-b0b5-e9a1f4fc355b",
+      "name": "Error_meldung"
+    },
+    {
+      "parameters": {
+        "content": "## Create the Media",
+        "height": 464,
+        "width": 1232,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        688,
+        -112
+      ],
+      "id": "0565f7f2-94ee-4204-b13d-5f4db347b165",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7467dc11-45a0-4eec-bd1a-2fe414dc69b7",
+              "leftValue": "={{ $('Split Out').item.json.post_type }}",
+              "rightValue": "video",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "ed9e4a24-0486-482d-a86a-2da2e9ae9bb9",
+              "leftValue": "={{ $json.publish_status }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        2176,
+        -32
+      ],
+      "id": "bf5fce58-215b-4b4d-9b91-aa89f77424a9",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "content": "## ERROR",
+        "height": 224,
+        "width": 272,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1648,
+        128
+      ],
+      "id": "f6172c09-100f-4bf5-856f-705c0b9cf7d6",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1cf6912-a868-4a5c-a757-220022307818",
+              "name": "image_result",
+              "value": "={{ JSON.parse($json.data.resultJson).resultUrls[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3360,
+        416
+      ],
+      "id": "c534fba7-8f1d-4707-99be-08d5007ca2b3",
+      "name": "Error_meldung1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "faab7657-491f-4770-9722-2fc8cbc1122a",
+              "name": "aspect_ratio",
+              "value": "={{ $('On form submission').first().json['aspect ratio'][0] }}",
+              "type": "string"
+            },
+            {
+              "id": "c3a4f82d-0516-443f-b90a-940d2a9ad18b",
+              "name": "video_prompt",
+              "value": "={{ $('Split Out').item.json.video_prompt }}",
+              "type": "string"
+            },
+            {
+              "id": "35c6f420-5a57-4fe1-806d-8e3a6dfbccc6",
+              "name": "image_url",
+              "value": "={{ $('Edit Fields1').item.json.image_result }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2336,
+        -32
+      ],
+      "id": "7ec48a0f-950e-4b1f-bd92-b95e92b69d9b",
+      "name": "Edit_Fields2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/veo/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"prompt\": \"{{ JSON.stringify($json.video_prompt) }}\",\n  \n  \"model\": \"veo3_fast\",\n  \"aspectRatio\": \"{{ $json.aspect_ratio }}\",\n  \"enableTranslation\": false,\n\n  \"generationType\": \"FIRST_AND_LAST_FRAMES_2_VIDEO\",\n  \"imageUrls\": [ \"{{ $json.image_url }}\" ]\n\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2512,
+        176
+      ],
+      "id": "a7c5df5a-97e8-44c8-85fe-67d6d8ae2cba",
+      "name": "create_video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xOY1o4feS5gzFv9y",
+          "name": "kie.ai"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/veo/record-info",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2912,
+        -32
+      ],
+      "id": "2ccb7547-d19c-476f-882b-2a3d3d640530",
+      "name": "get_vid",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xOY1o4feS5gzFv9y",
+          "name": "kie.ai"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "=success",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "9245bb6e-c0cd-4d6d-b51b-fa8f78cd976b"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "success"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "111cd81b-2f5c-400d-acbf-6e3a9ebabb93",
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "=waiting",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "in progress"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "634f3abd-ba90-4068-b57a-2da2ba324b8e",
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "=error",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "error"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        3136,
+        368
+      ],
+      "id": "d508a41a-5940-4844-a5cc-d9a06908f608",
+      "name": "Switch_again",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "GrihVdg7wSpT65T8",
+          "mode": "list",
+          "cachedResultName": "nano-banana-tutorial-robonugggets",
+          "cachedResultUrl": "/projects/lIrOmkqJ4K9YPLu8/datatables/GrihVdg7wSpT65T8"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "video_output": "={{ $json.veo_video_result }}",
+            "posting_id": "={{ $('Insert row').item.json.posting_id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "posting_id",
+              "displayName": "posting_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "image_output",
+              "displayName": "image_output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "video_output",
+              "displayName": "video_output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "publish_status",
+              "displayName": "publish_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        3360,
+        -32
+      ],
+      "id": "2e658fe7-6418-4cc6-80a5-aac6eb17e9ec",
+      "name": "Update row(s)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/veo/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"prompt\": \"frau feiert das kleind und erzählt wie toll es sich anfühlt dieses kleid zu tragen.\",\n  \n  \"model\": \"veo3_fast\",\n  \"aspectRatio\": \"9:16\",\n  \"enableTranslation\": false,\n\n  \"generationType\": \"FIRST_AND_LAST_FRAMES_2_VIDEO\",\n  \"imageUrls\": [ \"https://tempfile.aiquickdraw.com/image-format-converter/1765551795650-knia3rmfxpj.jpeg\" ]\n\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2512,
+        -32
+      ],
+      "id": "132b56e8-0c80-4efb-b746-65943607f3d1",
+      "name": "hardcode-test",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xOY1o4feS5gzFv9y",
+          "name": "kie.ai"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1cf6912-a868-4a5c-a757-220022307818",
+              "name": "veo_video_result",
+              "value": "={{ ($json.data.response.resultUrls[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3152,
+        -192
+      ],
+      "id": "4921c5c2-ed41-43f3-b495-8b4cd617b08a",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1cf6912-a868-4a5c-a757-220022307818",
+              "name": "veo_video_result",
+              "value": "=https://tempfile.aiquickdraw.com/v/14f429070b5ec191f1a0e7467e6997c7_1765552212.mp4",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3152,
+        -32
+      ],
+      "id": "c3e52ae2-47a0-49fa-b870-4b017fff420f",
+      "name": "hardcoded"
+    },
+    {
+      "parameters": {
+        "amount": 120
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2752,
+        384
+      ],
+      "id": "0ee16587-da00-4e93-993a-83fe406a34bb",
+      "name": "Wait_120",
+      "webhookId": "32d77914-6ad5-4eb2-868b-66111cf99542"
+    },
+    {
+      "parameters": {
+        "content": "## ID muss noch gefunden werden. evtl bei der ersten tabelle",
+        "height": 400,
+        "width": 192,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3312,
+        -240
+      ],
+      "id": "86f0d487-fa7d-47f6-ad68-0579c3e8547f",
+      "name": "Sticky Note6"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "character_image",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "setting_image",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "item_image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "item_image": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "character_image": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "setting_image": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Edit_Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call get_nano_banana_edit_pics": {
+      "main": [
+        []
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "get_nano_banna_pic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_nanobanana_pic": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit_Fields": {
+      "main": [
+        [
+          {
+            "node": "create_nanobanana_pic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_nano_banna_pic": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error_meldung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert row": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Edit_Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit_Fields2": {
+      "main": [
+        [
+          {
+            "node": "hardcode-test",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "create_video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_video": {
+      "main": [
+        [
+          {
+            "node": "get_vid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_vid": {
+      "main": [
+        [
+          {
+            "node": "hardcoded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch_again": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Wait_120",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error_meldung1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "hardcode-test": {
+      "main": [
+        [
+          {
+            "node": "Wait_120",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "hardcoded": {
+      "main": [
+        [
+          {
+            "node": "Update row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait_120": {
+      "main": [
+        [
+          {
+            "node": "get_vid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "96d61b44-71c0-43fb-84a5-e6a8369f61c3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e9bf91be85fb44a35ee1255b47e2a9e8546784cec323b05e98b2293bee506fe3"
+  },
+  "id": "iavmHTSDJ3E6RVv4",
+  "tags": []
+}

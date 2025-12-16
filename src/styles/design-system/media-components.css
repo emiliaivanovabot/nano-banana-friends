@@ -1,0 +1,494 @@
+/* NANO BANANA FRIENDS - MEDIA COMPONENTS */
+/* Wiederverwendbare Media-Display Komponenten für Images & Videos */
+
+/* ============================================
+   SINGLE IMAGE DISPLAY (Qwen, Seedream)
+   ============================================ */
+
+/* Single image container */
+.media-result-single {
+  background: hsl(var(--card));
+  border-radius: var(--radius-card);
+  padding: 24px;
+  border: 2px solid hsl(var(--border) / 0.3);
+  margin-top: 24px;
+  text-align: center;
+}
+
+.media-result-single--mobile {
+  padding: 16px;
+}
+
+/* Single generated image */
+.generated-image-single {
+  width: 100%;
+  max-width: 512px;
+  height: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  cursor: pointer;
+  transition: var(--transition-all);
+  display: block;
+  margin: 0 auto;
+}
+
+.generated-image-single:hover {
+  transform: scale(1.02);
+  box-shadow: var(--shadow-2xl);
+}
+
+/* ============================================
+   MULTI IMAGE GRID (4x, 10x Nano-Banana)
+   ============================================ */
+
+/* Multi image container */
+.media-result-grid {
+  background: hsl(var(--card));
+  border-radius: var(--radius-card);
+  padding: 24px;
+  border: 2px solid hsl(var(--border) / 0.3);
+  margin-top: 24px;
+}
+
+.media-result-grid--mobile {
+  padding: 16px;
+}
+
+/* 4x Grid (2x2) */
+.image-grid-4x {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.image-grid-4x--mobile {
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+/* 10x Grid (flexible) */
+.image-grid-10x {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.image-grid-10x--mobile {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+/* Grid image item */
+.grid-image-item {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: hsl(var(--muted));
+  aspect-ratio: 1;
+  cursor: pointer;
+  transition: var(--transition-all);
+}
+
+.grid-image-item:hover {
+  transform: scale(1.05);
+  z-index: 2;
+  box-shadow: var(--shadow-xl);
+}
+
+.grid-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Grid item loading state */
+.grid-image-item--loading {
+  background: linear-gradient(90deg, hsl(var(--muted)), hsl(var(--muted) / 0.5), hsl(var(--muted)));
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Grid item overlay (for actions) */
+.grid-image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  gap: 8px;
+}
+
+.grid-image-item:hover .grid-image-overlay {
+  opacity: 1;
+}
+
+.grid-action-btn {
+  background: hsl(var(--background) / 0.9);
+  border: 1px solid hsl(var(--border));
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-all);
+  color: hsl(var(--foreground));
+  backdrop-filter: blur(4px);
+}
+
+.grid-action-btn:hover {
+  background: hsl(var(--primary));
+  transform: scale(1.1);
+}
+
+/* ============================================
+   VIDEO COMPONENTS (WAN, Kling)
+   ============================================ */
+
+/* Video result container */
+.media-result-video {
+  background: hsl(var(--card));
+  border-radius: var(--radius-card);
+  padding: 24px;
+  border: 2px solid hsl(var(--border) / 0.3);
+  margin-top: 24px;
+  text-align: center;
+}
+
+/* Generated video */
+.generated-video {
+  width: 100%;
+  max-width: 512px;
+  height: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  display: block;
+  margin: 0 auto;
+}
+
+/* Video thumbnail (before generation) */
+.video-thumbnail {
+  width: 100%;
+  max-width: 512px;
+  height: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  cursor: pointer;
+  transition: var(--transition-all);
+  position: relative;
+  display: block;
+  margin: 0 auto;
+}
+
+.video-thumbnail::after {
+  content: '▶️';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 48px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.video-thumbnail:hover {
+  transform: scale(1.02);
+}
+
+/* ============================================
+   MEDIA ACTIONS (Universal)
+   ============================================ */
+
+/* Action buttons for any media */
+.media-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.media-actions--mobile {
+  gap: 8px;
+  flex-direction: column;
+}
+
+.media-actions--grid {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid hsl(var(--border) / 0.3);
+}
+
+/* Save Button */
+.btn--save {
+  background: linear-gradient(135deg, hsl(120 100% 30%), hsl(120 80% 35%));
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: var(--radius-button);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition-all);
+  cursor: pointer;
+}
+
+.btn--save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px hsl(120 100% 30% / 0.3);
+}
+
+.btn--save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Download Button */
+.btn--download {
+  background: linear-gradient(135deg, hsl(210 100% 50%), hsl(210 80% 55%));
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: var(--radius-button);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition-all);
+  cursor: pointer;
+}
+
+.btn--download:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px hsl(210 100% 50% / 0.3);
+}
+
+/* Download All (for grids) */
+.btn--download-all {
+  background: linear-gradient(135deg, hsl(280 100% 50%), hsl(280 80% 55%));
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: var(--radius-button);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition-all);
+  cursor: pointer;
+}
+
+.btn--download-all:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px hsl(280 100% 50% / 0.3);
+}
+
+/* ============================================
+   LOADING STATES (Universal)
+   ============================================ */
+
+/* Single image loading */
+.media-loading-single {
+  width: 100%;
+  max-width: 512px;
+  height: 512px;
+  background: linear-gradient(90deg, hsl(var(--muted)), hsl(var(--muted) / 0.5), hsl(var(--muted)));
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Grid loading placeholders */
+.media-loading-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.media-loading-item {
+  aspect-ratio: 1;
+  background: linear-gradient(90deg, hsl(var(--muted)), hsl(var(--muted) / 0.5), hsl(var(--muted)));
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+/* Progress indicators */
+.generation-progress {
+  width: 100%;
+  max-width: 512px;
+  height: 8px;
+  background: hsl(var(--muted));
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin: 16px auto;
+}
+
+.generation-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary)));
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  text-align: center;
+  font-size: var(--text-sm);
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 8px;
+}
+
+/* ============================================
+   FULLSCREEN VIEWER (Universal)
+   ============================================ */
+
+.media-fullscreen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: 20px;
+}
+
+.media-fullscreen {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2xl);
+}
+
+.btn--close-fullscreen {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: hsl(var(--background) / 0.8);
+  backdrop-filter: blur(4px);
+  border: 2px solid hsl(var(--border));
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-all);
+  color: hsl(var(--foreground));
+}
+
+.btn--close-fullscreen:hover {
+  background: hsl(var(--destructive));
+  border-color: hsl(var(--destructive));
+  transform: scale(1.1);
+}
+
+/* ============================================
+   DATA FORMAT HELPERS
+   ============================================ */
+
+/* Base64 images */
+.media-base64 {
+  /* Specific styles for base64 images if needed */
+}
+
+/* URL images */
+.media-url {
+  /* Specific styles for URL images if needed */
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+@media (max-width: 768px) {
+  .media-result-single,
+  .media-result-grid,
+  .media-result-video {
+    padding: 16px;
+  }
+  
+  .image-grid-4x {
+    grid-template-columns: 1fr;
+  }
+  
+  .image-grid-10x {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+  }
+  
+  .media-actions {
+    flex-direction: column;
+  }
+  
+  .btn--save,
+  .btn--download,
+  .btn--download-all {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .video-thumbnail::after {
+    width: 60px;
+    height: 60px;
+    font-size: 32px;
+  }
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes fadeInScale {
+  0% { 
+    opacity: 0; 
+    transform: scale(0.9);
+  }
+  100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+}
+
+.media-fade-in {
+  animation: fadeInScale 0.5s ease-out;
+}

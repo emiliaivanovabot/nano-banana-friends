@@ -459,6 +459,15 @@ function DashboardPage() {
         gradient: 'linear-gradient(135deg, #FFD700, #FFA500)',
         available: true,
         paused: false
+      },
+      {
+        id: 'instagram-reel',
+        title: 'Instagram Reel AI',
+        subtitle: 'Social Media Creator',
+        path: '/instagram-reel',
+        gradient: 'linear-gradient(135deg, #E1306C, #FD1D1D, #F77737)',
+        available: true,
+        paused: false
       }
     ] : []),
     // Admin-only tool for emilia.ivanova

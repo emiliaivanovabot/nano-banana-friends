@@ -1,0 +1,289 @@
+/* NANO BANANA FRIENDS - INSTAGRAM COMPONENTS */
+/* Instagram-spezifische Komponenten mit Design-System Integration */
+
+/* ============================================
+   INSTAGRAM PAGE LAYOUT
+   ============================================ */
+
+.instagram-page {
+  min-height: 100vh;
+  background: hsl(var(--background));
+  padding: var(--spacing-lg);
+  color: hsl(var(--foreground));
+}
+
+/* ============================================
+   INSTAGRAM HEADER
+   ============================================ */
+
+.instagram-header {
+  text-align: center;
+  margin-bottom: var(--spacing-3xl);
+}
+
+.instagram-title {
+  font-size: var(--text-5xl);
+  font-weight: var(--font-bold);
+  background: var(--gradient-instagram);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  margin: 0 0 var(--spacing-md) 0;
+  letter-spacing: var(--tracking-tight);
+  font-family: var(--font-brand);
+}
+
+.instagram-subtitle {
+  font-size: var(--text-xl);
+  color: hsl(var(--muted-foreground));
+  margin: 0;
+  font-weight: var(--font-normal);
+}
+
+/* ============================================
+   COMING SOON CARD
+   ============================================ */
+
+.instagram-coming-soon-card {
+  max-width: 600px;
+  margin: 0 auto;
+  background: hsl(var(--card));
+  border: 2px solid hsl(var(--border));
+  border-radius: var(--radius-2xl);
+  padding: var(--spacing-3xl);
+  text-align: center;
+  box-shadow: var(--shadow-xl);
+  transition: var(--transition-all);
+}
+
+.instagram-coming-soon-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2xl);
+  border-color: hsl(var(--instagram) / 0.3);
+}
+
+.instagram-icon {
+  font-size: 64px;
+  margin-bottom: var(--spacing-xl);
+  filter: grayscale(0.2);
+}
+
+.instagram-coming-title {
+  font-size: var(--text-4xl);
+  font-weight: var(--font-bold);
+  margin: 0 0 var(--spacing-lg) 0;
+  background: linear-gradient(135deg, var(--instagram), #F77737);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  font-family: var(--font-brand);
+}
+
+.instagram-description {
+  font-size: var(--text-lg);
+  color: hsl(var(--muted-foreground));
+  line-height: var(--leading-relaxed);
+  margin: 0 0 var(--spacing-xl) 0;
+}
+
+/* ============================================
+   FEATURES SECTION
+   ============================================ */
+
+.instagram-features {
+  background: hsl(var(--muted) / 0.1);
+  border: 1px solid hsl(var(--border) / 0.3);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  text-align: left;
+  margin-top: var(--spacing-xl);
+  transition: var(--transition-all);
+}
+
+.instagram-features:hover {
+  background: hsl(var(--muted) / 0.15);
+  border-color: hsl(var(--instagram) / 0.2);
+}
+
+.instagram-features-title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  margin: 0 0 var(--spacing-md) 0;
+  color: hsl(var(--foreground));
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.instagram-features-title::before {
+  content: '✨';
+  font-size: var(--text-base);
+}
+
+.instagram-features-list {
+  margin: 0;
+  padding: 0 0 0 var(--spacing-lg);
+  color: hsl(var(--muted-foreground));
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+}
+
+.instagram-features-list li {
+  margin-bottom: var(--spacing-sm);
+  position: relative;
+}
+
+.instagram-features-list li::marker {
+  color: var(--instagram);
+}
+
+/* ============================================
+   STATUS SECTION
+   ============================================ */
+
+.instagram-status {
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  background: linear-gradient(135deg, 
+    hsla(330, 79%, 48%, 0.1), 
+    hsla(19, 93%, 62%, 0.1)
+  );
+  border-radius: var(--radius-lg);
+  border: 1px solid hsla(330, 79%, 48%, 0.2);
+  transition: var(--transition-all);
+}
+
+.instagram-status:hover {
+  background: linear-gradient(135deg, 
+    hsla(330, 79%, 48%, 0.15), 
+    hsla(19, 93%, 62%, 0.15)
+  );
+  border-color: hsla(330, 79%, 48%, 0.3);
+}
+
+.instagram-status-text {
+  font-size: var(--text-base);
+  color: hsl(var(--muted-foreground));
+  font-weight: var(--font-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.instagram-status-eta {
+  font-size: var(--text-sm);
+  color: hsl(var(--muted-foreground));
+  margin-top: var(--spacing-xs);
+  opacity: 0.8;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+@media (max-width: 768px) {
+  .instagram-page {
+    padding: var(--spacing-md);
+  }
+  
+  .instagram-header {
+    margin-bottom: var(--spacing-xl);
+  }
+  
+  .instagram-title {
+    font-size: var(--text-3xl);
+  }
+  
+  .instagram-subtitle {
+    font-size: var(--text-lg);
+  }
+  
+  .instagram-coming-soon-card {
+    padding: var(--spacing-xl);
+  }
+  
+  .instagram-coming-title {
+    font-size: var(--text-3xl);
+  }
+  
+  .instagram-icon {
+    font-size: 48px;
+    margin-bottom: var(--spacing-lg);
+  }
+  
+  .instagram-features {
+    padding: var(--spacing-lg);
+  }
+  
+  .instagram-features-list {
+    font-size: var(--text-sm);
+    padding-left: var(--spacing-lg);
+  }
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes instagram-glow {
+  0% { 
+    box-shadow: 0 0 20px hsla(330, 79%, 48%, 0.3);
+  }
+  50% { 
+    box-shadow: 0 0 30px hsla(330, 79%, 48%, 0.5), 
+                0 0 40px hsla(19, 93%, 62%, 0.3);
+  }
+  100% { 
+    box-shadow: 0 0 20px hsla(330, 79%, 48%, 0.3);
+  }
+}
+
+.instagram-coming-soon-card:hover {
+  animation: instagram-glow 2s ease-in-out infinite;
+}
+
+/* ============================================
+   FUTURE COMPONENT PREVIEWS
+   ============================================ */
+
+/* Placeholder für zukünftige Instagram-spezifische Komponenten */
+
+.instagram-form-section {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.instagram-upload-area {
+  border: 2px dashed hsl(var(--border));
+  border-radius: var(--radius-md);
+  padding: var(--spacing-xl);
+  text-align: center;
+  transition: var(--transition-all);
+  background: hsl(var(--muted) / 0.05);
+}
+
+.instagram-upload-area:hover {
+  border-color: var(--instagram);
+  background: hsl(var(--muted) / 0.1);
+}
+
+.instagram-btn {
+  background: var(--gradient-instagram);
+  color: white;
+  border: none;
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--radius-button);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: var(--transition-all);
+  font-family: var(--font-primary);
+}
+
+.instagram-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px hsla(330, 79%, 48%, 0.3);
+}

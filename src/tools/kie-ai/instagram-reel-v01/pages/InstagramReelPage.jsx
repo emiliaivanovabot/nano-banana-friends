@@ -1,10 +1,12 @@
 import React, { useState, useRef } from 'react'
 import { useAuth } from '../../../../auth/AuthContext.jsx'
+import { useNavigate } from 'react-router-dom'
 import { generateInstagramPrompts, getDefaultCharacterBrief } from '../services/openaiService.js'
 import { uploadImageToKieAi, convertImageToBase64, generateNanoBananaImage, pollTaskStatus, checkNanoBananaStatus, generateVeoVideo, checkVeoVideoStatus } from '../services/kieAiService.js'
 
 function InstagramReelPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   
   // Form states
   const [uploadedImages, setUploadedImages] = useState([null, null, null]) // [character, setting, item]
@@ -434,6 +436,34 @@ function InstagramReelPage() {
     <div className="instagram-page">
       {/* Header */}
       <div className="instagram-header">
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              background: 'hsl(var(--muted))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '8px',
+              padding: '8px 12px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              color: 'hsl(var(--foreground))',
+              transition: 'all 0.2s ease',
+              marginRight: '16px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'hsl(var(--muted) / 0.8)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'hsl(var(--muted))'
+            }}
+          >
+            ← Zurück
+          </button>
+        </div>
         <h1 className="instagram-title">
           📱 Instagram Reel AI
         </h1>

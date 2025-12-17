@@ -1,15 +1,14 @@
 // KIE.AI API Service for Instagram Reel Generator
 // Based on n8n workflow APIs
 
-const KIE_AI_API_KEY = import.meta.env.VITE_KIE_AI_API_KEY
-const KIE_AI_API_URL = import.meta.env.VITE_KIE_AI_API_URL
-const KIE_AI_UPLOAD_URL = import.meta.env.VITE_KIE_AI_UPLOAD_URL
+// Environment detection for proxy routing (like Seedream)
+const isProduction = typeof window !== 'undefined' && 
+  window.location.hostname !== 'localhost' && 
+  window.location.hostname !== '127.0.0.1'
 
-// Headers for KIE.AI API requests
+// Headers for KIE.AI API requests (simplified for proxy)
 const getKieAiHeaders = () => ({
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${KIE_AI_API_KEY}`,
-  // Add any other required headers from n8n workflow
+  'Content-Type': 'application/json'
 })
 
 /**
@@ -18,7 +17,15 @@ const getKieAiHeaders = () => ({
  */
 export const uploadImageToKieAi = async (base64Data, fileName = null) => {
   try {
-    const response = await fetch(`${KIE_AI_UPLOAD_URL}/api/file-base64-upload`, {
+    // Use proxy endpoints (like Seedream)
+    const API_ENDPOINT = isProduction
+      ? '/api/kie-ai-upload'           // Production: Vercel serverless function
+      : 'http://localhost:3002/kie-ai/upload' // Local: future local proxy
+
+    console.log(`🌍 Upload Environment: ${isProduction ? 'Production' : 'Development'}`)
+    console.log(`📡 Upload Endpoint: ${API_ENDPOINT}`)
+
+    const response = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: getKieAiHeaders(),
       body: JSON.stringify({
@@ -53,6 +60,14 @@ export const uploadImageToKieAi = async (base64Data, fileName = null) => {
  */
 export const generateNanoBananaImage = async (prompt, imageUrls = [], aspectRatio = '9:16') => {
   try {
+    // Use proxy endpoints (like Seedream)
+    const API_ENDPOINT = isProduction
+      ? '/api/kie-ai-generate'         // Production: Vercel serverless function
+      : 'http://localhost:3002/kie-ai/generate' // Local: future local proxy
+
+    console.log(`🌍 Generate Environment: ${isProduction ? 'Production' : 'Development'}`)
+    console.log(`📡 Generate Endpoint: ${API_ENDPOINT}`)
+
     const requestBody = {
       model: 'google/nano-banana-edit',
       input: {
@@ -67,7 +82,7 @@ export const generateNanoBananaImage = async (prompt, imageUrls = [], aspectRati
       requestBody.input.image_urls = imageUrls
     }
 
-    const response = await fetch(`${KIE_AI_API_URL}/api/v1/jobs/createTask`, {
+    const response = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: getKieAiHeaders(),
       body: JSON.stringify(requestBody)
@@ -98,13 +113,15 @@ export const generateNanoBananaImage = async (prompt, imageUrls = [], aspectRati
  */
 export const checkNanoBananaStatus = async (taskId) => {
   try {
-    const response = await fetch(
-      `${KIE_AI_API_URL}/api/v1/jobs/recordInfo?taskId=${taskId}`,
-      {
-        method: 'GET',
-        headers: getKieAiHeaders()
-      }
-    )
+    // Use proxy endpoints (like Seedream)
+    const API_ENDPOINT = isProduction
+      ? `/api/kie-ai-status?taskId=${taskId}&type=nanoBanana`  // Production: Vercel serverless function
+      : `http://localhost:3002/kie-ai/status?taskId=${taskId}&type=nanoBanana` // Local: future local proxy
+
+    const response = await fetch(API_ENDPOINT, {
+      method: 'GET',
+      headers: getKieAiHeaders()
+    })
 
     if (!response.ok) {
       throw new Error(`Status check failed: ${response.status} ${response.statusText}`)
@@ -132,6 +149,14 @@ export const checkNanoBananaStatus = async (taskId) => {
  */
 export const generateVeoVideo = async (videoPrompt, imageUrl, aspectRatio = '9:16') => {
   try {
+    // Use proxy endpoints (like Seedream)
+    const API_ENDPOINT = isProduction
+      ? '/api/kie-ai-veo'              // Production: Vercel serverless function
+      : 'http://localhost:3002/kie-ai/veo' // Local: future local proxy
+
+    console.log(`🌍 VEO Environment: ${isProduction ? 'Production' : 'Development'}`)
+    console.log(`📡 VEO Endpoint: ${API_ENDPOINT}`)
+
     const requestBody = {
       prompt: videoPrompt,
       model: 'veo3_fast',
@@ -141,7 +166,7 @@ export const generateVeoVideo = async (videoPrompt, imageUrl, aspectRatio = '9:1
       imageUrls: [imageUrl]
     }
 
-    const response = await fetch(`${KIE_AI_API_URL}/api/v1/veo/generate`, {
+    const response = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: getKieAiHeaders(),
       body: JSON.stringify(requestBody)
@@ -172,13 +197,15 @@ export const generateVeoVideo = async (videoPrompt, imageUrl, aspectRatio = '9:1
  */
 export const checkVeoVideoStatus = async (taskId) => {
   try {
-    const response = await fetch(
-      `${KIE_AI_API_URL}/api/v1/veo/record-info?taskId=${taskId}`,
-      {
-        method: 'GET',
-        headers: getKieAiHeaders()
-      }
-    )
+    // Use proxy endpoints (like Seedream)
+    const API_ENDPOINT = isProduction
+      ? `/api/kie-ai-status?taskId=${taskId}&type=veo`  // Production: Vercel serverless function
+      : `http://localhost:3002/kie-ai/status?taskId=${taskId}&type=veo` // Local: future local proxy
+
+    const response = await fetch(API_ENDPOINT, {
+      method: 'GET',
+      headers: getKieAiHeaders()
+    })
 
     if (!response.ok) {
       throw new Error(`Video status check failed: ${response.status} ${response.statusText}`)

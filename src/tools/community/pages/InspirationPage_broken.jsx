@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../auth/AuthContext.jsx';
 import { supabase } from '../../../lib/supabase';
-import './InspirationPage.css';
+import '../../../pages/InspirationPage.css';
 
 const InspirationPage = () => {
   const { user } = useAuth();

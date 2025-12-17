@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../auth/AuthContext.jsx';
 import { supabase } from '../../../lib/supabase';
-import './InspirationPage.css';
+import '../../../pages/InspirationPage.css';
 
 function InspirationPage() {
   const { user } = useAuth();

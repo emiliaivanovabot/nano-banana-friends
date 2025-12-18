@@ -20,7 +20,7 @@ export const uploadImageToKieAi = async (base64Data, fileName = null) => {
     // Use proxy endpoints (like Seedream)
     const API_ENDPOINT = isProduction
       ? '/api/kie-ai-upload'           // Production: Vercel serverless function
-      : 'http://localhost:3002/kie-ai/upload' // Local: future local proxy
+      : '/api/kie-ai-upload'           // Local: use same serverless function
 
     console.log(`🌍 Upload Environment: ${isProduction ? 'Production' : 'Development'}`)
     console.log(`📡 Upload Endpoint: ${API_ENDPOINT}`)
@@ -63,7 +63,7 @@ export const generateNanoBananaImage = async (prompt, imageUrls = [], aspectRati
     // Use proxy endpoints (like Seedream)
     const API_ENDPOINT = isProduction
       ? '/api/kie-ai-generate'         // Production: Vercel serverless function
-      : 'http://localhost:3002/kie-ai/generate' // Local: future local proxy
+      : '/api/kie-ai-generate'         // Local: use same serverless function
 
     console.log(`🌍 Generate Environment: ${isProduction ? 'Production' : 'Development'}`)
     console.log(`📡 Generate Endpoint: ${API_ENDPOINT}`)
@@ -116,7 +116,7 @@ export const checkNanoBananaStatus = async (taskId) => {
     // Use proxy endpoints (like Seedream)
     const API_ENDPOINT = isProduction
       ? `/api/kie-ai-status?taskId=${taskId}&type=nanoBanana`  // Production: Vercel serverless function
-      : `http://localhost:3002/kie-ai/status?taskId=${taskId}&type=nanoBanana` // Local: future local proxy
+      : `/api/kie-ai-status?taskId=${taskId}&type=nanoBanana`  // Local: use same serverless function
 
     const response = await fetch(API_ENDPOINT, {
       method: 'GET',
@@ -152,7 +152,7 @@ export const generateVeoVideo = async (videoPrompt, imageUrl, aspectRatio = '9:1
     // Use proxy endpoints (like Seedream)
     const API_ENDPOINT = isProduction
       ? '/api/kie-ai-veo'              // Production: Vercel serverless function
-      : 'http://localhost:3002/kie-ai/veo' // Local: future local proxy
+      : '/api/kie-ai-veo'              // Local: use same serverless function
 
     console.log(`🌍 VEO Environment: ${isProduction ? 'Production' : 'Development'}`)
     console.log(`📡 VEO Endpoint: ${API_ENDPOINT}`)
@@ -200,7 +200,7 @@ export const checkVeoVideoStatus = async (taskId) => {
     // Use proxy endpoints (like Seedream)
     const API_ENDPOINT = isProduction
       ? `/api/kie-ai-status?taskId=${taskId}&type=veo`  // Production: Vercel serverless function
-      : `http://localhost:3002/kie-ai/status?taskId=${taskId}&type=veo` // Local: future local proxy
+      : `/api/kie-ai-status?taskId=${taskId}&type=veo`  // Local: use same serverless function
 
     const response = await fetch(API_ENDPOINT, {
       method: 'GET',

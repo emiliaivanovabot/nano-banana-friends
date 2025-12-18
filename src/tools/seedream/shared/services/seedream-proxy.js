@@ -3,7 +3,7 @@ import fetch from 'node-fetch'
 import dotenv from 'dotenv'
 
 // Load environment variables
-dotenv.config({ path: '.env.local' })
+dotenv.config({ path: '.env' })
 
 const app = express()
 const port = 3002

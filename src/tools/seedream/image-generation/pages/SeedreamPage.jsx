@@ -146,6 +146,79 @@ function SeedreamPage() {
     }
   }
 
+  // Premium download handler for images (like Nano-Banana)
+  const downloadSeedreamImage = (imageUrl, index) => {
+    const link = document.createElement('a')
+    link.href = imageUrl
+    link.download = `seedream-4.5-${Date.now()}-${index + 1}.jpg`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  // Convert Seedream URL to Base64 for FTP upload
+  const convertSeedreamImageToBase64 = async (imageUrl) => {
+    try {
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+      return new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.readAsDataURL(blob)
+      })
+    } catch (error) {
+      console.error('Failed to convert image to base64:', error)
+      return null
+    }
+  }
+
+  // Upload single Seedream image to FTP (like Nano-Banana)
+  const uploadSeedreamToFTP = async (imageUrl, index) => {
+    if (!user?.username) {
+      alert('❌ Sie müssen angemeldet sein, um Bilder zu speichern.')
+      return
+    }
+
+    try {
+      console.log(`🚀 Uploading Seedream image ${index + 1} to FTP...`)
+      const base64Image = await convertSeedreamImageToBase64(imageUrl)
+      
+      if (!base64Image) {
+        alert('❌ Fehler beim Konvertieren des Bildes')
+        return
+      }
+
+      // Create generation metadata (estimate for Seedream)
+      const estimatedTokens = Math.round(prompt.length * 1.2)
+      const estimatedUsageMetadata = {
+        promptTokenCount: Math.round(estimatedTokens * 0.3),
+        candidatesTokenCount: Math.round(estimatedTokens * 0.7),
+        totalTokenCount: estimatedTokens
+      }
+
+      const uploadResult = await uploadAndSaveImage(
+        base64Image,
+        user.username,
+        'seedream-4.5',
+        prompt,
+        index,
+        size,
+        index === 0 ? parseFloat(generationTime) : null,
+        estimatedUsageMetadata,
+        aspectRatio
+      )
+
+      if (uploadResult.success) {
+        alert(`✅ Bild ${index + 1} erfolgreich in der Galerie gespeichert!`)
+      } else {
+        alert(`❌ Upload fehlgeschlagen: ${uploadResult.error}`)
+      }
+    } catch (error) {
+      console.error('FTP Upload Error:', error)
+      alert(`❌ Upload Fehler: ${error.message}`)
+    }
+  }
+
   const handleGenerate = async () => {
     try {
       setIsGenerating(true)
@@ -245,52 +318,8 @@ function SeedreamPage() {
       setGenerationTime(totalDuration)
       console.log(`✅ Total images generated: ${allImages.length} in ${totalDuration}s`)
         
-        // Auto-save images to FTP server and gallery (non-blocking)
-        if (allImages && allImages.length > 0 && user?.username) {
-          allImages.forEach((imageUrl, index) => {
-            // Convert Seedream image URL to base64 and upload to FTP
-            fetch(imageUrl)
-              .then(response => response.blob())
-              .then(blob => {
-                return new Promise((resolve) => {
-                  const reader = new FileReader()
-                  reader.onload = () => resolve(reader.result)
-                  reader.readAsDataURL(blob)
-                })
-              })
-              .then(base64Image => {
-                // Prepare generation metadata similar to Nano-Banana
-                const estimatedTokens = Math.round(prompt.length * 1.2) // Rough estimation for Seedream
-                const estimatedUsageMetadata = {
-                  promptTokenCount: Math.round(estimatedTokens * 0.3), // Estimated prompt tokens
-                  candidatesTokenCount: Math.round(estimatedTokens * 0.7), // Estimated output tokens
-                  totalTokenCount: estimatedTokens
-                }
-                
-                return uploadAndSaveImage(
-                  base64Image,
-                  user.username,
-                  'seedream-single',
-                  prompt,
-                  index,
-                  size,
-                  index === 0 ? parseFloat(duration) : null, // Generation time only for first image
-                  estimatedUsageMetadata,
-                  aspectRatio
-                )
-              })
-              .then(uploadResult => {
-                if (uploadResult.success) {
-                  console.log(`✅ Seedream image ${index + 1} uploaded to gallery:`, uploadResult.imageUrl)
-                } else {
-                  console.error(`❌ Failed to upload image ${index + 1}:`, uploadResult.error)
-                }
-              })
-              .catch(error => {
-                console.error(`❌ Error processing image ${index + 1} for upload:`, error)
-              })
-          })
-        }
+        // Images are now saved manually via upload buttons (better UX)
+        console.log(`✅ ${allImages.length} images generated successfully!`)
       
       if (allImages.length === 0) {
         throw new Error('Keine Bilder generiert')
@@ -2085,31 +2114,72 @@ function SeedreamPage() {
                 generatedImages.length <= 4 ? 'repeat(2, 1fr)' :
                 generatedImages.length <= 6 ? 'repeat(3, 1fr)' :
                 'repeat(4, 1fr)', // 7+ Bilder in 4 Spalten
-              maxWidth: generatedImages.length === 1 ? '600px' : '800px', // Kleinere Bilder
+              maxWidth: generatedImages.length === 1 ? '600px' : '800px',
               margin: '0 auto'
             }}>
               {generatedImages.map((image, index) => (
-                <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div key={index} style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '15px',
+                  background: 'hsl(var(--card))',
+                  borderRadius: '16px',
+                  padding: '15px',
+                  border: '1px solid hsl(var(--border))',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)'
+                  e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.15)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0px)'
+                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.08)'
+                }}>
+                  {/* Header with index */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '10px'
+                  }}>
+                    <div style={{
+                      background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                      color: 'white',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      padding: '4px 10px',
+                      borderRadius: '12px'
+                    }}>
+                      Seedream 4.5 • #{index + 1}
+                    </div>
+                    <div style={{
+                      fontSize: '11px',
+                      color: 'hsl(var(--muted-foreground))',
+                      background: 'hsl(var(--muted) / 0.3)',
+                      padding: '3px 8px',
+                      borderRadius: '8px'
+                    }}>
+                      {size} • {aspectRatio}
+                    </div>
+                  </div>
+
+                  {/* Image Container */}
                   <div style={{
                     position: 'relative',
                     borderRadius: '12px',
                     overflow: 'hidden',
-                    transition: 'transform 0.3s ease',
-                    cursor: 'pointer'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.02)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)'
+                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
                   }}>
                     <img
                       src={image.url}
-                      alt={`Generated ${index + 1}`}
+                      alt={`Seedream 4.5 Generated ${index + 1}`}
                       style={{
                         width: '100%',
-                        borderRadius: '12px',
-                        boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
+                        height: 'auto',
+                        display: 'block',
+                        borderRadius: '12px'
                       }}
                       onError={(e) => {
                         e.target.style.display = 'none'
@@ -2128,77 +2198,106 @@ function SeedreamPage() {
                         fontSize: '14px',
                         color: 'hsl(var(--foreground))'
                       }}>
-                        Bild konnte nicht geladen werden
+                        ❌ Bild konnte nicht geladen werden
                       </p>
                     </div>
-                    
-                    {/* Download Button Overlay */}
-                    <div style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background: 'rgba(0, 0, 0, 0)',
-                      borderRadius: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      opacity: 0,
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)'
-                      e.currentTarget.style.opacity = '1'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(0, 0, 0, 0)'
-                      e.currentTarget.style.opacity = '0'
-                    }}>
-                      <a
-                        href={image.url}
-                        download={`seedream-${Date.now()}-${index + 1}.png`}
+                  </div>
+
+                  {/* Action Buttons - Nano-Banana Style */}
+                  <div style={{
+                    display: 'flex',
+                    gap: '8px',
+                    marginTop: '8px'
+                  }}>
+                    {/* Download Button */}
+                    <button
+                      onClick={() => downloadSeedreamImage(image.url, index)}
+                      style={{
+                        flex: 1,
+                        background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.02)'
+                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)'
+                        e.currentTarget.style.boxShadow = 'none'
+                      }}
+                    >
+                      ⬇️ Download
+                    </button>
+
+                    {/* Save to Gallery Button */}
+                    {user && (
+                      <button
+                        onClick={() => uploadSeedreamToFTP(image.url, index)}
                         style={{
-                          background: 'white',
-                          color: 'black',
-                          padding: '10px 20px',
+                          flex: 1,
+                          background: 'linear-gradient(135deg, #11998e, #38ef7d)',
+                          color: 'white',
+                          border: 'none',
                           borderRadius: '8px',
-                          fontSize: '14px',
+                          padding: '8px 12px',
+                          fontSize: '12px',
                           fontWeight: '500',
-                          textDecoration: 'none',
+                          cursor: 'pointer',
                           transition: 'all 0.3s ease',
-                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px'
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#f0f0f0'
-                          e.currentTarget.style.transform = 'scale(1.05)'
+                          e.currentTarget.style.transform = 'scale(1.02)'
+                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(17, 153, 142, 0.4)'
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'white'
                           e.currentTarget.style.transform = 'scale(1)'
+                          e.currentTarget.style.boxShadow = 'none'
                         }}
                       >
-                        ⬇ Download
-                      </a>
-                    </div>
+                        💾 Galerie
+                      </button>
+                    )}
                   </div>
-                  
+
+                  {/* Revised Prompt Display */}
                   {image.revisedPrompt && image.revisedPrompt !== prompt && (
                     <div style={{
                       background: 'hsl(var(--muted) / 0.3)',
                       borderRadius: '8px',
-                      padding: '12px'
+                      padding: '12px',
+                      marginTop: '8px'
                     }}>
                       <p style={{
                         margin: '0 0 4px 0',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        color: 'hsl(var(--muted-foreground))'
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        color: 'hsl(var(--primary))',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
                       }}>
-                        Revised Prompt:
+                        🎯 Optimierter Prompt:
                       </p>
                       <p style={{
                         margin: 0,
-                        fontSize: '13px',
+                        fontSize: '12px',
                         color: 'hsl(var(--foreground))',
-                        lineHeight: '1.4'
+                        lineHeight: '1.4',
+                        opacity: 0.8
                       }}>
                         {image.revisedPrompt}
                       </p>

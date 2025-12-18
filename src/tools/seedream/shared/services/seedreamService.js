@@ -136,8 +136,8 @@ export async function generateSeedreamImage(options = {}) {
     // Use environment-specific endpoint
     const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
     const API_ENDPOINT = isProduction
-      ? '/api/seedream-generate'      // Production: use Vercel serverless function
-      : 'http://localhost:3002/seedream/generate'  // Local: use local proxy server
+      ? '/api/seedream-generate'      // Production: Vercel serverless function
+      : 'http://localhost:3002/seedream/generate'  // Local: local proxy server
     
     console.log(`🌍 Environment: ${isProduction ? 'Production' : 'Development'}`)
     console.log(`📡 API Endpoint: ${API_ENDPOINT}`)

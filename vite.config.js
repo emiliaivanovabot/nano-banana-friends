@@ -15,9 +15,14 @@ export default defineConfig({
     }
   },
   build: {
-    // Split vendor chunks for better caching
+    // Force new asset hashes to bypass Vercel MIME cache
+    assetsDir: 'assets',
     rollupOptions: {
       output: {
+        // Force new file hashes by changing asset naming
+        assetFileNames: 'assets/[name]-[hash][extname]',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
         manualChunks: {
           // Core React libraries - stable and rarely change
           react: ['react', 'react-dom'],

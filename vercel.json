@@ -53,7 +53,7 @@
       ]
     },
     {
-      "source": "/assets/(.*)",
+      "source": "/assets/(.*)\\.js",
       "headers": [
         {
           "key": "Cache-Control", 
@@ -62,6 +62,32 @@
         {
           "key": "Content-Type",
           "value": "application/javascript"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)\\.css",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Content-Type",
+          "value": "text/css"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)\\.jsx",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Content-Type",
+          "value": "text/javascript"
         }
       ]
     }
